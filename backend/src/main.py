@@ -16,6 +16,7 @@ from src.presentation.controllers import (
     squads_controller,
     expeditions_controller,
     player_controller,
+    runs_controller,
 )
 
 
@@ -80,6 +81,7 @@ app.include_router(champions_controller.router)
 app.include_router(artifacts_controller.router)
 app.include_router(squads_controller.router)
 app.include_router(expeditions_controller.router)
+app.include_router(runs_controller.router)
 
 
 @app.get("/")

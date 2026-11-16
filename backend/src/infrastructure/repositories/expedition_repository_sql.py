@@ -1,13 +1,25 @@
 from typing import List, Optional, Dict
+import copy
 from sqlmodel import Session, select
 from src.domain.repositories.expedition_repository import IExpeditionRepository
 from src.domain.entities.expedition import ActiveExpedition, BackgroundExpedition
 from src.domain.entities.biome import Biome
+from src.domain.entities.expedition_run import ExpeditionRun
+from src.domain.value_objects.card import CombatCard
+from src.domain.value_objects.enums import LaneScope
+from src.domain.value_objects.troop import TroopTemplate
 from src.infrastructure.database.models.sql_models import BackgroundExpeditionSQL
-from src.infrastructure.database.seed_data import get_seed_biomes
+from src.infrastructure.database.seed_data import (
+    get_seed_biomes,
+    get_seed_troop_templates,
+    get_seed_ability_lane_scopes,
+    get_seed_summon_abilities,
+)
 
 # In-memory storage for active interactive combat sessions
 _active_expedition_store: Optional[ActiveExpedition] = None
+# In-memory storage for the lane-battle expedition run
+_active_run_store: Optional[ExpeditionRun] = None
 
 
 class ExpeditionRepositorySQL(IExpeditionRepository):
@@ -89,3 +101,20 @@ class ExpeditionRepositorySQL(IExpeditionRepository):
         self.session.commit()
         self.session.refresh(row)
         return expedition
+
+    # ── Lane battle expedition runs ─────────────────────────────────────────
+    def get_active_run(self) -> Optional[ExpeditionRun]:
+        return _active_run_store
+
+    def save_active_run(self, run: Optional[ExpeditionRun]) -> None:
+        global _active_run_store
+        _active_run_store = run
+
+    def get_troop_templates(self) -> List[TroopTemplate]:
+        return get_seed_troop_templates()
+
+    def get_ability_lane_scopes(self) -> Dict[str, LaneScope]:
+        return get_seed_ability_lane_scopes()
+
+    def get_summon_abilities(self, champion_template_id: str) -> List[CombatCard]:
+        return copy.deepcopy(get_seed_summon_abilities().get(champion_template_id, []))

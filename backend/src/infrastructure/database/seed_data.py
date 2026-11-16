@@ -636,3 +636,77 @@ def get_seed_starting_artifacts() -> List[Artifact]:
             equipped_to=None,
         ),
     ]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LANE BATTLE CATALOG (Active Expedition runs)
+# ══════════════════════════════════════════════════════════════════════════════
+from src.domain.value_objects.enums import LaneScope  # noqa: E402
+from src.domain.value_objects.troop import TroopTemplate  # noqa: E402
+
+TROOPS_PER_HERO = 2
+
+
+def get_seed_troop_templates() -> List[TroopTemplate]:
+    return [
+        # Terran
+        TroopTemplate("troop_marine", "Marine Squad", Faction.TERRAN.value, count=6, unit_hp=35, unit_attack=6, defense=12,
+                      description="Reliable gauss riflemen. Balanced pack.", icon_name="Crosshair"),
+        TroopTemplate("troop_marauder", "Marauder Team", Faction.TERRAN.value, count=4, unit_hp=70, unit_attack=9, defense=25,
+                      description="Armored grenadiers. Hold the line.", icon_name="Shield"),
+        # Zerg
+        TroopTemplate("troop_zergling", "Zergling Swarm", Faction.ZERG.value, count=10, unit_hp=18, unit_attack=3, defense=6,
+                      description="Many fragile bodies. Absorbs hits for the hero behind.", icon_name="Bug"),
+        TroopTemplate("troop_hydralisk", "Hydralisk Brood", Faction.ZERG.value, count=5, unit_hp=40, unit_attack=8, defense=10,
+                      description="Spine-launching damage dealers.", icon_name="Zap"),
+        # Protoss
+        TroopTemplate("troop_zealot", "Zealot Cohort", Faction.PROTOSS.value, count=4, unit_hp=75, unit_attack=10, defense=18,
+                      description="Psi-blade warriors. Elite but few.", icon_name="Swords"),
+        TroopTemplate("troop_stalker", "Stalker Wing", Faction.PROTOSS.value, count=3, unit_hp=90, unit_attack=12, defense=20,
+                      description="Blink-capable walkers with heavy shots.", icon_name="Radio"),
+    ]
+
+
+def get_seed_ability_lane_scopes() -> Dict[str, LaneScope]:
+    """How far each champion ability reaches on the lane board (default: same lane)."""
+    return {
+        "raynor_hyperion_barrage": LaneScope.ALL_LANES,
+        "nova_snipe": LaneScope.ANY_LANE,
+        "nova_emp": LaneScope.ADJACENT_LANES,
+        "medic_nanite_heal": LaneScope.ADJACENT_LANES,
+        "tank_siege_blast": LaneScope.ADJACENT_LANES,
+        "kerrigan_psionic_shift": LaneScope.ADJACENT_LANES,
+        "kerrigan_crushing_grip": LaneScope.ANY_LANE,
+        "dehaka_drag": LaneScope.ANY_LANE,
+        "artanis_shield_overcharge": LaneScope.ADJACENT_LANES,
+        "artanis_solar_bombardment": LaneScope.ALL_LANES,
+        "tassadar_psi_storm": LaneScope.ANY_LANE,
+        "zeratul_void_slash": LaneScope.ANY_LANE,
+        "karax_guardian_shield": LaneScope.ALL_LANES,
+        "karax_chrono_beam": LaneScope.ANY_LANE,
+    }
+
+
+def get_seed_summon_abilities() -> Dict[str, List[CombatCard]]:
+    """Extra lane-battle abilities granted per champion template: troop summons."""
+    def summon(card_id: str, name: str, desc: str, troop_id: str, scope: LaneScope, quote: str) -> CombatCard:
+        return CombatCard(
+            id=card_id, name=name, description=desc, energy_cost=2,
+            target_type=TargetType.SELF, power_multiplier=0.0, cooldown_turns=3,
+            icon_name="Users", flavor_quote=quote, lane_scope=scope, summon_troop_id=troop_id,
+        )
+
+    return {
+        "tmpl_terran_raynor": [summon("raynor_drop_pods", "Drop-Pod Marines", "Call a fresh Marine Squad into any lane.",
+                                      "troop_marine", LaneScope.ANY_LANE, "Boys, we got company!")],
+        "tmpl_terran_tank": [summon("duke_marauder_drop", "Marauder Detachment", "Deploy a Marauder Team in this lane.",
+                                    "troop_marauder", LaneScope.SAME_LANE, "Hold position!")],
+        "tmpl_zerg_kerrigan": [summon("kerrigan_spawn_brood", "Spawn Brood", "Spawn a Zergling Swarm in any lane.",
+                                      "troop_zergling", LaneScope.ANY_LANE, "The Swarm answers.")],
+        "tmpl_zerg_dehaka": [summon("dehaka_primal_pack", "Primal Pack", "Call a Hydralisk Brood into this lane.",
+                                    "troop_hydralisk", LaneScope.SAME_LANE, "Pack hunts together.")],
+        "tmpl_protoss_karax": [summon("karax_warp_in", "Warp-In Zealots", "Warp a Zealot Cohort into any lane.",
+                                      "troop_zealot", LaneScope.ANY_LANE, "Matrix online.")],
+        "tmpl_protoss_artanis": [summon("artanis_stalker_warp", "Stalker Warp", "Warp a Stalker Wing into this lane.",
+                                        "troop_stalker", LaneScope.SAME_LANE, "En Taro Tassadar!")],
+    }

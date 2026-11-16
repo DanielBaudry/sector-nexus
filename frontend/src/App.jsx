@@ -6,7 +6,7 @@ import WarpBeaconView from './views/WarpBeaconView';
 import ArmoryView from './views/ArmoryView';
 import SquadBuilderView from './views/SquadBuilderView';
 import ExpeditionMapView from './views/ExpeditionMapView';
-import ActiveExpeditionView from './views/ActiveExpeditionView';
+import ExpeditionRunView from './views/ExpeditionRunView';
 import BackgroundExpeditionView from './views/BackgroundExpeditionView';
 import { api } from './services/api';
 
@@ -18,7 +18,7 @@ export default function App() {
   const [artifacts, setArtifacts] = useState([]);
   const [squads, setSquads] = useState([]);
   const [biomes, setBiomes] = useState([]);
-  const [activeExpedition, setActiveExpedition] = useState(null);
+  const [activeRun, setActiveRun] = useState(null);
   const [backgroundExpeditions, setBackgroundExpeditions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,7 +35,7 @@ export default function App() {
         artifactsData,
         squadsData,
         biomesData,
-        activeExpData,
+        activeRunData,
         bgExpData,
       ] = await Promise.all([
         api.getPlayerProfile(),
@@ -44,7 +44,7 @@ export default function App() {
         api.getArtifacts(),
         api.getSquads(),
         api.getBiomes(),
-        api.getActiveExpedition(),
+        api.getActiveRun(),
         api.getBackgroundExpeditions(),
       ]);
 
@@ -54,7 +54,7 @@ export default function App() {
       setArtifacts(artifactsData);
       setSquads(squadsData);
       setBiomes(biomesData);
-      setActiveExpedition(activeExpData);
+      setActiveRun(activeRunData);
       setBackgroundExpeditions(bgExpData);
       setLoading(false);
     } catch (err) {
@@ -71,16 +71,12 @@ export default function App() {
     loadInitialData();
   }, []);
 
-  // Periodic poll for background expeditions and active combat
+  // Periodic poll for background expeditions (the run view drives its own battle ticks)
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const [bgData, actData] = await Promise.all([
-          api.getBackgroundExpeditions(),
-          api.getActiveExpedition(),
-        ]);
+        const bgData = await api.getBackgroundExpeditions();
         setBackgroundExpeditions(bgData);
-        if (actData) setActiveExpedition(actData);
       } catch (err) {
         // silent fail on poll
       }
@@ -126,8 +122,8 @@ export default function App() {
     } catch (err) {}
   };
 
-  const handleStartCombat = (expedition) => {
-    setActiveExpedition(expedition);
+  const handleStartCombat = (run) => {
+    setActiveRun(run);
     setActiveTab('combat');
   };
 
@@ -165,10 +161,20 @@ export default function App() {
     );
   }
 
-  const hasActiveCombat = activeExpedition && activeExpedition.status === 'IN_PROGRESS';
+  const runInProgress = !!activeRun && !['VICTORY', 'DEFEAT', 'ABANDONED'].includes(activeRun.status);
+  const hasActiveCombat = runInProgress;
+  // Summary consumed by the HUD header and Command Deck widgets.
+  const expeditionSummary = activeRun
+    ? {
+        biome_name: activeRun.biome_name,
+        status: runInProgress ? 'IN_PROGRESS' : activeRun.status,
+        room_index: activeRun.nodes.find((n) => n.id === activeRun.current_node_id)?.row ?? 0,
+        total_rooms: Math.max(...activeRun.nodes.map((n) => n.row)) + 1,
+      }
+    : null;
 
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-black">
+    <div className={`${activeTab === 'combat' ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-[#050811] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-black`}>
       {/* Background Holographic Scanlines */}
       <div className="fixed inset-0 scanlines pointer-events-none z-50 opacity-40" />
 
@@ -176,7 +182,7 @@ export default function App() {
       <HUDHeader
         player={player}
         onResupply={handleResupply}
-        activeExpedition={activeExpedition}
+        activeExpedition={expeditionSummary}
         backgroundCount={backgroundExpeditions.filter((e) => !e.claimed).length}
       />
 
@@ -190,7 +196,7 @@ export default function App() {
       {/* Main Tactical Viewport */}
       <main className={`flex-1 w-full mx-auto relative z-10 ${
         activeTab === 'combat'
-          ? 'h-[calc(100vh-115px)] max-h-[calc(100vh-115px)] overflow-hidden px-3 py-1 max-w-[1440px]'
+          ? 'min-h-0 overflow-hidden px-3 py-2 max-w-[1920px]'
           : 'max-w-7xl p-4 sm:p-6 pb-20'
       }`}>
         {activeTab === 'deck' && (
@@ -198,7 +204,7 @@ export default function App() {
             player={player}
             squads={squads}
             champions={champions}
-            activeExpedition={activeExpedition}
+            activeExpedition={expeditionSummary}
             backgroundExpeditions={backgroundExpeditions}
             setActiveTab={setActiveTab}
           />
@@ -238,23 +244,25 @@ export default function App() {
           <ExpeditionMapView
             biomes={biomes}
             squads={squads}
+            champions={champions}
+            activeRun={activeRun}
             onStartCombat={handleStartCombat}
             onDispatchIdle={handleDispatchIdle}
           />
         )}
 
         {activeTab === 'combat' && (
-          <ActiveExpeditionView
-            expedition={activeExpedition}
-            onCombatUpdated={(updated) => setActiveExpedition(updated)}
-            onExpeditionFinished={async () => {
+          <ExpeditionRunView
+            run={activeRun}
+            onRunUpdated={(updated) => setActiveRun(updated)}
+            onRunCleared={async () => {
               const [pData, chData] = await Promise.all([
                 api.getPlayerProfile(),
                 api.getChampions(),
               ]);
               setPlayer(pData);
               setChampions(chData);
-              setActiveExpedition(null);
+              setActiveRun(null);
             }}
             setActiveTab={setActiveTab}
           />

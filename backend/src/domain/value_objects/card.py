@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-from src.domain.value_objects.enums import TargetType
+from src.domain.value_objects.enums import TargetType, LaneScope
 
 
 @dataclass
@@ -16,6 +16,10 @@ class CombatCard:
     cooldown_turns: int = 0
     icon_name: str = "Zap"
     flavor_quote: Optional[str] = None
+    # Lane battle: which lanes the ability reaches (troops never leave their lane).
+    lane_scope: LaneScope = LaneScope.SAME_LANE
+    # Lane battle: optional troop template summoned into the target lane.
+    summon_troop_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -30,6 +34,8 @@ class CombatCard:
             "cooldown_turns": self.cooldown_turns,
             "icon_name": self.icon_name,
             "flavor_quote": self.flavor_quote,
+            "lane_scope": self.lane_scope.value if hasattr(self.lane_scope, "value") else str(self.lane_scope),
+            "summon_troop_id": self.summon_troop_id,
         }
 
     @classmethod
@@ -46,4 +52,6 @@ class CombatCard:
             cooldown_turns=int(data.get("cooldown_turns", 0)),
             icon_name=data.get("icon_name", "Zap"),
             flavor_quote=data.get("flavor_quote"),
+            lane_scope=LaneScope(data.get("lane_scope", LaneScope.SAME_LANE)),
+            summon_troop_id=data.get("summon_troop_id"),
         )

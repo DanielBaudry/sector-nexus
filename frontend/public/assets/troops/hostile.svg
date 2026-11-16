@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a0a10"/><stop offset="100%" stop-color="#0b0204"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7f1d1d"/><stop offset="100%" stop-color="#1f0508"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/><stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <g id="u">
+    <path d="M20 172 Q10 110 40 80 Q75 40 110 80 Q140 110 130 172 Q110 150 98 172 Q85 150 75 172 Q62 150 50 172 Q38 150 20 172 Z" fill="url(#body)" stroke="#0b0204" stroke-width="3"/>
+    <ellipse cx="75" cy="98" rx="20" ry="13" fill="#fecaca"/>
+    <circle cx="75" cy="98" r="8" fill="#ef4444" filter="url(#g)"/>
+    <path d="M45 70 L30 40 M105 70 L120 40" stroke="#7f1d1d" stroke-width="6" stroke-linecap="round"/></g>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#bg)"/>
+  <rect width="200" height="200" rx="20" fill="url(#halo)"/>
+  <path d="M0 170 L200 150 L200 200 L0 200 Z" fill="#000" opacity="0.35"/>
+  <use href="#u" transform="translate(18 34) scale(0.62)" opacity="0.55"/>
+  <use href="#u" transform="translate(96 34) scale(0.62)" opacity="0.55"/>
+  <use href="#u" transform="translate(38 40) scale(0.86)"/>
+  <rect x="6" y="6" width="188" height="188" rx="16" fill="none" stroke="#ef4444" stroke-width="2" stroke-opacity="0.35"/>
+</svg>

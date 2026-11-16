@@ -38,3 +38,25 @@ class DispatchBackgroundDTO(BaseModel):
     biome_id: str
     squad_id: str = "squad_alpha"
     duration_seconds: int = 60
+
+
+class StartRunDTO(BaseModel):
+    biome_id: str
+    squad_id: str = "squad_alpha"
+    # hero (champion) id -> list of troop template ids; omitted heroes get default faction troops
+    troop_assignments: Optional[Dict[str, List[str]]] = None
+
+
+class ChooseNodeDTO(BaseModel):
+    node_id: str
+
+
+class DeployHeroesDTO(BaseModel):
+    # hero (champion) id -> lane index (0 = left, 1 = center, 2 = right)
+    assignments: Dict[str, int]
+
+
+class PlayAbilityDTO(BaseModel):
+    card_id: Optional[str] = None
+    target_lane: Optional[int] = None
+    target_unit_id: Optional[str] = None

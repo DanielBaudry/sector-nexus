@@ -91,21 +91,21 @@ Run the automated launcher script from the root of `sector-nexus`:
 ./start.sh
 ```
 
-- **Web Browser HUD**: [http://localhost:3000](http://localhost:3000)
-- **FastAPI Interactive Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Web Browser HUD**: [http://localhost:5710](http://localhost:5710)
+- **FastAPI Interactive Docs**: [http://localhost:8710/docs](http://localhost:8710/docs)
 
 ### Manual Launch
 
 #### 1. Backend (FastAPI)
 ```bash
 cd backend
-.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8710 --reload
 ```
 
 #### 2. Frontend (Vite + React)
 ```bash
 cd frontend
-npm run dev -- --port 3000
+npm run dev  # port 5710, proxies /api to 8710
 ```
 
 ### Running Backend Tests

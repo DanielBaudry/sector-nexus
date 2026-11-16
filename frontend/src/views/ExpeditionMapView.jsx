@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Compass, Flame, Sparkles, Radio, Swords, Satellite, AlertTriangle, Shield, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
+import RunSetupModal from '../components/run/RunSetupModal';
 
 const ICON_MAP = {
   Flame,
@@ -12,22 +13,22 @@ const ICON_MAP = {
 export default function ExpeditionMapView({
   biomes,
   squads,
+  champions = [],
+  activeRun,
   onStartCombat,
   onDispatchIdle,
 }) {
   const [starting, setStarting] = useState(false);
+  const [setupBiome, setSetupBiome] = useState(null);
   const currentSquad = squads?.[0] || { id: 'squad_alpha' };
+  const runInProgress = activeRun && !['VICTORY', 'DEFEAT', 'ABANDONED'].includes(activeRun.status);
 
-  const handleStartLive = async (biomeId) => {
-    setStarting(true);
-    try {
-      const expedition = await api.startExpedition(biomeId, currentSquad.id);
-      if (onStartCombat) onStartCombat(expedition);
-    } catch (err) {
-      alert(err.message || 'Failed to start expedition');
-    } finally {
-      setStarting(false);
+  const handleStartLive = (biome) => {
+    if (runInProgress) {
+      if (onStartCombat) onStartCombat(activeRun);
+      return;
     }
+    setSetupBiome(biome);
   };
 
   const handleDispatchBackground = async (biomeId) => {
@@ -117,11 +118,11 @@ export default function ExpeditionMapView({
               <div className="mt-6 pt-4 border-t border-slate-700/60 flex flex-wrap gap-2.5">
                 <button
                   disabled={starting}
-                  onClick={() => handleStartLive(biome.id)}
+                  onClick={() => handleStartLive(biome)}
                   className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-orbitron font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-500/20 flex items-center justify-center gap-1.5 transition disabled:opacity-50"
                 >
                   <Swords className="w-4 h-4" />
-                  <span>LIVE DESCENT</span>
+                  <span>{runInProgress ? (activeRun.biome_id === biome.id ? 'RESUME DESCENT' : 'RUN IN PROGRESS') : 'LIVE DESCENT'}</span>
                 </button>
 
                 <button
@@ -137,6 +138,19 @@ export default function ExpeditionMapView({
           );
         })}
       </div>
+
+      {setupBiome && (
+        <RunSetupModal
+          biome={setupBiome}
+          squad={currentSquad}
+          champions={champions}
+          onClose={() => setSetupBiome(null)}
+          onLaunched={(run) => {
+            setSetupBiome(null);
+            if (onStartCombat) onStartCombat(run);
+          }}
+        />
+      )}
     </div>
   );
 }

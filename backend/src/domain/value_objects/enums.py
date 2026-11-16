@@ -53,3 +53,55 @@ class GambitCondition(str, Enum):
     ENEMY_IS_ELITE = "enemy_is_elite"
     ENEMY_COUNT_OVER_1 = "enemy_count_over_1"
     ENEMY_LOW_HP = "enemy_low_hp"
+
+
+# ── Lane Battle / Expedition Run ─────────────────────────────────────────────
+
+class LaneScope(str, Enum):
+    """Which lanes a hero ability reaches. Troops always stay in their own lane."""
+    SAME_LANE = "same_lane"
+    ADJACENT_LANES = "adjacent_lanes"   # own lane + neighbours
+    ANY_LANE = "any_lane"               # player picks one target lane
+    ALL_LANES = "all_lanes"
+
+
+class Side(str, Enum):
+    ALLY = "ALLY"
+    ENEMY = "ENEMY"
+
+
+class UnitKind(str, Enum):
+    HERO = "HERO"
+    TROOP = "TROOP"
+
+
+class NodeType(str, Enum):
+    START = "START"
+    COMBAT = "COMBAT"
+    ELITE = "ELITE"
+    REST = "REST"
+    CACHE = "CACHE"
+    BOSS = "BOSS"
+
+
+class ObjectiveType(str, Enum):
+    CLEAR_LANES = "CLEAR_LANES"         # primary: wipe enemies in N lanes
+    DEFEND_LANE = "DEFEND_LANE"         # constraint: keep >=1 ally unit alive in lane
+    SURVIVE_TURNS = "SURVIVE_TURNS"     # primary: hold out until turn N
+    ELIMINATE_BOSS = "ELIMINATE_BOSS"   # primary: kill the boss unit
+
+
+class RunStatus(str, Enum):
+    MAP = "MAP"                 # choosing next node
+    DEPLOYMENT = "DEPLOYMENT"   # placing heroes in lanes before a battle
+    BATTLE = "BATTLE"
+    VICTORY = "VICTORY"
+    DEFEAT = "DEFEAT"
+    ABANDONED = "ABANDONED"
+
+
+class BattleStatus(str, Enum):
+    DEPLOYMENT = "DEPLOYMENT"
+    IN_PROGRESS = "IN_PROGRESS"
+    WON = "WON"
+    LOST = "LOST"

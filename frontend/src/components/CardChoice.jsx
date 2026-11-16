@@ -1,7 +1,7 @@
 import React from 'react';
 import { Zap, Shield, Heart, Crosshair, Target, Swords, Bomb, Sun, Activity } from 'lucide-react';
 
-const SKILL_IMAGES = {
+export const SKILL_IMAGES = {
   'Penetrator Round': '/assets/skills/skill_penetrator.svg',
   'Hyperion Salvo': '/assets/skills/skill_orbital.svg',
   'Inspire Squad': '/assets/skills/skill_shield.svg',

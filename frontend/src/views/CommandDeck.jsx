@@ -189,7 +189,7 @@ export default function CommandDeck({
             </h4>
             <p className="text-xs text-slate-400 mt-1">
               {activeExpedition && activeExpedition.status === 'IN_PROGRESS'
-                ? `Room ${activeExpedition.room_index + 1}/${activeExpedition.total_rooms} in progress. Real-time tactical cards active.`
+                ? `Route depth ${activeExpedition.room_index}/${activeExpedition.total_rooms - 1}. Lane battles and branching paths await.`
                 : 'Deploy to Char, Aiur, Mar Sara, or the Derelict Void Sector to test your squad and AI gambits.'}
             </p>
           </div>
