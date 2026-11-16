@@ -53,7 +53,7 @@ class LaneBattleEngine:
         self.rng = rng or random.Random()
 
     # ── Lifecycle ───────────────────────────────────────────────────────────
-    def begin(self, battle: Battle, now: Optional[float] = None) -> None:
+    def begin(self, battle: Battle, now: Optional[float] = None, max_actions: Optional[int] = None) -> None:
         battle.status = BattleStatus.IN_PROGRESS
         for u in battle.units:
             if u.is_hero and u.lane is not None:
@@ -62,11 +62,16 @@ class LaneBattleEngine:
             for lane in range(LANE_COUNT):
                 battle.drill_meters[f"{side.value}:{lane}"] = float(self.rng.randint(0, 20))
         self._evaluate(battle)
-        self.advance(battle, now)
+        self.advance(battle, now, max_actions)
 
-    def advance(self, battle: Battle, now: Optional[float] = None) -> None:
-        """Run initiative until an ally hero needs a decision or the battle ends."""
+    def advance(self, battle: Battle, now: Optional[float] = None, max_actions: Optional[int] = None) -> None:
+        """
+        Run initiative until an ally hero needs a decision or the battle ends.
+        `max_actions` caps how many enemy/drill actions resolve in this call, so the
+        client can animate the battle one action at a time (None = unlimited).
+        """
         ticks = 0
+        actions = 0
         while battle.status == BattleStatus.IN_PROGRESS and not battle.current_actor_id:
             ticks += 1
             if ticks > MAX_TICKS_PER_STEP:
@@ -76,22 +81,29 @@ class LaneBattleEngine:
                 self._tick_meters(battle)
                 continue
 
+            unit = None if actor_key.startswith("DRILL:") else battle.get_unit(actor_key)
+            if unit is not None and unit.side == Side.ALLY:
+                battle.current_actor_id = unit.id
+                battle.turn_started_at = time.time() if now is None else now
+                battle.log.append(f"⚡ {unit.name} ready in {LANE_NAMES[unit.lane]} — choose an ability.")
+                battle.emit("ready", actor_id=unit.id, lane=unit.lane)
+                return
+            if max_actions is not None and actions >= max_actions:
+                return
+            actions += 1
+
             if actor_key.startswith("DRILL:"):
                 _, side_value, lane_str = actor_key.split(":")
                 side, lane = Side(side_value), int(lane_str)
                 battle.drill_meters[f"{side.value}:{lane}"] = 0.0
+                battle.emit("turn", actor_id=None, side=side.value, lane=lane, drill=True)
                 self._volley(battle, side, lane)
                 self._end_action(battle)
                 continue
 
-            unit = battle.get_unit(actor_key)
             if unit is None:
                 continue
-            if unit.side == Side.ALLY:
-                battle.current_actor_id = unit.id
-                battle.turn_started_at = time.time() if now is None else now
-                battle.log.append(f"⚡ {unit.name} ready in {LANE_NAMES[unit.lane]} — choose an ability.")
-                return
+            battle.emit("turn", actor_id=unit.id, side=unit.side.value, lane=unit.lane, drill=False)
             self._enemy_hero_turn(battle, unit)
             self._end_action(battle)
 
@@ -103,6 +115,7 @@ class LaneBattleEngine:
         timed_out: bool = False,
         now: Optional[float] = None,
         target_unit_id: Optional[str] = None,
+        max_actions_after: Optional[int] = None,
     ) -> None:
         if battle.status != BattleStatus.IN_PROGRESS:
             raise ValueError("Battle is not in progress.")
@@ -135,6 +148,7 @@ class LaneBattleEngine:
         if card.lane_scope == LaneScope.ANY_LANE and target_lane is None:
             target_lane = self._auto_target_lane(battle, actor, card)
 
+        battle.emit("turn", actor_id=actor.id, side=actor.side.value, lane=actor.lane, drill=False)
         self._tick_cooldowns(actor)
         self._resolve_ability(battle, actor, card, target_lane, target_unit)
         if card.cooldown_turns > 0:
@@ -146,7 +160,7 @@ class LaneBattleEngine:
         if actor.is_alive and actor.lane is not None:
             self._volley(battle, Side.ALLY, actor.lane)
         self._end_action(battle)
-        self.advance(battle, now)
+        self.advance(battle, now, max_actions_after)
 
     # ── Initiative ──────────────────────────────────────────────────────────
     def _next_ready(self, battle: Battle) -> Optional[str]:
@@ -183,6 +197,7 @@ class LaneBattleEngine:
                     battle.drill_meters[key] = 0.0
 
     def _end_action(self, battle: Battle) -> None:
+        battle.emit("end")
         battle.turn += 1
         self._spawn_waves(battle)
         self._evaluate(battle)
@@ -254,6 +269,7 @@ class LaneBattleEngine:
         friend = actor.side
         lane_label = "ALL LANES" if len(lanes) == LANE_COUNT else " + ".join(LANE_NAMES[l] for l in lanes)
         battle.log.append(f"🎯 {actor.name} uses {card.name} → {lane_label}.")
+        battle.emit("ability", actor_id=actor.id, name=card.name, lanes=lanes, summon=bool(card.summon_troop_id))
 
         # Damage
         if card.power_multiplier > 0:
@@ -274,9 +290,13 @@ class LaneBattleEngine:
             if card.target_type == TargetType.ALL_ALLIES:
                 for ally in [u for l in lanes for u in battle.living(friend, l)]:
                     self._grant_shields(ally, card.shield_grant)
+                    battle.emit("shield", source_id=actor.id, target_id=ally.id, amount=card.shield_grant,
+                                shields=ally.shields, max_shields=ally.max_shields)
                 battle.log.append(f"🛡️ +{card.shield_grant} shields to allies in {lane_label}.")
             else:
                 self._grant_shields(actor, card.shield_grant)
+                battle.emit("shield", source_id=actor.id, target_id=actor.id, amount=card.shield_grant,
+                            shields=actor.shields, max_shields=actor.max_shields)
                 battle.log.append(f"🛡️ {actor.name} gains +{card.shield_grant} shields.")
 
         # Healing (troop packs regain soldiers when healed)
@@ -285,14 +305,14 @@ class LaneBattleEngine:
             friends = [u for l in lanes for u in battle.living(friend, l)]
             if card.target_type == TargetType.ALL_ALLIES:
                 for ally in friends:
-                    ally.hp = min(ally.max_hp, ally.hp + amount)
+                    self._heal(battle, actor, ally, amount)
                 battle.log.append(f"💚 Allies in {lane_label} restored +{amount} HP.")
             elif friends:
                 if target_unit is not None and target_unit in friends:
                     target = target_unit
                 else:
                     target = min(friends, key=lambda u: u.hp / max(1, u.max_hp))
-                target.hp = min(target.max_hp, target.hp + amount)
+                self._heal(battle, actor, target, amount)
                 battle.log.append(f"💚 {target.name} restored +{amount} HP.")
 
         # Summons
@@ -308,6 +328,7 @@ class LaneBattleEngine:
                     lane=summon_lane,
                 )
                 battle.units.append(pack)
+                battle.emit("summon", source_id=actor.id, unit_id=pack.id, lane=summon_lane, name=pack.name)
                 battle.log.append(f"📦 {pack.name} ×{pack.count} deployed to {LANE_NAMES[summon_lane]}.")
 
     def _enemy_hero_turn(self, battle: Battle, hero: LaneUnit) -> None:
@@ -363,6 +384,11 @@ class LaneBattleEngine:
         before_count = target.count
         target.hp = max(0, target.hp - hull)
 
+        battle.emit(
+            "hit", source_id=attacker.id, target_id=target.id, damage=damage, absorbed=absorbed, hull=hull,
+            crit=is_crit, volley=attacker.is_troop, hp=target.hp, shields=target.shields, count=target.count,
+            alive=target.hp > 0,
+        )
         crit_tag = " [CRITICAL]" if is_crit else ""
         who = f"{attacker.name} ×{attacker.count}" if attacker.is_troop else attacker.name
         if target.is_troop and hull > 0:
@@ -378,6 +404,13 @@ class LaneBattleEngine:
             target.is_alive = False
             target.turn_meter = 0.0
             battle.log.append(f"💀 {target.name} destroyed in {LANE_NAMES[target.lane]}!")
+
+    @staticmethod
+    def _heal(battle: Battle, source: LaneUnit, target: LaneUnit, amount: int) -> None:
+        before = target.hp
+        target.hp = min(target.max_hp, target.hp + amount)
+        battle.emit("heal", source_id=source.id, target_id=target.id, amount=target.hp - before,
+                    hp=target.hp, count=target.count)
 
     @staticmethod
     def _grant_shields(unit: LaneUnit, amount: int) -> None:
@@ -396,6 +429,7 @@ class LaneBattleEngine:
                 unit.turn_meter = 0.0
                 battle.units.append(unit)
             names = ", ".join(u.name for u in wave.units)
+            battle.emit("wave", lane=wave.lane, unit_ids=[u.id for u in wave.units], names=names)
             battle.log.append(f"🚨 Reinforcements in {LANE_NAMES[wave.lane]}: {names}!")
 
     def _evaluate(self, battle: Battle) -> None:

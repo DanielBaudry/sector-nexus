@@ -206,6 +206,17 @@ class Battle:
     turn_time_limit_seconds: float = 30.0
     log: List[str] = field(default_factory=list)
     rewards: Dict[str, int] = field(default_factory=dict)
+    # Structured combat events (hits, heals, summons...) the client replays as animations.
+    events: List[Dict[str, Any]] = field(default_factory=list)
+    event_seq: int = 0
+
+    MAX_EVENTS = 300
+
+    def emit(self, type_: str, **data: Any) -> None:
+        self.event_seq += 1
+        self.events.append({"seq": self.event_seq, "type": type_, **data})
+        if len(self.events) > self.MAX_EVENTS:
+            del self.events[: len(self.events) - self.MAX_EVENTS]
 
     # ── Queries ────────────────────────────────────────────────────────────
     def get_unit(self, unit_id: str) -> Optional[LaneUnit]:
@@ -273,4 +284,6 @@ class Battle:
             "turn_time_limit_seconds": self.turn_time_limit_seconds,
             "log": self.log[-40:],
             "rewards": self.rewards,
+            "events": self.events[-150:],
+            "event_seq": self.event_seq,
         }

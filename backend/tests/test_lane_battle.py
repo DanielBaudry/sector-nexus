@@ -201,7 +201,7 @@ def test_losses_persist_between_nodes():
     assert run.status == RunStatus.DEPLOYMENT
     service.deploy(run, {"h1": 1}, now=0)
     guard = 0
-    while run.status == RunStatus.BATTLE and guard < 200:
+    while run.status == RunStatus.BATTLE and guard < 2000:
         guard += 1
         if run.battle.current_actor_id:
             service.play(run, None, None, now=0)
@@ -324,3 +324,36 @@ def test_heal_can_target_chosen_ally():
     engine.begin(battle, now=0)
     engine.play_ally_turn(battle, card_id="heal", target_unit_id="p2", now=0)
     assert chosen.hp == 150 and hurt_most.hp == 10
+
+
+# ── Step-wise resolution & events ───────────────────────────────────────────
+def test_events_describe_hits_and_tick_resolves_one_action():
+    rng = random.Random(15)
+    service = ExpeditionRunService(rng=rng)
+    biome = get_seed_biomes()[0]
+    h = hero("h1", lane=None, attack=60, speed=40)
+    run = ExpeditionRun(
+        id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
+        nodes=[MapNode("n0_1", 0, 1, NodeType.START, next_ids=["n1_1"]), MapNode("n1_1", 1, 1, NodeType.ELITE, threat=1)],
+        current_node_id="n0_1", heroes=[h], troops=[],
+    )
+    service.choose_node(run, biome, "n1_1", {})
+    service.deploy(run, {"h1": 1}, now=0)
+    battle = run.battle
+    turns_before = battle.turn
+    if not battle.current_actor_id:
+        service.tick(run, now=0)
+        assert battle.turn - turns_before <= 1
+    for _ in range(30):
+        if run.status != RunStatus.BATTLE:
+            break
+        if battle.current_actor_id:
+            service.play(run, None, None, now=0)
+        else:
+            service.tick(run, now=0)
+    hits = [e for e in battle.events if e["type"] == "hit"]
+    assert hits, "combat should emit hit events"
+    e = hits[-1]
+    assert {"source_id", "target_id", "damage", "hp", "alive", "crit"} <= set(e)
+    seqs = [ev["seq"] for ev in battle.events]
+    assert seqs == sorted(seqs)

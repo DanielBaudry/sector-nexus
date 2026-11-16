@@ -67,7 +67,7 @@ function frameFor(unit) {
 }
 
 /** Framed hero card: portrait centred, info strip attached underneath. */
-export function HeroTile({ unit, isActive = false, onInspect, targetable = null, dimmed = false }) {
+function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed = false }) {
   const enemy = unit.side === 'ENEMY';
   const alive = unit.is_alive;
   const frame = frameFor(unit);
@@ -141,7 +141,7 @@ export function HeroTile({ unit, isActive = false, onInspect, targetable = null,
 }
 
 /** Troop pack card: art fills ~80%, soldier count in a grey pill, life bar underneath. */
-export function TroopTile({ unit, onInspect, targetable = null, dimmed = false }) {
+function TroopCard({ unit, onInspect, targetable = null, dimmed = false }) {
   const enemy = unit.side === 'ENEMY';
   const tone = factionTone(unit.faction);
   return (
@@ -165,5 +165,52 @@ export function TroopTile({ unit, onInspect, targetable = null, dimmed = false }
         <LifeBar hp={unit.hp} maxHp={unit.max_hp} height="h-3" text="text-[9px]" />
       </div>
     </div>
+  );
+}
+
+// ── Combat FX wrapper ─────────────────────────────────────────────────────
+const FLASH = {
+  attack: 'bg-yellow-200/25',
+  hit: 'bg-red-500/60',
+  crit: 'bg-amber-400/70',
+  heal: 'bg-emerald-400/50',
+  shield: 'bg-cyan-400/50',
+};
+
+/**
+ * Anchors the unit for screen-space FX (data-unit-id) and plays its current effect:
+ * lunge toward the front when attacking, shake + flash when hit.
+ * The inner node is keyed by the effect so each new effect restarts the animation.
+ */
+function FxWrap({ unit, fx, className = '', children }) {
+  const motion = !fx ? ''
+    : fx.kind === 'attack' ? (unit.side === 'ALLY' ? 'fx-attack-up' : 'fx-attack-down')
+    : fx.kind === 'crit' ? 'fx-crit'
+    : fx.kind === 'hit' ? 'fx-hit'
+    : '';
+  const flash = fx && FLASH[fx.kind];
+  return (
+    <div data-unit-id={unit.id} className={className}>
+      <div key={fx?.key ?? 0} className={`relative ${motion}`}>
+        {children}
+        {flash && <span className={`absolute inset-0 rounded-xl pointer-events-none fx-flash ${flash}`} />}
+      </div>
+    </div>
+  );
+}
+
+export function HeroTile({ fx, ...props }) {
+  return (
+    <FxWrap unit={props.unit} fx={fx} className="mx-auto w-fit">
+      <HeroCard {...props} />
+    </FxWrap>
+  );
+}
+
+export function TroopTile({ fx, ...props }) {
+  return (
+    <FxWrap unit={props.unit} fx={fx}>
+      <TroopCard {...props} />
+    </FxWrap>
   );
 }

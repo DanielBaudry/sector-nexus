@@ -62,6 +62,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
   const [busy, setBusy] = useState(false);
   const [dismissedBattleId, setDismissedBattleId] = useState(null);
   const [error, setError] = useState(null);
+  const [boardAnimating, setBoardAnimating] = useState(false);
 
   if (!run) {
     return (
@@ -135,7 +136,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
       {/* Body */}
       <div className="flex-1 min-h-0">
         {showBoard ? (
-          <LaneBattleBoard run={run} onRunUpdated={onRunUpdated} />
+          <LaneBattleBoard run={run} onRunUpdated={onRunUpdated} onAnimatingChange={setBoardAnimating} />
         ) : (
           <div className="h-full flex flex-col lg:flex-row gap-2 min-h-0">
             <div className="flex-1 hud-panel rounded-xl border border-cyan-500/20 p-3 flex flex-col min-h-0">
@@ -171,7 +172,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
       </div>
 
       {/* Battle report (run continues) */}
-      {battleReport && !finished && (
+      {battleReport && !finished && !boardAnimating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl p-6 border border-emerald-400/70 bg-gradient-to-b from-emerald-950/80 to-slate-950 text-center">
             <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-2" />
@@ -190,7 +191,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
       )}
 
       {/* Run over */}
-      {finished && (
+      {finished && !boardAnimating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <div className={`w-full max-w-md rounded-2xl p-6 border text-center ${
             run.status === 'VICTORY' ? 'bg-gradient-to-b from-cyan-950/90 to-slate-950 border-cyan-400' : 'bg-gradient-to-b from-red-950/90 to-slate-950 border-red-500'

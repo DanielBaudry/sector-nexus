@@ -6,9 +6,12 @@ import { SKILL_IMAGES } from '../CardChoice';
 import { HeroTile, TroopTile } from './LaneUnits';
 import ObjectiveTracker from './ObjectiveTracker';
 import UnitInfoPopover from './UnitInfoPopover';
+import BattleFxLayer from './BattleFxLayer';
+import useBattleReplay from './useBattleReplay';
 import { LANE_NAMES, SCOPE_LABEL, factionTone, getPortrait, lanesInReach } from '../../utils/battleVisuals';
 
-const TICK_MS = 700;
+const STEP_PAUSE_MS = 250;   // breather between resolved actions (animations add the rest)
+const EXPIRY_POLL_MS = 500;
 
 function DrillMeter({ value, enemy }) {
   return (
@@ -45,7 +48,8 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(card)}
       onBlur={() => onHover(null)}
-      className={`group relative h-full min-h-0 rounded-xl border-2 text-left overflow-hidden flex flex-col transition-all ${
+      title={card.description}
+      className={`relative shrink-0 h-full max-h-[128px] w-[clamp(84px,7.2vw,120px)] rounded-xl border-2 text-left overflow-hidden flex flex-col transition-all ${
         onCooldown
           ? 'border-slate-800 bg-slate-950 opacity-50 cursor-not-allowed'
           : selected
@@ -57,29 +61,28 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
     >
       <div className="relative flex-1 min-h-0 bg-black/60 flex items-center justify-center overflow-hidden">
         {img ? <img src={img} alt="" className="h-full w-full object-contain p-1" /> : isSummon ? <Users className="w-1/3 h-1/3 text-emerald-300" /> : <Crosshair className="w-1/3 h-1/3 text-cyan-300" />}
-        <span className="absolute top-1 left-1 font-mono text-[10px] px-1 rounded bg-black/80 border border-slate-600 text-slate-300">[{index + 1}]</span>
-        <span className="absolute top-1 right-1 font-mono text-[10px] px-1 rounded bg-black/80 border border-cyan-600/60 text-cyan-300">
-          {SCOPE_LABEL[card.lane_scope] || 'LANE'}
-        </span>
+        <span className="absolute top-0.5 left-0.5 font-mono text-[9px] px-1 rounded bg-black/80 border border-slate-600 text-slate-300">{index + 1}</span>
       </div>
-      <div className="shrink-0 px-2 py-1.5 border-t border-white/10">
-        <div className="flex items-center justify-between gap-1">
-          <span className="font-orbitron font-bold text-xs text-slate-100 truncate">{card.name}</span>
-          {card.cooldown_turns > 0 && <span className="font-mono text-[9px] text-slate-500 shrink-0">CD {card.cooldown_turns}</span>}
+      <div className="shrink-0 px-1.5 py-1 border-t border-white/10">
+        <div className="font-orbitron font-bold text-[10px] leading-tight text-slate-100 truncate">{card.name}</div>
+        <div className="flex items-center justify-between gap-1 mt-0.5">
+          <span className="font-mono text-[8px] px-1 rounded bg-black/60 border border-cyan-600/60 text-cyan-300 truncate">
+            {SCOPE_LABEL[card.lane_scope] || 'LANE'}
+          </span>
+          {card.cooldown_turns > 0 && <span className="font-mono text-[8px] text-slate-500 shrink-0">CD{card.cooldown_turns}</span>}
         </div>
-        <p className="text-[10px] leading-tight text-slate-400 line-clamp-2 mt-0.5">{card.description}</p>
       </div>
       {onCooldown && (
         <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 font-orbitron font-black text-slate-200">
-          <span className="text-3xl">{card.cooldown_remaining}</span>
-          <span className="font-mono text-[10px] text-slate-400">TURNS</span>
+          <span className="text-2xl">{card.cooldown_remaining}</span>
+          <span className="font-mono text-[9px] text-slate-400">TURNS</span>
         </span>
       )}
     </button>
   );
 }
 
-export default function LaneBattleBoard({ run, onRunUpdated }) {
+export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }) {
   const battle = run.battle;
   const deploying = run.status === 'DEPLOYMENT';
   const live = run.status === 'BATTLE' && battle?.status === 'IN_PROGRESS';
@@ -93,8 +96,15 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
 
-  const units = battle?.units || [];
-  const actor = units.find((u) => u.id === battle?.current_actor_id) || null;
+  const replay = useBattleReplay(battle);
+  const { overrides, fx, laneFx, animating } = replay;
+  useEffect(() => { onAnimatingChange?.(animating); }, [animating, onAnimatingChange]);
+
+  // While replaying, vitals come from the event stream so bars drop hit by hit.
+  const units = (battle?.units || []).map((u) => (overrides[u.id] ? { ...u, ...overrides[u.id] } : u));
+  const pendingActor = units.find((u) => u.id === battle?.current_actor_id) || null;
+  const actor = animating ? null : pendingActor;  // orders open once the replay has caught up
+  const [tickNonce, setTickNonce] = useState(0);
   const livingHeroes = run.heroes.filter((h) => h.is_alive);
 
   // Default deployment: first three living heroes into lanes 0..2
@@ -122,19 +132,23 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
     } finally {
       busyRef.current = false;
       setBusy(false);
+      setTickNonce((n) => n + 1);
     }
   }, [onRunUpdated]);
 
-  // Drive initiative: tick while no hero awaits orders, or when the decision window expired.
+  // Drive the battle one action at a time: wait for the replay, pause briefly, tick again.
+  // When a hero awaits orders, only tick if the decision window expires.
   useEffect(() => {
-    if (!live) return undefined;
-    const id = setInterval(() => {
-      const now = Date.now() / 1000;
-      const expired = actor && now - battle.turn_started_at > battle.turn_time_limit_seconds;
-      if (!actor || expired) call(() => api.tickRun());
-    }, TICK_MS);
-    return () => clearInterval(id);
-  }, [live, actor, battle?.turn_started_at, battle?.turn_time_limit_seconds, call]);
+    if (!live || animating) return undefined;
+    if (pendingActor) {
+      const id = setInterval(() => {
+        if (Date.now() / 1000 - battle.turn_started_at > battle.turn_time_limit_seconds) call(() => api.tickRun());
+      }, EXPIRY_POLL_MS);
+      return () => clearInterval(id);
+    }
+    const t = setTimeout(() => call(() => api.tickRun()), STEP_PAUSE_MS);
+    return () => clearTimeout(t);
+  }, [live, animating, pendingActor?.id, battle?.event_seq, battle?.turn_started_at, battle?.turn_time_limit_seconds, tickNonce, call]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fire = useCallback((card, { lane = null, unitId = null } = {}) => {
     setTargeting(null);
@@ -265,7 +279,7 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
 
             return (
               <div
-                key={lane}
+                key={`${lane}-${laneFx[lane] || 0}`}
                 role={pickable ? 'button' : undefined}
                 onClick={() => (laneTargeting ? fireAtLane(lane) : deploying && selectedHero ? placeHero(lane) : null)}
                 className={`relative flex flex-col rounded-xl border overflow-hidden min-h-0 transition-all ${
@@ -274,7 +288,7 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
                     : activeLane
                     ? 'border-cyan-400/70 bg-[#06101f]'
                     : 'border-slate-800 bg-[#060a14]/90'
-                } ${inReach ? 'ring-2 ring-cyan-400/70' : ''} ${pickable ? 'cursor-pointer hover:ring-cyan-300' : ''}`}
+                } ${inReach ? 'ring-2 ring-cyan-400/70' : ''} ${pickable ? 'cursor-pointer hover:ring-cyan-300' : ''} ${laneFx[lane] ? 'fx-lane-alert' : ''}`}
               >
                 {/* Lane header */}
                 <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-black/50">
@@ -303,11 +317,11 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
                       <AlertTriangle className="w-3.5 h-3.5" /> Wave @ turn {w.turn}: {w.unit_names.join(', ')}
                     </div>
                   ))}
-                  {enemyHero && <div className="pb-1"><HeroTile unit={enemyHero} onInspect={onInspect} {...aim(enemyHero)} /></div>}
+                  {enemyHero && <div className="pb-1"><HeroTile unit={enemyHero} onInspect={onInspect} fx={fx[enemyHero.id]} {...aim(enemyHero)} /></div>}
                   {enemyLeaderless && <DrillMeter value={meta.enemy_drill_meter} enemy />}
                   {enemyTroops.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-2 pt-1">
-                      {enemyTroops.map((u) => <TroopTile key={u.id} unit={u} onInspect={onInspect} {...aim(u)} />)}
+                      {enemyTroops.map((u) => <TroopTile key={u.id} unit={u} onInspect={onInspect} fx={fx[u.id]} {...aim(u)} />)}
                     </div>
                   )}
                   {enemies.length === 0 && !meta.incoming_waves.length && (
@@ -325,13 +339,13 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
                 <div className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1.5 bg-gradient-to-t from-cyan-950/25 to-transparent">
                   {allyTroops.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-2 pb-1">
-                      {allyTroops.map((u) => <TroopTile key={u.id} unit={u} onInspect={onInspect} {...aim(u)} />)}
+                      {allyTroops.map((u) => <TroopTile key={u.id} unit={u} onInspect={onInspect} fx={fx[u.id]} {...aim(u)} />)}
                     </div>
                   )}
                   {allyLeaderless && <DrillMeter value={meta.ally_drill_meter} />}
                   {allyHero && (
                     <div className="relative mx-auto w-fit pt-1">
-                      <HeroTile unit={allyHero} isActive={actor?.id === allyHero.id} onInspect={onInspect} {...aim(allyHero)} />
+                      <HeroTile unit={allyHero} isActive={actor?.id === allyHero.id} onInspect={onInspect} fx={fx[allyHero.id]} {...aim(allyHero)} />
                       {deploying && (
                         <button
                           onClick={(e) => { e.stopPropagation(); unplace(allyHero.id); }}
@@ -409,16 +423,16 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
           ) : actor ? (
             <div className="flex-1 min-h-0 flex gap-3">
               {/* Acting hero */}
-              <div className="w-56 xl:w-72 shrink-0 flex gap-2 min-h-0">
-                <div className={`h-full aspect-square max-h-full rounded-lg overflow-hidden border-2 bg-black shrink-0 ${factionTone(actor.faction).border}`}>
+              <div className="w-64 xl:w-80 shrink-0 flex items-center gap-3 min-h-0">
+                <div className={`w-24 h-24 xl:w-28 xl:h-28 rounded-lg overflow-hidden border-2 bg-black shrink-0 ${factionTone(actor.faction).border}`}>
                   {getPortrait(actor.name)
                     ? <img src={getPortrait(actor.name)} alt="" className="w-full h-full object-cover object-top" />
                     : <Users className={`w-1/2 h-1/2 m-[25%] ${factionTone(actor.faction).text}`} />}
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-between gap-1">
+                <div className="flex-1 min-w-[120px] flex flex-col justify-center gap-2">
                   <div>
-                    <div className="font-orbitron font-black text-sm text-cyan-200 leading-tight truncate">{actor.name}</div>
-                    <div className="font-mono text-[10px] text-slate-400">{LANE_NAMES[actor.lane]}</div>
+                    <div className="font-orbitron font-black text-base text-cyan-200 leading-tight truncate">{actor.name}</div>
+                    <div className="font-mono text-[11px] text-slate-400">{LANE_NAMES[actor.lane]} · HP {actor.hp}/{actor.max_hp}</div>
                   </div>
                   <TimerBar
                     startedAt={battle.turn_started_at}
@@ -452,7 +466,7 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
                     <span>Choose an ability · targeted abilities: pick a unit, or click the ability again to auto-target</span>
                   )}
                 </div>
-                <div className="flex-1 min-h-0 grid grid-flow-col auto-cols-fr gap-2">
+                <div className="flex-1 min-h-0 flex items-center gap-2 overflow-x-auto">
                   {actor.cards.map((card, i) => (
                     <AbilityCard
                       key={card.id}
@@ -470,7 +484,7 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
           ) : (
             <div className="flex-1 flex items-center justify-center gap-2 font-mono text-sm text-slate-500">
               <Hourglass className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
-              {live ? 'INITIATIVE RUNNING — hostiles and drills acting…' : 'Battle resolved.'}
+              {animating ? 'COMBAT IN PROGRESS…' : live ? 'INITIATIVE RUNNING — hostiles and drills acting…' : 'Battle resolved.'}
             </div>
           )}
           {error && <div className="mt-1 font-mono text-[10px] text-red-400">{error}</div>}
@@ -502,6 +516,7 @@ export default function LaneBattleBoard({ run, onRunUpdated }) {
           </div>
         </div>
       </div>
+      <BattleFxLayer tracers={replay.tracers} floaters={replay.floaters} />
       {inspected && inspect.el?.isConnected && (
         <UnitInfoPopover
           unit={inspected}

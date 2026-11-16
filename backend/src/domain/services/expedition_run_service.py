@@ -13,6 +13,7 @@ BATTLE_NODES = (NodeType.COMBAT, NodeType.ELITE, NodeType.BOSS)
 REST_HERO_HEAL = 0.35      # fraction of max HP restored to living heroes
 REST_TROOP_REGROUP = 0.50  # fraction of missing soldiers recovered
 DEFEAT_REWARD_SHARE = 0.5  # share of run loot kept on defeat / retreat
+ACTIONS_PER_STEP = 1       # enemy/drill actions resolved per tick, so each one can be animated
 
 
 class ExpeditionRunService:
@@ -103,7 +104,7 @@ class ExpeditionRunService:
         deployed = ", ".join(f"{living[h].name} → {LANE_NAMES[l]}" for h, l in assignments.items())
         battle.log.append(f"🚀 Deployment: {deployed}.")
         run.status = RunStatus.BATTLE
-        self.engine.begin(battle, now)
+        self.engine.begin(battle, now, max_actions=ACTIONS_PER_STEP)
         self._settle(run)
 
     def play(
@@ -114,6 +115,7 @@ class ExpeditionRunService:
             raise ValueError("No battle in progress.")
         self.engine.play_ally_turn(
             run.battle, card_id=card_id, target_lane=target_lane, now=now, target_unit_id=target_unit_id,
+            max_actions_after=0,
         )
         self._settle(run)
 
@@ -122,9 +124,9 @@ class ExpeditionRunService:
             return
         battle = run.battle
         if battle.current_actor_id and battle.is_turn_timed_out(now):
-            self.engine.play_ally_turn(battle, timed_out=True, now=now)
+            self.engine.play_ally_turn(battle, timed_out=True, now=now, max_actions_after=0)
         elif not battle.current_actor_id:
-            self.engine.advance(battle, now)
+            self.engine.advance(battle, now, max_actions=ACTIONS_PER_STEP)
         self._settle(run)
 
     def abandon(self, run: ExpeditionRun) -> None:
