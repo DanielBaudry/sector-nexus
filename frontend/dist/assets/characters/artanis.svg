@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgProtoss" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#241e06"/>
+      <stop offset="100%" stop-color="#080702"/>
+    </linearGradient>
+    <linearGradient id="goldArmor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </linearGradient>
+    <linearGradient id="psiBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="glowProtoss">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="200" height="200" rx="20" fill="url(#bgProtoss)"/>
+  <rect x="6" y="6" width="188" height="188" rx="16" fill="none" stroke="#eab308" stroke-width="2" stroke-opacity="0.3"/>
+
+  <!-- Ornate Protoss Golden Pauldrons -->
+  <path d="M 20 180 L 50 120 L 75 140 L 70 195 Z" fill="url(#goldArmor)" stroke="#fde047" stroke-width="2"/>
+  <path d="M 180 180 L 150 120 L 125 140 L 130 195 Z" fill="url(#goldArmor)" stroke="#fde047" stroke-width="2"/>
+
+  <!-- High Hierarch Collar & Chest Core -->
+  <path d="M 65 145 L 100 165 L 135 145 L 140 195 L 60 195 Z" fill="#1e1b0c" stroke="#eab308" stroke-width="2"/>
+  <polygon points="100,165 110,180 100,195 90,180" fill="url(#psiBlue)" filter="url(#glowProtoss)"/>
+
+  <!-- Protoss Angular Head / Cranium -->
+  <!-- Nerve Cords (Severed / Cut Dark Templar style or Tied Firstborn Cords) -->
+  <path d="M 65 80 C 45 100, 40 150, 50 185" stroke="#ca8a04" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M 135 80 C 155 100, 160 150, 150 185" stroke="#ca8a04" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- Elongated Skull Profile -->
+  <path d="M 70 85 C 70 45, 130 45, 130 85 C 130 115, 115 140, 100 148 C 85 140, 70 115, 70 85 Z" fill="#9ca3af" stroke="#ca8a04" stroke-width="1.5"/>
+
+  <!-- Golden Brow Headdress & Crown -->
+  <path d="M 65 65 L 100 45 L 135 65 L 125 78 L 100 60 L 75 78 Z" fill="url(#goldArmor)" stroke="#fef08a" stroke-width="2"/>
+  <polygon points="100,48 106,58 100,68 94,58" fill="url(#psiBlue)" filter="url(#glowProtoss)"/>
+
+  <!-- Pure Psionic Glowing Cyan Eyes (No pupils) -->
+  <ellipse cx="86" cy="90" rx="7" ry="3.5" fill="#22d3ee" transform="rotate(-10 86 90)" filter="url(#glowProtoss)"/>
+  <ellipse cx="114" cy="90" rx="7" ry="3.5" fill="#22d3ee" transform="rotate(10 114 90)" filter="url(#glowProtoss)"/>
+  <ellipse cx="86" cy="90" rx="3" ry="1.5" fill="#ffffff"/>
+  <ellipse cx="114" cy="90" rx="3" ry="1.5" fill="#ffffff"/>
+
+  <!-- Protoss Mandible-less Mouth Area / Cheek Ridges -->
+  <path d="M 82 108 L 94 125 L 100 132 L 106 125 L 118 108" stroke="#4b5563" stroke-width="2" fill="none"/>
+  <line x1="100" y1="110" x2="100" y2="128" stroke="#4b5563" stroke-width="1.5"/>
+
+  <!-- Psi-Blade Energy Sparks at Bottom -->
+  <path d="M 30 190 L 15 140 L 40 160 Z" fill="url(#psiBlue)" filter="url(#glowProtoss)" opacity="0.9"/>
+  <path d="M 170 190 L 185 140 L 160 160 Z" fill="url(#psiBlue)" filter="url(#glowProtoss)" opacity="0.9"/>
+
+  <!-- Faction Accent Badge -->
+  <rect x="14" y="14" width="42" height="14" rx="4" fill="#713f12" fill-opacity="0.8" stroke="#eab308" stroke-width="1"/>
+  <text x="35" y="24" font-family="'Orbitron', sans-serif" font-size="8" font-weight="bold" fill="#fef08a" text-anchor="middle">PROTOSS</text>
+</svg>

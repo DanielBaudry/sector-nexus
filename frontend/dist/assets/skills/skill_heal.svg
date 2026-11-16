@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="healWave" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="50%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <filter id="healGlow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="100" height="100" rx="12" fill="#03140c"/>
+  <rect x="3" y="3" width="94" height="94" rx="9" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.4"/>
+
+  <!-- Pulsing Bio-Shield Rings -->
+  <circle cx="50" cy="50" r="34" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
+  <circle cx="50" cy="50" r="24" fill="#14532d" fill-opacity="0.5" stroke="#22c55e" stroke-width="2"/>
+
+  <!-- Medical Cross / Nanite Spark -->
+  <rect x="42" y="28" width="16" height="44" rx="4" fill="url(#healWave)" filter="url(#healGlow)"/>
+  <rect x="28" y="42" width="44" height="16" rx="4" fill="url(#healWave)" filter="url(#healGlow)"/>
+
+  <!-- Center Core Shine -->
+  <circle cx="50" cy="50" r="6" fill="#ffffff" filter="url(#healGlow)"/>
+</svg>

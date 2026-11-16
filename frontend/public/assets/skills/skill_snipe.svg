@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <filter id="snipeGlow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="100" height="100" rx="12" fill="#030f14"/>
+  <rect x="3" y="3" width="94" height="94" rx="9" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.4"/>
+
+  <!-- Optical Crosshair -->
+  <circle cx="50" cy="50" r="32" fill="none" stroke="#0891b2" stroke-width="2"/>
+  <circle cx="50" cy="50" r="22" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="6 3"/>
+  <circle cx="50" cy="50" r="8" fill="none" stroke="#ef4444" stroke-width="2" filter="url(#snipeGlow)"/>
+  <circle cx="50" cy="50" r="2.5" fill="#ef4444" filter="url(#snipeGlow)"/>
+
+  <!-- Crosshair Hash Marks -->
+  <line x1="50" y1="12" x2="50" y2="40" stroke="#22d3ee" stroke-width="2"/>
+  <line x1="50" y1="60" x2="50" y2="88" stroke="#22d3ee" stroke-width="2"/>
+  <line x1="12" y1="50" x2="40" y2="50" stroke="#22d3ee" stroke-width="2"/>
+  <line x1="60" y1="50" x2="88" y2="50" stroke="#22d3ee" stroke-width="2"/>
+
+  <!-- Range Angle Ticks -->
+  <line x1="38" y1="30" x2="44" y2="30" stroke="#67e8f9" stroke-width="1.5"/>
+  <line x1="38" y1="70" x2="44" y2="70" stroke="#67e8f9" stroke-width="1.5"/>
+  <line x1="56" y1="30" x2="62" y2="30" stroke="#67e8f9" stroke-width="1.5"/>
+  <line x1="56" y1="70" x2="62" y2="70" stroke="#67e8f9" stroke-width="1.5"/>
+</svg>

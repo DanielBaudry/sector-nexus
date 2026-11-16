@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bulletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="bulletGlow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="100" height="100" rx="12" fill="#091224"/>
+  <rect x="3" y="3" width="94" height="94" rx="9" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.4"/>
+
+  <!-- Speed Shockwave Rings -->
+  <ellipse cx="25" cy="50" rx="6" ry="24" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.4"/>
+  <ellipse cx="42" cy="50" rx="8" ry="32" fill="none" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.6"/>
+
+  <!-- High-Caliber Sabot Round -->
+  <path d="M 30 42 L 68 42 L 85 50 L 68 58 L 30 58 Z" fill="url(#bulletGrad)" stroke="#fef08a" stroke-width="1.5" filter="url(#bulletGlow)"/>
+  <line x1="12" y1="50" x2="30" y2="50" stroke="#fef08a" stroke-width="3" filter="url(#bulletGlow)"/>
+
+  <!-- Trailing Sparks & Plasma Flashes -->
+  <line x1="8" y1="44" x2="32" y2="44" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <line x1="8" y1="56" x2="32" y2="56" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 2"/>
+
+  <polygon points="85,50 92,44 88,50 92,56" fill="#fef08a" filter="url(#bulletGlow)"/>
+</svg>
