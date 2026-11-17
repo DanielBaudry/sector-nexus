@@ -4,10 +4,7 @@ from src.domain.entities.expedition import ActiveExpedition
 from src.domain.entities.biome import Biome
 from src.domain.entities.boss_encounter import BossEncounter
 from src.domain.entities.expedition_run import ExpeditionRun
-from src.domain.value_objects.card import CombatCard
-from src.domain.value_objects.enums import LaneScope
 from src.domain.value_objects.troop import TroopTemplate
-from typing import Dict
 
 
 class IExpeditionRepository(ABC):
@@ -46,12 +43,4 @@ class IExpeditionRepository(ABC):
 
     @abstractmethod
     def get_troop_templates(self) -> List[TroopTemplate]:
-        pass
-
-    @abstractmethod
-    def get_ability_lane_scopes(self) -> Dict[str, LaneScope]:
-        pass
-
-    @abstractmethod
-    def get_summon_abilities(self, champion_template_id: str) -> List[CombatCard]:
         pass

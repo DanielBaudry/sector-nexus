@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_zealot",
+  "name": "Zealot Cohort",
+  "faction": "Astral Templars",
+  "count": 4,
+  "unit_hp": 75,
+  "unit_attack": 10,
+  "defense": 18,
+  "description": "Psi-blade warriors. Elite but few.",
+  "icon_name": "Swords"
+}

@@ -1,0 +1,115 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_zerg_kerrigan",
+  "order": 5,
+  "name": "Sarah Kerrigan",
+  "title": "Queen of Blades",
+  "faction": "Bio-Swarm",
+  "role": "Psionic Specialist",
+  "rarity": "Legendary",
+  "stats": {
+    "hp": 390,
+    "shields": 70,
+    "attack": 60,
+    "defense": 30,
+    "speed": 112,
+    "crit_rate": 0.22,
+    "crit_damage": 1.75,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "kerrigan_swarm_queen",
+    "name": "Queen of the Swarm",
+    "description": "+6% attack for every allied troop pack alive across all lanes.",
+    "kind": "PER_ALLY_TROOP",
+    "stat": "attack",
+    "value": 0.06
+  },
+  "abilities": [
+    {
+      "id": "kerrigan_psionic_shift",
+      "name": "Psionic Shift",
+      "description": "Dashes through enemy ranks tearing through bio-armor.",
+      "target_type": "all_enemies",
+      "lane_scope": "adjacent_lanes",
+      "power_multiplier": 1.4,
+      "cooldown_turns": 0,
+      "energy_cost": 1,
+      "flavor_quote": "The Swarm will consume you."
+    },
+    {
+      "id": "kerrigan_crushing_grip",
+      "name": "Crushing Grip",
+      "description": "Lifts and crushes high-threat target in telekinetic fury.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.9,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "STUN",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 0.5
+        }
+      ],
+      "energy_cost": 2,
+      "icon_name": "HandMetal"
+    },
+    {
+      "id": "kerrigan_primal_leech",
+      "name": "Biomass Harvest",
+      "description": "Drains life from target to heal herself.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.2,
+      "heal_multiplier": 0.9,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "STEAL",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 0.85
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Flame"
+    },
+    {
+      "id": "kerrigan_spawn_brood",
+      "name": "Spawn Brood",
+      "description": "Spawn a Zergling Swarm in any lane.",
+      "target_type": "self",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "troop_zergling",
+      "energy_cost": 2,
+      "icon_name": "Users",
+      "flavor_quote": "The Swarm answers."
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "enemy_is_elite",
+      "card_id": "kerrigan_crushing_grip"
+    },
+    {
+      "priority": 2,
+      "condition": "enemy_count_over_1",
+      "card_id": "kerrigan_psionic_shift"
+    },
+    {
+      "priority": 3,
+      "condition": "always",
+      "card_id": "kerrigan_primal_leech"
+    }
+  ],
+  "avatar_color": "#8b5cf6",
+  "avatar_icon": "Zap"
+}

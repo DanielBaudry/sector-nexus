@@ -1,0 +1,91 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_terran_nova",
+  "order": 2,
+  "name": "Nova Terra",
+  "title": "Covert Ghost",
+  "faction": "Terran Vanguard",
+  "role": "Assault",
+  "rarity": "Epic",
+  "stats": {
+    "hp": 310,
+    "shields": 120,
+    "attack": 58,
+    "defense": 22,
+    "speed": 115,
+    "crit_rate": 0.25,
+    "crit_damage": 1.8,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "nova_ghost_protocol",
+    "name": "Ghost Protocol",
+    "description": "Deals +25% damage to targets with at least one debuff.",
+    "kind": "DAMAGE_VS_DEBUFFED",
+    "value": 0.25
+  },
+  "abilities": [
+    {
+      "id": "nova_snipe",
+      "name": "C-20A Snipe",
+      "description": "Lethal precision rifle round executing single targets.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.85,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "STRIP",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 0.9
+        },
+        {
+          "type": "MARKED",
+          "target": "hit",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 0.8
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Target"
+    },
+    {
+      "id": "nova_emp",
+      "name": "EMP Shockwave",
+      "description": "Detonates an electromagnetic pulse, devastating shields and stripping turn meter.",
+      "target_type": "all_enemies",
+      "lane_scope": "adjacent_lanes",
+      "power_multiplier": 1.2,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "energy_cost": 2,
+      "icon_name": "Radio"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "enemy_is_elite",
+      "card_id": "nova_snipe"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "nova_emp"
+    }
+  ],
+  "avatar_color": "#06b6d4",
+  "avatar_icon": "Target"
+}

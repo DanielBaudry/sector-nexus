@@ -10,9 +10,12 @@ from src.domain.repositories.artifact_repository import IArtifactRepository
 from src.domain.repositories.champion_repository import IChampionRepository
 from src.domain.repositories.expedition_repository import IExpeditionRepository
 from src.domain.repositories.hero_kit_repository import IHeroKitRepository
+from src.domain.repositories.hierarchy_repository import IHierarchyRepository
 from src.domain.repositories.player_repository import IPlayerRepository
 from src.domain.repositories.squad_repository import ISquadRepository
 from src.domain.services.expedition_run_service import ExpeditionRunService
+from src.domain.services.hierarchy_service import HierarchyService
+from src.domain.entities.hierarchy_standing import ChampionStatus
 from src.domain.services.map_generator import MapGenerator
 from src.domain.value_objects.enums import NodeType, RunStatus, Side, UnitKind
 
@@ -30,10 +33,12 @@ class _RunUseCase:
         expedition_repo: IExpeditionRepository,
         player_repo: Optional[IPlayerRepository] = None,
         artifact_repo: Optional[IArtifactRepository] = None,
+        hierarchy_repo: Optional[IHierarchyRepository] = None,
     ):
         self.expedition_repo = expedition_repo
         self.player_repo = player_repo
         self.artifact_repo = artifact_repo
+        self.hierarchy_repo = hierarchy_repo
         self.service = ExpeditionRunService()
 
     def _require_run(self) -> ExpeditionRun:
@@ -57,6 +62,7 @@ class _RunUseCase:
                 for data in payout.get("artifacts", []):
                     self.artifact_repo.save(Artifact.from_dict(data))
             run.rewards_paid = True
+            self._settle_hierarchy(run)
             lost = payout.get("artifacts_lost", 0)
             run.log.append(
                 f"💰 Banked {payout.get('credits', 0)} CR, {payout.get('crystals', 0)} crystals, "
@@ -65,6 +71,30 @@ class _RunUseCase:
             )
         self.expedition_repo.save_active_run(run)
         return run.to_dict()
+
+    def _settle_hierarchy(self, run: ExpeditionRun) -> None:
+        """Run over: bank the expedition's Influence, or record a hierarchy boss fight's outcome."""
+        if not self.hierarchy_repo:
+            return
+        champion_id = run.boss_id if run.mode == "boss" else run.influence_target_id
+        boss = self.expedition_repo.get_boss_encounter(champion_id) if champion_id else None
+        if not boss or not boss.rank:
+            return
+        standing = self.hierarchy_repo.get_planet(boss.planet_id, [boss.id])[0]
+        if run.mode == "boss":
+            result = HierarchyService.record_fight(standing, run.status == RunStatus.VICTORY)
+            if result["claimed"]:
+                result["rewards"] = HierarchyService.claim_rewards(boss)
+                run.log.append(f"👑 {boss.name} is defeated — their seat in the hierarchy is yours.")
+            else:
+                a = result["adaptation"]
+                run.log.append(f"🧬 {boss.name} adapts: {a['name']} — {a['description']} Your Influence is kept.")
+            run.hierarchy_result = {"boss_id": boss.id, "boss_name": boss.name, **result}
+        else:
+            banked = HierarchyService.bank_run_influence(standing, boss, run.influence_gained, run.status)
+            run.influence_banked = banked
+            run.log.append(f"🎯 {banked} Influence banked on {boss.name} ({standing.influence}/{boss.influence_required}).")
+        self.hierarchy_repo.save(standing)
 
 
 class GetTroopCatalogUseCase:
@@ -87,12 +117,22 @@ class StartExpeditionRunUseCase(_RunUseCase):
         champion_repo: IChampionRepository,
         artifact_repo: IArtifactRepository,
         hero_kit_repo: Optional[IHeroKitRepository] = None,
+        hierarchy_repo: Optional[IHierarchyRepository] = None,
     ):
-        super().__init__(expedition_repo)
+        super().__init__(expedition_repo, hierarchy_repo=hierarchy_repo)
         self.squad_repo = squad_repo
         self.champion_repo = champion_repo
         self.artifact_repo = artifact_repo
         self.hero_kit_repo = hero_kit_repo
+
+    def _planet_state(self, planet_id: str):
+        """(bosses, standings by id) for a planet's hierarchy."""
+        bosses = [b for b in self.expedition_repo.get_boss_encounters() if b.rank and b.planet_id == planet_id]
+        standings = (
+            {s.boss_id: s for s in self.hierarchy_repo.get_planet(planet_id, [b.id for b in bosses])}
+            if self.hierarchy_repo else {}
+        )
+        return bosses, standings
 
     def execute(
         self, biome_id: str, squad_id: str, troop_assignments: Optional[Dict[str, List[str]]] = None,
@@ -133,6 +173,17 @@ class StartExpeditionRunUseCase(_RunUseCase):
                 "🗺️ Choose your path. The apex threat waits at the end.",
             ],
         )
+        bosses, standings = self._planet_state(biome.id)
+        target = HierarchyService.find_target(list(standings.values()))
+        boss = next((b for b in bosses if target and b.id == target.boss_id), None)
+        if boss:
+            run.influence_target_id = boss.id
+            run.influence_target_name = boss.name
+            run.target_guard = copy.deepcopy(boss.guard) or None
+            run.log.append(
+                f"🎯 Hunting {boss.name}, {boss.title}: every battle won builds Influence. "
+                f"Their {boss.guard.get('name', 'guards')} will be waiting."
+            )
         return self._save(run)
 
     def _build_roster(
@@ -140,7 +191,6 @@ class StartExpeditionRunUseCase(_RunUseCase):
     ) -> Tuple[List[LaneUnit], List[LaneUnit]]:
         """Champions -> battle heroes (gear, kit, summons) plus the troop packs they lead."""
         templates = {t.id: t for t in self.expedition_repo.get_troop_templates()}
-        lane_scopes = self.expedition_repo.get_ability_lane_scopes()
         artifacts = {a.id: a for a in self.artifact_repo.get_all()}
         troop_assignments = troop_assignments or {}
 
@@ -151,11 +201,8 @@ class StartExpeditionRunUseCase(_RunUseCase):
             if not champ:
                 continue
             eff = champ.get_effective_stats(artifacts)
+            # Abilities (lane reach, effects, summons) come straight from the hero's content file.
             cards = self.hero_kit_repo.apply_to_cards(champ.cards) if self.hero_kit_repo else copy.deepcopy(champ.cards)
-            for card in cards:
-                if card.id in lane_scopes:
-                    card.lane_scope = lane_scopes[card.id]
-            cards.extend(self.expedition_repo.get_summon_abilities(champ.template_id))
             faction = _enum_value(champ.faction)
 
             heroes.append(LaneUnit(
@@ -224,6 +271,20 @@ class StartBossEncounterUseCase(StartExpeditionRunUseCase):
         biome = self.expedition_repo.get_biome_by_id(boss.arena_biome_id)
         if not biome:
             raise ValueError(f"Arena {boss.arena_biome_id} not found.")
+        adaptations = []
+        if boss.rank:
+            bosses, standings = self._planet_state(boss.planet_id)
+            standing = standings[boss.id]
+            status = HierarchyService.status(boss, standing, bosses, standings)
+            if status != ChampionStatus.VULNERABLE:
+                raise ValueError(
+                    f"{boss.name} is not vulnerable yet ({status.value.lower()}): "
+                    + ("already defeated." if status == ChampionStatus.DEFEATED
+                       else HierarchyService.unlock_hint(boss, bosses) if status == ChampionStatus.LOCKED
+                       else f"gather Influence {standing.influence}/{boss.influence_required}.")
+                )
+            adaptations = HierarchyService.adaptations(standing.losses)
+            boss = HierarchyService.adapted(boss, standing.losses)
 
         heroes, troops = self._build_roster(ids, troop_assignments or {})
         if not heroes:
@@ -250,17 +311,35 @@ class StartBossEncounterUseCase(StartExpeditionRunUseCase):
             log=[
                 f"🐉 Boss encounter: {boss.name}, {boss.title} — difficulty {difficulty}.",
                 "🎯 One hero per lane. The boss stands in every lane: all of them can hit it, and it can hit all of them.",
+                *[f"🧬 Adapted from past victories: {a['name']} — {a['description']}" for a in adaptations],
             ],
         )
         return self._save(run)
 
 
-class ListBossEncountersUseCase:
-    def __init__(self, expedition_repo: IExpeditionRepository):
+class GetPlanetHierarchyUseCase:
+    def __init__(self, expedition_repo: IExpeditionRepository, hierarchy_repo: IHierarchyRepository):
         self.expedition_repo = expedition_repo
+        self.hierarchy_repo = hierarchy_repo
 
-    def execute(self) -> List[Dict[str, Any]]:
-        return [b.to_dict() for b in self.expedition_repo.get_boss_encounters()]
+    def execute(self, planet_id: str) -> Dict[str, Any]:
+        if not self.expedition_repo.get_biome_by_id(planet_id):
+            raise ValueError(f"Planet {planet_id} not found.")
+        bosses = [b for b in self.expedition_repo.get_boss_encounters() if b.rank and b.planet_id == planet_id]
+        standings = {s.boss_id: s for s in self.hierarchy_repo.get_planet(planet_id, [b.id for b in bosses])}
+        return {"planet_id": planet_id, **HierarchyService.planet_view(bosses, standings)}
+
+
+class SetHierarchyTargetUseCase(GetPlanetHierarchyUseCase):
+    def execute(self, boss_id: str) -> Dict[str, Any]:  # type: ignore[override]
+        boss = self.expedition_repo.get_boss_encounter(boss_id)
+        if not boss or not boss.rank:
+            raise ValueError(f"Champion {boss_id} not found in any hierarchy.")
+        bosses = [b for b in self.expedition_repo.get_boss_encounters() if b.rank and b.planet_id == boss.planet_id]
+        standings = {s.boss_id: s for s in self.hierarchy_repo.get_planet(boss.planet_id, [b.id for b in bosses])}
+        for changed in HierarchyService.set_target(boss, bosses, standings):
+            self.hierarchy_repo.save(changed)
+        return super().execute(boss.planet_id)
 
 
 class GetActiveRunUseCase(_RunUseCase):

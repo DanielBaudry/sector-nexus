@@ -1,0 +1,78 @@
+{
+  "additionalProperties": false,
+  "description": "A troop pack heroes lead (or summon). Pack HP = count \u00d7 unit_hp.",
+  "properties": {
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Editor hint, ignored by the game.",
+      "title": "$Schema"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "faction": {
+      "enum": [
+        "Terran Vanguard",
+        "Bio-Swarm",
+        "Astral Templars"
+      ],
+      "title": "Faction",
+      "type": "string"
+    },
+    "count": {
+      "exclusiveMinimum": 0,
+      "title": "Count",
+      "type": "integer"
+    },
+    "unit_hp": {
+      "exclusiveMinimum": 0,
+      "title": "Unit Hp",
+      "type": "integer"
+    },
+    "unit_attack": {
+      "minimum": 0,
+      "title": "Unit Attack",
+      "type": "integer"
+    },
+    "defense": {
+      "minimum": 0,
+      "title": "Defense",
+      "type": "integer"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "icon_name": {
+      "default": "Users",
+      "title": "Icon Name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "faction",
+    "count",
+    "unit_hp",
+    "unit_attack",
+    "defense"
+  ],
+  "title": "Troop",
+  "type": "object",
+  "$id": "troop.schema.json"
+}

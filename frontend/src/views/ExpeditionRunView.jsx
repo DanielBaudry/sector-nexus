@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Swords, Trophy, Skull, Map as MapIcon, Users, Heart, ArrowRight, Rocket, AlertTriangle, X } from 'lucide-react';
+import { Swords, Trophy, Skull, Map as MapIcon, Users, Heart, ArrowRight, Rocket, AlertTriangle, X, Crosshair, Crown, Dna } from 'lucide-react';
 import { api } from '../services/api';
 import RunNodeMap, { NODE_STYLE } from '../components/run/RunNodeMap';
 import LaneBattleBoard from '../components/run/LaneBattleBoard';
@@ -144,6 +144,11 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
           {run.difficulty > 1 && (
             <span className="px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 font-mono text-[12px]">
               DIFFICULTY {run.difficulty}
+            </span>
+          )}
+          {run.influence && (
+            <span className="flex items-center gap-1 px-1.5 py-px rounded bg-cyan-950/70 text-cyan-200 border border-cyan-500/50 font-mono text-[12px]" title="Influence gathered this run (banked when it ends)">
+              <Crosshair className="w-3 h-3" /> {run.influence.target_name.toUpperCase()} +{run.influence.gained}
             </span>
           )}
           <span className="px-1.5 py-px rounded border font-mono text-[12px]" style={{ borderColor: nodeStyle.color, color: nodeStyle.color }}>
@@ -298,6 +303,24 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
                 : bossMode ? 'The boss still stands. Gear up, read its wind-ups, and try again.' : 'Survivors evacuated. Half of the gathered loot was recovered.'}
             </p>
             {battle && <div className="mb-4 text-left"><ObjectiveTracker objectives={battle.objectives} /></div>}
+            {run.influence && run.influence.banked !== null && (
+              <div className="mb-3 rounded-xl border border-cyan-500/40 bg-cyan-950/40 px-3 py-2 flex items-center justify-center gap-2 font-mono text-[13px] text-cyan-100">
+                <Crosshair className="w-4 h-4" /> +{run.influence.banked} Influence banked on <b>{run.influence.target_name}</b>
+                {run.influence.banked < run.influence.gained && <span className="text-slate-400">({run.influence.gained} gathered)</span>}
+              </div>
+            )}
+            {run.hierarchy_result && (
+              run.hierarchy_result.claimed ? (
+                <div className="mb-3 rounded-xl border border-amber-400/60 bg-amber-950/40 px-3 py-2 flex items-center justify-center gap-2 font-orbitron text-sm text-amber-200">
+                  <Crown className="w-4 h-4" /> {run.hierarchy_result.boss_name}'s seat is yours — the one above is now exposed.
+                </div>
+              ) : (
+                <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/40 px-3 py-2 text-[13px] text-red-200">
+                  <div className="flex items-center justify-center gap-2 font-orbitron font-bold"><Dna className="w-4 h-4" /> {run.hierarchy_result.boss_name} adapts: {run.hierarchy_result.adaptation.name}</div>
+                  <div className="font-mono text-[12px] text-red-200/80">{run.hierarchy_result.adaptation.description} Your Influence is kept — challenge them again.</div>
+                </div>
+              )
+            )}
             <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-700 flex justify-center mb-5">
               <Rewards rewards={run.payout || run.rewards} />
             </div>

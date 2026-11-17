@@ -59,3 +59,14 @@ class PlayerProfileSQL(SQLModel, table=True):
     level: int = 1
     experience: int = 0
     champion_xp: int = 0
+
+
+class HierarchyStandingSQL(SQLModel, table=True):
+    __tablename__ = "hierarchy_standings"
+
+    boss_id: str = Field(primary_key=True)
+    planet_id: str = Field(index=True)
+    influence: int = 0
+    defeated: bool = False
+    losses: int = 0
+    targeted: bool = False

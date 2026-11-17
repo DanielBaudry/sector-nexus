@@ -1,0 +1,65 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_zerg_hydralisk",
+  "order": 8,
+  "name": "Voracious Hunter",
+  "title": "Spine Impaler",
+  "faction": "Bio-Swarm",
+  "role": "Assault",
+  "rarity": "Rare",
+  "stats": {
+    "hp": 330,
+    "attack": 48,
+    "defense": 25,
+    "speed": 108,
+    "crit_rate": 0.2,
+    "crit_damage": 1.55,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "hydra_toxic_glands",
+    "name": "Toxic Glands",
+    "description": "Abilities have a 30% chance to poison targets hit (4% max HP per turn, 2 turns).",
+    "kind": "ON_HIT_EFFECT",
+    "value": 0.0,
+    "effect": {
+      "type": "POISON",
+      "target": "hit",
+      "value": 0.04,
+      "turns": 2,
+      "chance": 0.3
+    }
+  },
+  "abilities": [
+    {
+      "id": "hydra_grooved_spines",
+      "name": "Grooved Spine Salvo",
+      "description": "Launches high-velocity bone spines at armor seams.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.55,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "POISON",
+          "target": "hit",
+          "value": 0.05,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Activity"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "always",
+      "card_id": "hydra_grooved_spines"
+    }
+  ],
+  "avatar_color": "#c084fc",
+  "avatar_icon": "Activity"
+}

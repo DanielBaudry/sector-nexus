@@ -1,21 +1,12 @@
-from typing import List, Optional, Dict
-import copy
+from typing import List, Optional
 from sqlmodel import Session, select
 from src.domain.repositories.expedition_repository import IExpeditionRepository
 from src.domain.entities.expedition import ActiveExpedition
 from src.domain.entities.biome import Biome
 from src.domain.entities.boss_encounter import BossEncounter
 from src.domain.entities.expedition_run import ExpeditionRun
-from src.domain.value_objects.card import CombatCard
-from src.domain.value_objects.enums import LaneScope
 from src.domain.value_objects.troop import TroopTemplate
-from src.infrastructure.database.seed_data import (
-    get_seed_biomes,
-    get_seed_boss_encounters,
-    get_seed_troop_templates,
-    get_seed_ability_lane_scopes,
-    get_seed_summon_abilities,
-)
+from src.infrastructure.content.library import get_library
 
 # In-memory storage for active interactive combat sessions
 _active_expedition_store: Optional[ActiveExpedition] = None
@@ -26,8 +17,10 @@ _active_run_store: Optional[ExpeditionRun] = None
 class ExpeditionRepositorySQL(IExpeditionRepository):
     def __init__(self, session: Session):
         self.session = session
-        self._biomes = {b.id: b for b in get_seed_biomes()}
-        self._bosses = {b.id: b for b in get_seed_boss_encounters()}
+        library = get_library()
+        self._biomes = {b.id: b for b in library.biomes()}
+        self._bosses = {b.id: b for b in library.boss_encounters()}
+        self._troops = library.troop_templates()
 
     def get_biomes(self) -> List[Biome]:
         return list(self._biomes.values())
@@ -58,10 +51,4 @@ class ExpeditionRepositorySQL(IExpeditionRepository):
         _active_run_store = run
 
     def get_troop_templates(self) -> List[TroopTemplate]:
-        return get_seed_troop_templates()
-
-    def get_ability_lane_scopes(self) -> Dict[str, LaneScope]:
-        return get_seed_ability_lane_scopes()
-
-    def get_summon_abilities(self, champion_template_id: str) -> List[CombatCard]:
-        return copy.deepcopy(get_seed_summon_abilities().get(champion_template_id, []))
+        return list(self._troops)

@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_zergling",
+  "name": "Zergling Swarm",
+  "faction": "Bio-Swarm",
+  "count": 10,
+  "unit_hp": 18,
+  "unit_attack": 3,
+  "defense": 6,
+  "description": "Many fragile bodies. Absorbs hits for the hero behind.",
+  "icon_name": "Bug"
+}

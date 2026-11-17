@@ -17,6 +17,7 @@ from src.presentation.controllers import (
     expeditions_controller,
     player_controller,
     runs_controller,
+    hierarchy_controller,
 )
 
 
@@ -82,6 +83,7 @@ app.include_router(artifacts_controller.router)
 app.include_router(squads_controller.router)
 app.include_router(expeditions_controller.router)
 app.include_router(runs_controller.router)
+app.include_router(hierarchy_controller.router)
 
 
 @app.get("/")

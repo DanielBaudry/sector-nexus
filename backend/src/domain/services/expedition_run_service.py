@@ -5,6 +5,7 @@ from src.domain.entities.battle import LANE_COUNT, LANE_NAMES
 from src.domain.entities.biome import Biome
 from src.domain.entities.expedition_run import ExpeditionRun
 from src.domain.services.encounter_factory import EncounterFactory
+from src.domain.services.hierarchy_service import HierarchyService
 from src.domain.services.lane_battle_engine import LaneBattleEngine
 from src.domain.services.loot_service import LootService
 from src.domain.value_objects.difficulty import Difficulty
@@ -49,7 +50,7 @@ class ExpeditionRunService:
         run.current_node_id = node.id
 
         if node.type in BATTLE_NODES:
-            battle = self.encounters.build(biome, node, run.difficulty)
+            battle = self.encounters.build(biome, node, run.difficulty, guard=run.target_guard)
             battle.summon_templates.update(summon_templates)
             run.battle = battle
             run.status = RunStatus.DEPLOYMENT
@@ -185,6 +186,10 @@ class ExpeditionRunService:
                 f"🎁 Loot: +{battle.rewards.get('credits', 0)} CR, +{battle.rewards.get('champion_xp', 0)} XP"
                 + (f", {drops} artifact(s)" if drops else "") + "."
             )
+            if run.influence_target_id and node:
+                gained = HierarchyService.node_influence(node.type, run.difficulty)
+                run.influence_gained += gained
+                run.log.append(f"🎯 +{gained} Influence on {run.influence_target_name} (banked when the run ends).")
             if node and node.type == NodeType.BOSS:
                 run.status = RunStatus.VICTORY
                 run.log.append(f"🏆 {run.biome_name} conquered!")

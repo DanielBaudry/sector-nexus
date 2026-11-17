@@ -1,0 +1,59 @@
+{
+  "$schema": "../schema/planet.schema.json",
+  "id": "biome_mar_sara",
+  "order": 3,
+  "name": "Mar Sara: Badland Outposts",
+  "description": "Dust-swept frontier wasteland packed with renegade mercenaries, scrap mechs, and raiders.",
+  "hazard_name": "Scrap Ambush",
+  "hazard_description": "Mercenaries initiate with high initial speed burst.",
+  "recommended_power": 650,
+  "allowed_artifact_sets": [
+    "Hyper-Thrusters",
+    "Gauss Overcharge"
+  ],
+  "color": "#f59e0b",
+  "bg_gradient": "from-amber-950 via-zinc-900 to-black",
+  "icon_name": "Compass",
+  "max_difficulty": 1,
+  "enemy_pool": [
+    {
+      "name": "Raider Marine",
+      "hp": 190,
+      "shields": 40,
+      "attack": 26,
+      "defense": 18,
+      "speed": 100
+    },
+    {
+      "name": "Firebat Pyromaniac",
+      "hp": 280,
+      "shields": 50,
+      "attack": 30,
+      "defense": 32,
+      "speed": 88
+    },
+    {
+      "name": "Scrap Goliath",
+      "hp": 420,
+      "shields": 80,
+      "attack": 44,
+      "defense": 36,
+      "speed": 92,
+      "is_elite": true,
+      "passive": {
+        "id": "goliath_shred",
+        "name": "Shredder Rounds",
+        "description": "Attacks have a 35% chance to reduce defense by 20% for 2 turns.",
+        "kind": "ON_HIT_EFFECT",
+        "value": 0.0,
+        "effect": {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.2,
+          "turns": 2,
+          "chance": 0.35
+        }
+      }
+    }
+  ]
+}

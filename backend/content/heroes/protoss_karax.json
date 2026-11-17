@@ -1,0 +1,106 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_protoss_karax",
+  "order": 12,
+  "name": "Phase-Smith Karax",
+  "title": "Pylon Architect",
+  "faction": "Astral Templars",
+  "role": "Support",
+  "rarity": "Rare",
+  "stats": {
+    "hp": 350,
+    "shields": 180,
+    "attack": 30,
+    "defense": 38,
+    "speed": 98,
+    "crit_rate": 0.1,
+    "crit_damage": 1.35,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "karax_chrono_boost",
+    "name": "Chrono Boost",
+    "description": "Allies fighting in Karax' lane gain +15% speed.",
+    "kind": "LANE_AURA",
+    "stat": "speed",
+    "value": 0.15
+  },
+  "abilities": [
+    {
+      "id": "karax_guardian_shield",
+      "name": "Guardian Barrier",
+      "description": "Deploys energy dome shielding all allies from incoming fire.",
+      "target_type": "all_allies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 0.0,
+      "shield_grant": 70,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "IMMUNITY",
+          "target": "allies",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 1.0
+        },
+        {
+          "type": "CLEANSE",
+          "target": "allies",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Shield"
+    },
+    {
+      "id": "karax_chrono_beam",
+      "name": "Chrono Beam",
+      "description": "Fires focused tachyon beam at hostile core.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.2,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.75
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Radio"
+    },
+    {
+      "id": "karax_warp_in",
+      "name": "Warp-In Zealots",
+      "description": "Warp a Zealot Cohort into any lane.",
+      "target_type": "self",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "troop_zealot",
+      "energy_cost": 2,
+      "icon_name": "Users",
+      "flavor_quote": "Matrix online."
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "self_shield_depleted",
+      "card_id": "karax_guardian_shield"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "karax_chrono_beam"
+    }
+  ],
+  "avatar_color": "#eab308",
+  "avatar_icon": "Shield"
+}

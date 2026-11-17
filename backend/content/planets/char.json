@@ -1,0 +1,329 @@
+{
+  "$schema": "../schema/planet.schema.json",
+  "id": "biome_char",
+  "order": 1,
+  "name": "Char: Molten Ashfields",
+  "description": "Volcanic planet overrun by frenzied Swarm hives and molten magma rivers.",
+  "hazard_name": "Thermal Overheat",
+  "hazard_description": "Extreme heat reduces team defense by 10%.",
+  "recommended_power": 800,
+  "allowed_artifact_sets": [
+    "Gauss Overcharge",
+    "Bio-Leech"
+  ],
+  "color": "#ef4444",
+  "bg_gradient": "from-red-950 via-zinc-900 to-black",
+  "icon_name": "Flame",
+  "max_difficulty": 10,
+  "enemy_pool": [
+    {
+      "name": "Zergling Brood",
+      "hp": 180,
+      "attack": 28,
+      "defense": 12,
+      "speed": 115
+    },
+    {
+      "name": "Roach Spitter",
+      "hp": 290,
+      "attack": 32,
+      "defense": 26,
+      "speed": 85
+    },
+    {
+      "name": "Primal Ravager",
+      "hp": 480,
+      "attack": 46,
+      "defense": 35,
+      "speed": 95,
+      "is_elite": true,
+      "passive": {
+        "id": "ravager_frenzy",
+        "name": "Frenzy",
+        "description": "+5% attack at the end of each of its turns (max 6).",
+        "kind": "STACK_ON_TURN_END",
+        "stat": "attack",
+        "value": 0.05,
+        "max_stacks": 6
+      }
+    }
+  ],
+  "difficulty_enemies": [
+    {
+      "name": "Baneling Swarm",
+      "hp": 220,
+      "attack": 52,
+      "defense": 8,
+      "speed": 120,
+      "role": "troop",
+      "min_tier": 4
+    },
+    {
+      "name": "Swarm Queen",
+      "hp": 560,
+      "attack": 40,
+      "defense": 32,
+      "speed": 100,
+      "role": "elite",
+      "min_tier": 4,
+      "passive": {
+        "id": "queen_mend",
+        "name": "Creep Tumor",
+        "description": "Heals every hostile in her lane for 4% max HP each turn.",
+        "kind": "REGEN",
+        "value": 0.04,
+        "lane_wide": true
+      },
+      "cards": [
+        {
+          "id": "queen_transfusion",
+          "name": "Transfusion",
+          "description": "Mends the most wounded hostile in nearby lanes.",
+          "target_type": "lowest_hp_ally",
+          "lane_scope": "adjacent_lanes",
+          "power_multiplier": 0.0,
+          "heal_multiplier": 2.4,
+          "cooldown_turns": 3,
+          "effects": [
+            {
+              "type": "CLEANSE",
+              "target": "ally",
+              "value": 0.0,
+              "turns": 2,
+              "chance": 1.0,
+              "count": 2
+            }
+          ],
+          "icon_name": "Heart"
+        },
+        {
+          "id": "queen_spawn_broodlings",
+          "name": "Spawn Broodlings",
+          "description": "Births a Broodling swarm into her lane.",
+          "target_type": "self",
+          "lane_scope": "same_lane",
+          "power_multiplier": 0.0,
+          "cooldown_turns": 4,
+          "summon_troop_id": "enemy_broodlings",
+          "icon_name": "Bug"
+        }
+      ],
+      "summons": {
+        "enemy_broodlings": {
+          "name": "Broodling Swarm",
+          "count": 6,
+          "unit_hp": 32,
+          "unit_attack": 6,
+          "defense": 6
+        }
+      }
+    },
+    {
+      "name": "Ultralisk Vanguard",
+      "hp": 560,
+      "attack": 46,
+      "defense": 48,
+      "speed": 80,
+      "role": "troop",
+      "min_tier": 8
+    },
+    {
+      "name": "Lurker Ambusher",
+      "hp": 520,
+      "attack": 58,
+      "defense": 30,
+      "speed": 92,
+      "role": "elite",
+      "min_tier": 8,
+      "passive": {
+        "id": "lurker_hunter",
+        "name": "Ambush Predator",
+        "description": "+30% damage against debuffed targets.",
+        "kind": "DAMAGE_VS_DEBUFFED",
+        "value": 0.3
+      },
+      "cards": [
+        {
+          "id": "lurker_spine_barrage",
+          "name": "Spine Barrage",
+          "description": "Subterranean spines rake every enemy in its lane.",
+          "target_type": "all_enemies",
+          "lane_scope": "same_lane",
+          "power_multiplier": 0.75,
+          "cooldown_turns": 2,
+          "effects": [
+            {
+              "type": "POISON",
+              "target": "hit",
+              "value": 0.05,
+              "turns": 2,
+              "chance": 0.5
+            }
+          ],
+          "icon_name": "Swords"
+        },
+        {
+          "id": "lurker_burrowed_ambush",
+          "name": "Burrowed Ambush",
+          "description": "Erupts under the most valuable target in nearby lanes.",
+          "target_type": "single_enemy",
+          "lane_scope": "adjacent_lanes",
+          "power_multiplier": 1.7,
+          "cooldown_turns": 3,
+          "effects": [
+            {
+              "type": "DEF_DOWN",
+              "target": "hit",
+              "value": 0.3,
+              "turns": 2,
+              "chance": 0.7
+            }
+          ],
+          "icon_name": "Crosshair"
+        }
+      ]
+    },
+    {
+      "name": "Brood Lord",
+      "hp": 620,
+      "attack": 56,
+      "defense": 30,
+      "speed": 86,
+      "role": "elite",
+      "min_tier": 10,
+      "passive": {
+        "id": "broodlord_swarm",
+        "name": "Swarm Cloud",
+        "description": "Attacks have a 40% chance to slow by 20% for 2 turns.",
+        "kind": "ON_HIT_EFFECT",
+        "value": 0.0,
+        "effect": {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.2,
+          "turns": 2,
+          "chance": 0.4
+        }
+      },
+      "cards": [
+        {
+          "id": "broodlord_broodling_rain",
+          "name": "Broodling Rain",
+          "description": "Bombards nearby lanes and drops a fresh Broodling swarm.",
+          "target_type": "all_enemies",
+          "lane_scope": "adjacent_lanes",
+          "power_multiplier": 0.5,
+          "cooldown_turns": 3,
+          "summon_troop_id": "enemy_broodlings",
+          "effects": [
+            {
+              "type": "SPD_DOWN",
+              "target": "hit",
+              "value": 0.2,
+              "turns": 2,
+              "chance": 0.4
+            }
+          ],
+          "icon_name": "CloudRain"
+        }
+      ],
+      "summons": {
+        "enemy_broodlings": {
+          "name": "Broodling Swarm",
+          "count": 6,
+          "unit_hp": 32,
+          "unit_attack": 6,
+          "defense": 6
+        }
+      }
+    },
+    {
+      "name": "Primal Tyrant",
+      "hp": 720,
+      "attack": 62,
+      "defense": 46,
+      "speed": 96,
+      "role": "boss",
+      "min_tier": 10,
+      "passive": {
+        "id": "tyrant_apex",
+        "name": "Apex Fury",
+        "description": "+50% attack below 50% HP.",
+        "kind": "LOW_HP",
+        "stat": "attack",
+        "value": 0.5,
+        "threshold": 0.5
+      },
+      "cards": [
+        {
+          "id": "tyrant_magma_eruption",
+          "name": "Magma Eruption",
+          "description": "Char itself erupts: heavy damage across every lane.",
+          "target_type": "all_enemies",
+          "lane_scope": "all_lanes",
+          "power_multiplier": 0.8,
+          "cooldown_turns": 2,
+          "effects": [
+            {
+              "type": "BURN",
+              "target": "hit",
+              "value": 0.04,
+              "turns": 2,
+              "chance": 0.6
+            }
+          ],
+          "icon_name": "Flame"
+        },
+        {
+          "id": "tyrant_primal_regeneration",
+          "name": "Primal Regeneration",
+          "description": "Regrows carapace: large shield and heals the most wounded hostile.",
+          "target_type": "self",
+          "lane_scope": "same_lane",
+          "power_multiplier": 0.0,
+          "heal_multiplier": 3.0,
+          "shield_grant": 220,
+          "cooldown_turns": 4,
+          "effects": [
+            {
+              "type": "ATK_UP",
+              "target": "self",
+              "value": 0.3,
+              "turns": 2,
+              "chance": 1.0
+            },
+            {
+              "type": "CLEANSE",
+              "target": "self",
+              "value": 0.0,
+              "turns": 2,
+              "chance": 1.0,
+              "count": 3
+            }
+          ],
+          "icon_name": "Heart"
+        },
+        {
+          "id": "tyrant_brood_call",
+          "name": "Brood Call",
+          "description": "Calls a Broodling swarm to its lane.",
+          "target_type": "self",
+          "lane_scope": "same_lane",
+          "power_multiplier": 0.0,
+          "cooldown_turns": 3,
+          "summon_troop_id": "enemy_broodlings",
+          "icon_name": "Bug"
+        }
+      ],
+      "summons": {
+        "enemy_broodlings": {
+          "name": "Broodling Swarm",
+          "count": 6,
+          "unit_hp": 32,
+          "unit_attack": 6,
+          "defense": 6
+        }
+      }
+    }
+  ]
+}

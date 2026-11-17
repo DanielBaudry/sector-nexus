@@ -1,10 +1,10 @@
 import React from 'react';
-import { Crown, Hourglass, Lock, AlertTriangle, Flame, Skull, Droplets, Bug, Mountain, Zap } from 'lucide-react';
+import { Crown, Hourglass, Lock, AlertTriangle, Flame, Skull, Droplets, Bug, Mountain, Zap, Shield, Heart, Swords } from 'lucide-react';
 import { LANE_NAMES, getBossArt, pct } from '../../utils/battleVisuals';
 import { AimMarker, Bar, FxWrap, aimClasses } from './LaneUnits';
 import { EffectBadges } from './StatusEffects';
 
-const ICONS = { Flame, Skull, Droplets, Bug, Mountain };
+const ICONS = { Flame, Skull, Droplets, Bug, Mountain, Shield, Heart, Swords };
 
 /** Boss HP bar with phase thresholds marked on it. */
 function PhaseBar({ hp, maxHp, phases = [], phase = 0 }) {
@@ -91,7 +91,8 @@ export default function BossBanner({ boss, fx, onInspect, targetable = null, dim
         <div className="flex items-stretch gap-3 p-2 min-h-[clamp(110px,17vh,170px)]">
           {/* Art */}
           <div className="relative w-[clamp(110px,16vh,190px)] shrink-0 flex items-center justify-center">
-            <img src={getBossArt(boss.name)} alt={boss.name} className="max-h-[clamp(110px,17vh,170px)] w-full object-contain drop-shadow-[0_0_18px_rgba(249,115,22,0.5)]" />
+            <img src={boss.art?.image || getBossArt(boss.name)} alt={boss.name}
+              style={{ filter: boss.art?.hue ? `hue-rotate(${boss.art.hue}deg)` : undefined }} className="max-h-[clamp(110px,17vh,170px)] w-full object-contain drop-shadow-[0_0_18px_rgba(249,115,22,0.5)]" />
             {!alive && <Skull className="absolute w-1/2 h-1/2 text-red-500/80" />}
             <AimMarker targetable={targetable} />
           </div>

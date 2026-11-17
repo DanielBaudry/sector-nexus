@@ -91,7 +91,14 @@ export const api = {
   // Expedition Runs (node map + 3-lane battles)
   getTroopCatalog: () => fetch(`${BASE_URL}/runs/troops`).then(handleResponse),
   getActiveRun: () => fetch(`${BASE_URL}/runs/active`).then(handleResponse),
-  getBosses: () => fetch(`${BASE_URL}/runs/bosses`).then(handleResponse),
+  // Planet hierarchy
+  getHierarchy: (planetId) => fetch(`${BASE_URL}/hierarchy/${planetId}`).then(handleResponse),
+  setHierarchyTarget: (boss_id) =>
+    fetch(`${BASE_URL}/hierarchy/target`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boss_id }),
+    }).then(handleResponse),
   startBossRun: (boss_id, champion_ids, troop_assignments = null, difficulty = 1) =>
     fetch(`${BASE_URL}/runs/boss/start`, {
       method: 'POST',

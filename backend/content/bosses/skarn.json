@@ -1,0 +1,156 @@
+{
+  "$schema": "../schema/bosse.schema.json",
+  "id": "boss_skarn",
+  "name": "Skarn",
+  "title": "Pack Alpha",
+  "description": "Vex'thara's fastest hunter. Skarn grows stronger with every kill-scent and calls the pack whenever it smells blood.",
+  "planet": "biome_char",
+  "arena_name": "Char — Ash Hunting Grounds",
+  "image": "/assets/bosses/zargul.svg",
+  "art_hue": 330,
+  "color": "#f43f5e",
+  "recommended_power": 1600,
+  "stats": {
+    "hp": 17000,
+    "attack": 115,
+    "defense": 40,
+    "speed": 112,
+    "crit_rate": 0.1,
+    "crit_damage": 1.5,
+    "accuracy": 35,
+    "resistance": 50
+  },
+  "max_difficulty": 10,
+  "passive": {
+    "id": "skarn_frenzy",
+    "name": "Blood Frenzy",
+    "description": "+4% attack every turn, up to 8 stacks.",
+    "kind": "STACK_ON_TURN_END",
+    "stat": "attack",
+    "value": 0.04,
+    "max_stacks": 8
+  },
+  "abilities": [
+    {
+      "id": "skarn_pounce",
+      "name": "Pounce",
+      "description": "Leaps on the strongest lane's front-liner and marks it for the pack.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.6,
+      "cooldown_turns": 2,
+      "effects": [
+        {
+          "type": "MARKED",
+          "target": "hit",
+          "value": 0.2,
+          "turns": 2,
+          "chance": 0.7
+        }
+      ],
+      "icon_name": "Swords"
+    },
+    {
+      "id": "skarn_rallying_howl",
+      "name": "Rallying Howl",
+      "description": "Calls a hunting pack and whips itself into a frenzy (Attack Up).",
+      "target_type": "self",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "skarn_pack",
+      "effects": [
+        {
+          "type": "ATK_UP",
+          "target": "self",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "icon_name": "Bug"
+    },
+    {
+      "id": "skarn_savage_rush",
+      "name": "Savage Rush",
+      "description": "Crouches, then tears through a whole lane: heavy damage and Defense Down.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 2.0,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.7
+        }
+      ],
+      "telegraph_turns": 1,
+      "phase": 1,
+      "icon_name": "Skull"
+    }
+  ],
+  "phases": [
+    {
+      "threshold": 1.0,
+      "name": "The Hunt",
+      "description": "Pounces and howls.",
+      "summons": []
+    },
+    {
+      "threshold": 0.5,
+      "name": "Bloodlust",
+      "description": "+25% attack, +20% speed, packs on both flanks. Unlocks Savage Rush.",
+      "bonus": {
+        "attack": 0.25,
+        "speed": 0.2
+      },
+      "summons": [
+        {
+          "template_id": "skarn_pack",
+          "lanes": [
+            0,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "summons": {
+    "skarn_pack": {
+      "name": "Ravenous Pack",
+      "count": 6,
+      "unit_hp": 50,
+      "unit_attack": 9,
+      "defense": 8
+    }
+  },
+  "rewards": {
+    "credits": 1100,
+    "crystals": 60
+  },
+  "rank": "CAPTAIN",
+  "superior": "boss_vexthara",
+  "influence_required": 60,
+  "guard": {
+    "name": "Skarn's Packleader",
+    "hp": 380,
+    "attack": 44,
+    "defense": 25,
+    "speed": 115,
+    "cards": [
+      {
+        "id": "packleader_maul",
+        "name": "Maul",
+        "description": "Savage bite on the weakest target.",
+        "target_type": "single_enemy",
+        "lane_scope": "same_lane",
+        "power_multiplier": 1.4,
+        "cooldown_turns": 2,
+        "icon_name": "Swords"
+      }
+    ]
+  }
+}

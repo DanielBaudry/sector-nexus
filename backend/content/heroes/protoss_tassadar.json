@@ -1,0 +1,84 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_protoss_tassadar",
+  "order": 10,
+  "name": "Executor Tassadar",
+  "title": "Twilight Archon",
+  "faction": "Astral Templars",
+  "role": "Psionic Specialist",
+  "rarity": "Epic",
+  "stats": {
+    "hp": 320,
+    "shields": 240,
+    "attack": 56,
+    "defense": 28,
+    "speed": 106,
+    "crit_rate": 0.2,
+    "crit_damage": 1.7,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "tassadar_khaydarin",
+    "name": "Khaydarin Focus",
+    "description": "Restores 10% max shields at the start of each of his turns.",
+    "kind": "SHIELD_REGEN",
+    "value": 0.1
+  },
+  "abilities": [
+    {
+      "id": "tassadar_psi_storm",
+      "name": "Psionic Storm",
+      "description": "Summons an electromagnetic maelstrom engulfing the entire battlefield.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.55,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "BURN",
+          "target": "hit",
+          "value": 0.05,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "energy_cost": 2,
+      "icon_name": "CloudLightning"
+    },
+    {
+      "id": "tassadar_plasma_surge",
+      "name": "Plasma Surge",
+      "description": "Direct energy bolt penetrating target shields.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.6,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "STRIP",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 0.8,
+          "count": 2
+        }
+      ],
+      "energy_cost": 1
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "enemy_count_over_1",
+      "card_id": "tassadar_psi_storm"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "tassadar_plasma_surge"
+    }
+  ],
+  "avatar_color": "#38bdf8",
+  "avatar_icon": "CloudLightning"
+}

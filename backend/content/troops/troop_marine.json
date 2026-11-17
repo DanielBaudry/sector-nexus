@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_marine",
+  "name": "Marine Squad",
+  "faction": "Terran Vanguard",
+  "count": 6,
+  "unit_hp": 35,
+  "unit_attack": 6,
+  "defense": 12,
+  "description": "Reliable gauss riflemen. Balanced pack.",
+  "icon_name": "Crosshair"
+}

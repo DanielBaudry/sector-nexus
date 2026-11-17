@@ -53,6 +53,13 @@ class ExpeditionRun:
     difficulty: int = 1  # 1-10, see value_objects.difficulty
     mode: str = "expedition"  # "expedition" (node map) | "boss" (single boss encounter)
     boss_id: Optional[str] = None
+    # Hierarchy: the champion this expedition gathers Influence against (and its guard elite).
+    influence_target_id: Optional[str] = None
+    influence_target_name: str = ""
+    influence_gained: int = 0
+    influence_banked: Optional[int] = None
+    target_guard: Optional[Dict[str, Any]] = None
+    hierarchy_result: Optional[Dict[str, Any]] = None  # boss mode: claimed / adaptation gained
 
     def get_node(self, node_id: Optional[str]) -> Optional[MapNode]:
         return next((n for n in self.nodes if n.id == node_id), None)
@@ -84,6 +91,13 @@ class ExpeditionRun:
             "difficulty": self.difficulty,
             "mode": self.mode,
             "boss_id": self.boss_id,
+            "influence": {
+                "target_id": self.influence_target_id,
+                "target_name": self.influence_target_name,
+                "gained": self.influence_gained,
+                "banked": self.influence_banked,
+            } if self.influence_target_id else None,
+            "hierarchy_result": self.hierarchy_result,
             "status": self.status.value,
             "nodes": [n.to_dict() for n in self.nodes],
             "current_node_id": self.current_node_id,

@@ -1,0 +1,52 @@
+{
+  "$schema": "../schema/planet.schema.json",
+  "id": "biome_aiur",
+  "order": 2,
+  "name": "Aiur: Khaydarin Ruins",
+  "description": "Ancient Protoss homeworld overgrown with crystal jungles and autonomous guardian pylons.",
+  "hazard_name": "Psionic Resonance",
+  "hazard_description": "Shielded enemies regenerate partial shields between rooms.",
+  "recommended_power": 1100,
+  "allowed_artifact_sets": [
+    "Psionic Aegis",
+    "Precision Matrix"
+  ],
+  "color": "#38bdf8",
+  "bg_gradient": "from-cyan-950 via-zinc-900 to-black",
+  "icon_name": "Sparkles",
+  "max_difficulty": 1,
+  "enemy_pool": [
+    {
+      "name": "Zealot Automaton",
+      "hp": 240,
+      "shields": 120,
+      "attack": 34,
+      "defense": 24,
+      "speed": 105
+    },
+    {
+      "name": "Stalker Strider",
+      "hp": 260,
+      "shields": 150,
+      "attack": 38,
+      "defense": 20,
+      "speed": 112
+    },
+    {
+      "name": "Immortal Sentinel",
+      "hp": 450,
+      "shields": 280,
+      "attack": 52,
+      "defense": 42,
+      "speed": 82,
+      "is_elite": true,
+      "passive": {
+        "id": "immortal_barrier",
+        "name": "Hardened Barrier",
+        "description": "Restores 12% max shields every turn.",
+        "kind": "SHIELD_REGEN",
+        "value": 0.12
+      }
+    }
+  ]
+}

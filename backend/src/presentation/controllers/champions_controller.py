@@ -3,7 +3,7 @@ from sqlmodel import Session
 from src.infrastructure.database.connection import get_session
 from src.infrastructure.repositories.champion_repository_sql import ChampionRepositorySQL
 from src.infrastructure.repositories.artifact_repository_sql import ArtifactRepositorySQL
-from src.infrastructure.repositories.hero_kit_repository_seed import HeroKitRepositorySeed
+from src.infrastructure.repositories.hero_kit_repository_content import HeroKitRepositoryContent
 from src.use_cases.champions.champion_use_cases import (
     GetChampionsUseCase,
     UpdateGambitsUseCase,
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/champions", tags=["Champions"])
 def get_champions(session: Session = Depends(get_session)):
     champ_repo = ChampionRepositorySQL(session)
     art_repo = ArtifactRepositorySQL(session)
-    return GetChampionsUseCase(champ_repo, art_repo, HeroKitRepositorySeed()).execute()
+    return GetChampionsUseCase(champ_repo, art_repo, HeroKitRepositoryContent()).execute()
 
 
 @router.post("/{champion_id}/gambits")

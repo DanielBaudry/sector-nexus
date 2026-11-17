@@ -13,7 +13,7 @@ from src.domain.value_objects.status_effect import (
     debuff_land_chance,
 )
 from src.domain.value_objects.troop import TroopTemplate
-from src.infrastructure.repositories.hero_kit_repository_seed import HeroKitRepositorySeed
+from src.infrastructure.repositories.hero_kit_repository_content import HeroKitRepositoryContent
 
 GRUNTS = TroopTemplate("grunt", "Grunts", "Hostile", count=4, unit_hp=20, unit_attack=4, defense=0)
 MARINES = TroopTemplate("troop_marine", "Marines", "Terran Vanguard", count=6, unit_hp=35, unit_attack=6, defense=12)
@@ -184,7 +184,7 @@ def test_ability_applies_effects_to_targets_hit():
 
 
 def test_seed_kits_cover_every_hero_template():
-    kit = HeroKitRepositorySeed()
+    kit = HeroKitRepositoryContent()
     for tid in ["tmpl_terran_raynor", "tmpl_zerg_kerrigan", "tmpl_protoss_zeratul", "tmpl_protoss_karax"]:
         assert kit.get_passive(tid) is not None
     assert kit.get_ability_effects()["karax_guardian_shield"][0].type == "IMMUNITY"

@@ -112,7 +112,7 @@ def test_empty_board_pulls_next_wave_and_survive_completes_when_all_waves_cleare
 
 
 def test_seed_boss_has_phases_and_telegraphs():
-    zargul = get_seed_boss_encounters()[0]
+    zargul = next(b for b in get_seed_boss_encounters() if b.id == "boss_zargul")
     assert len(zargul.phases) == 3
     assert any(a.get("telegraph_turns") for a in zargul.abilities)
     assert zargul.to_dict()["difficulty_tiers"]

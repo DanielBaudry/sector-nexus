@@ -1,0 +1,94 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_terran_medic",
+  "order": 3,
+  "name": "Lieutenant Lisa",
+  "title": "Field Surgeon",
+  "faction": "Terran Vanguard",
+  "role": "Support",
+  "rarity": "Rare",
+  "stats": {
+    "hp": 340,
+    "shields": 90,
+    "attack": 24,
+    "defense": 35,
+    "speed": 102,
+    "crit_rate": 0.1,
+    "crit_damage": 1.4,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "medic_field_triage",
+    "name": "Field Triage",
+    "description": "At the start of each of her turns, heals every ally in her lane for 4% max HP.",
+    "kind": "REGEN",
+    "value": 0.04,
+    "lane_wide": true
+  },
+  "abilities": [
+    {
+      "id": "medic_nanite_heal",
+      "name": "Nanite Injection",
+      "description": "Heals critical ally for massive hull repair.",
+      "target_type": "lowest_hp_ally",
+      "lane_scope": "adjacent_lanes",
+      "power_multiplier": 0.0,
+      "heal_multiplier": 1.9,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "CLEANSE",
+          "target": "ally",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 1.0,
+          "count": 2
+        },
+        {
+          "type": "REGEN",
+          "target": "ally",
+          "value": 0.06,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Heart"
+    },
+    {
+      "id": "medic_optical_flare",
+      "name": "Optical Flare",
+      "description": "Flares laser blinding target enemy, dealing moderate damage.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.1,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "ATK_DOWN",
+          "target": "hit",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 0.8
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Sun"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "ally_hp_under_50",
+      "card_id": "medic_nanite_heal"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "medic_optical_flare"
+    }
+  ],
+  "avatar_color": "#10b981",
+  "avatar_icon": "Heart"
+}

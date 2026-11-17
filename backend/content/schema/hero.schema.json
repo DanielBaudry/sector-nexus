@@ -1,0 +1,582 @@
+{
+  "$defs": {
+    "Ability": {
+      "additionalProperties": false,
+      "description": "A hero / enemy / boss ability (CombatCard).",
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "target_type": {
+          "default": "single_enemy",
+          "enum": [
+            "single_enemy",
+            "all_enemies",
+            "self",
+            "all_allies",
+            "lowest_hp_ally"
+          ],
+          "title": "Target Type",
+          "type": "string"
+        },
+        "lane_scope": {
+          "default": "same_lane",
+          "enum": [
+            "same_lane",
+            "adjacent_lanes",
+            "any_lane",
+            "all_lanes"
+          ],
+          "title": "Lane Scope",
+          "type": "string"
+        },
+        "power_multiplier": {
+          "default": 1.0,
+          "description": "Damage = attack \u00d7 this.",
+          "minimum": 0,
+          "title": "Power Multiplier",
+          "type": "number"
+        },
+        "heal_multiplier": {
+          "default": 0.0,
+          "description": "Heal = attack \u00d7 this.",
+          "minimum": 0,
+          "title": "Heal Multiplier",
+          "type": "number"
+        },
+        "shield_grant": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Shield Grant",
+          "type": "integer"
+        },
+        "cooldown_turns": {
+          "default": 0,
+          "description": "Own turns before it can be used again.",
+          "minimum": 0,
+          "title": "Cooldown Turns",
+          "type": "integer"
+        },
+        "summon_troop_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Troop template summoned into the target lane.",
+          "title": "Summon Troop Id"
+        },
+        "effects": {
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "title": "Effects",
+          "type": "array"
+        },
+        "telegraph_turns": {
+          "default": 0,
+          "description": "Bosses: own turns spent winding up before it lands.",
+          "minimum": 0,
+          "title": "Telegraph Turns",
+          "type": "integer"
+        },
+        "phase": {
+          "default": 0,
+          "description": "Bosses: 0-based phase from which it is unlocked.",
+          "minimum": 0,
+          "title": "Phase",
+          "type": "integer"
+        },
+        "energy_cost": {
+          "default": 0,
+          "description": "Legacy card mode only.",
+          "minimum": 0,
+          "title": "Energy Cost",
+          "type": "integer"
+        },
+        "icon_name": {
+          "default": "Zap",
+          "title": "Icon Name",
+          "type": "string"
+        },
+        "flavor_quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flavor Quote"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Ability",
+      "type": "object"
+    },
+    "Effect": {
+      "additionalProperties": false,
+      "description": "A buff / debuff an ability or passive applies, or an op (CLEANSE / STRIP / STEAL).",
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "type": {
+          "enum": [
+            "ATK_UP",
+            "DEF_UP",
+            "SPD_UP",
+            "CRIT_UP",
+            "IMMUNITY",
+            "REGEN",
+            "ATK_DOWN",
+            "DEF_DOWN",
+            "SPD_DOWN",
+            "BURN",
+            "POISON",
+            "STUN",
+            "HEAL_BLOCK",
+            "MARKED",
+            "CLEANSE",
+            "STRIP",
+            "STEAL"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "target": {
+          "default": "hit",
+          "description": "self | ally (healed/chosen ally) | allies (all allies in reach) | hit (enemies damaged) | enemies (all enemies in reach)",
+          "enum": [
+            "self",
+            "ally",
+            "allies",
+            "hit",
+            "enemies"
+          ],
+          "title": "Target",
+          "type": "string"
+        },
+        "value": {
+          "default": 0.0,
+          "description": "Strength: 0.3 = 30% (stat effects / MARKED) or 30% max HP per turn (BURN/POISON/REGEN).",
+          "title": "Value",
+          "type": "number"
+        },
+        "turns": {
+          "default": 2,
+          "description": "Duration in the holder's own turns.",
+          "minimum": 0,
+          "title": "Turns",
+          "type": "integer"
+        },
+        "chance": {
+          "default": 1.0,
+          "description": "Base land chance for debuffs (Accuracy vs Resistance applies).",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Chance",
+          "type": "number"
+        },
+        "count": {
+          "default": 1,
+          "description": "CLEANSE / STRIP / STEAL: number of effects affected.",
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Effect",
+      "type": "object"
+    },
+    "Gambit": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "priority": {
+          "title": "Priority",
+          "type": "integer"
+        },
+        "condition": {
+          "enum": [
+            "always",
+            "ally_hp_under_50",
+            "self_shield_depleted",
+            "enemy_is_elite",
+            "enemy_count_over_1",
+            "enemy_low_hp"
+          ],
+          "title": "Condition",
+          "type": "string"
+        },
+        "card_id": {
+          "title": "Card Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "priority",
+        "condition",
+        "card_id"
+      ],
+      "title": "Gambit",
+      "type": "object"
+    },
+    "Passive": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "STACK_ON_TURN_END",
+            "PER_ALLY_TROOP",
+            "LOW_HP",
+            "LANE_AURA",
+            "REGEN",
+            "SHIELD_REGEN",
+            "ON_KILL_METER",
+            "ON_HIT_EFFECT",
+            "DAMAGE_VS_DEBUFFED",
+            "BATTLE_START_EFFECT"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "stat": {
+          "anyOf": [
+            {
+              "enum": [
+                "attack",
+                "defense",
+                "speed",
+                "crit_rate"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stat"
+        },
+        "value": {
+          "default": 0.0,
+          "title": "Value",
+          "type": "number"
+        },
+        "max_stacks": {
+          "default": 0,
+          "title": "Max Stacks",
+          "type": "integer"
+        },
+        "threshold": {
+          "default": 0.0,
+          "description": "LOW_HP: HP ratio below which it triggers.",
+          "title": "Threshold",
+          "type": "number"
+        },
+        "lane_wide": {
+          "default": false,
+          "description": "REGEN: heal the whole lane instead of self.",
+          "title": "Lane Wide",
+          "type": "boolean"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Effect"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "title": "Passive",
+      "type": "object"
+    },
+    "Stats": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "hp": {
+          "exclusiveMinimum": 0,
+          "title": "Hp",
+          "type": "integer"
+        },
+        "shields": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Shields",
+          "type": "integer"
+        },
+        "attack": {
+          "minimum": 0,
+          "title": "Attack",
+          "type": "integer"
+        },
+        "defense": {
+          "minimum": 0,
+          "title": "Defense",
+          "type": "integer"
+        },
+        "speed": {
+          "exclusiveMinimum": 0,
+          "title": "Speed",
+          "type": "integer"
+        },
+        "crit_rate": {
+          "default": 0.1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Crit Rate",
+          "type": "number"
+        },
+        "crit_damage": {
+          "default": 1.5,
+          "minimum": 1,
+          "title": "Crit Damage",
+          "type": "number"
+        },
+        "accuracy": {
+          "default": 10,
+          "title": "Accuracy",
+          "type": "integer"
+        },
+        "resistance": {
+          "default": 30,
+          "title": "Resistance",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "hp",
+        "attack",
+        "defense",
+        "speed"
+      ],
+      "title": "Stats",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A playable champion template. Owned copies pick up changes on the next load.",
+  "properties": {
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Editor hint, ignored by the game.",
+      "title": "$Schema"
+    },
+    "id": {
+      "description": "Template id, e.g. tmpl_terran_raynor. Never rename once players own it.",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "faction": {
+      "enum": [
+        "Terran Vanguard",
+        "Bio-Swarm",
+        "Astral Templars"
+      ],
+      "title": "Faction",
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "Assault",
+        "Vanguard",
+        "Psionic Specialist",
+        "Support"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "rarity": {
+      "enum": [
+        "Common",
+        "Rare",
+        "Epic",
+        "Legendary"
+      ],
+      "title": "Rarity",
+      "type": "string"
+    },
+    "stats": {
+      "$ref": "#/$defs/Stats",
+      "description": "Level 1 / rank 1 stats; level & rank growth apply on top."
+    },
+    "passive": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Passive"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "abilities": {
+      "items": {
+        "$ref": "#/$defs/Ability"
+      },
+      "minItems": 1,
+      "title": "Abilities",
+      "type": "array"
+    },
+    "gambits": {
+      "description": "Default auto-play rules (players can edit their own).",
+      "items": {
+        "$ref": "#/$defs/Gambit"
+      },
+      "title": "Gambits",
+      "type": "array"
+    },
+    "avatar_color": {
+      "default": "#3b82f6",
+      "title": "Avatar Color",
+      "type": "string"
+    },
+    "avatar_icon": {
+      "default": "Shield",
+      "title": "Avatar Icon",
+      "type": "string"
+    },
+    "order": {
+      "default": 100,
+      "description": "Display / listing order (lower first).",
+      "title": "Order",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "title",
+    "faction",
+    "role",
+    "rarity",
+    "stats",
+    "abilities"
+  ],
+  "title": "Hero",
+  "type": "object",
+  "$id": "hero.schema.json"
+}

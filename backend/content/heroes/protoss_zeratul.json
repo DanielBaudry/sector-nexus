@@ -1,0 +1,84 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_protoss_zeratul",
+  "order": 11,
+  "name": "Prelate Zeratul",
+  "title": "Dark Templar",
+  "faction": "Astral Templars",
+  "role": "Assault",
+  "rarity": "Epic",
+  "stats": {
+    "hp": 300,
+    "shields": 150,
+    "attack": 62,
+    "defense": 24,
+    "speed": 118,
+    "crit_rate": 0.28,
+    "crit_damage": 1.9,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "zeratul_void_assassin",
+    "name": "Void Assassin",
+    "description": "Killing a unit fills 50% of his turn meter.",
+    "kind": "ON_KILL_METER",
+    "value": 50.0
+  },
+  "abilities": [
+    {
+      "id": "zeratul_void_slash",
+      "name": "Warp Blade Ambush",
+      "description": "Strikes unseen from the Void dealing immense critical damage.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.95,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.8
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Slash"
+    },
+    {
+      "id": "zeratul_shadow_cleave",
+      "name": "Shadow Cleave",
+      "description": "Sweeping warp slice through adjacent hostiles.",
+      "target_type": "all_enemies",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.25,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.2,
+          "turns": 2,
+          "chance": 0.4
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Sparkles"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "enemy_is_elite",
+      "card_id": "zeratul_void_slash"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "zeratul_shadow_cleave"
+    }
+  ],
+  "avatar_color": "#14b8a6",
+  "avatar_icon": "Slash"
+}

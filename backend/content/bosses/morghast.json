@@ -1,0 +1,221 @@
+{
+  "$schema": "../schema/bosse.schema.json",
+  "id": "boss_morghast",
+  "name": "Morghast",
+  "title": "The Siegebreaker",
+  "description": "A living battering ram that cracked the old Dominion bunker line. Its plating thickens every turn — break it before it becomes a wall.",
+  "planet": "biome_char",
+  "arena_name": "Char — Shattered Bulwark",
+  "image": "/assets/bosses/zargul.svg",
+  "art_hue": 150,
+  "color": "#94a3b8",
+  "recommended_power": 2000,
+  "stats": {
+    "hp": 21000,
+    "attack": 135,
+    "defense": 70,
+    "speed": 88,
+    "crit_rate": 0.1,
+    "crit_damage": 1.5,
+    "accuracy": 40,
+    "resistance": 75
+  },
+  "max_difficulty": 10,
+  "passive": {
+    "id": "morg_plating",
+    "name": "Siege Plating",
+    "description": "+4% defense every turn, up to 10 stacks.",
+    "kind": "STACK_ON_TURN_END",
+    "stat": "defense",
+    "value": 0.04,
+    "max_stacks": 10
+  },
+  "abilities": [
+    {
+      "id": "morg_crushing_charge",
+      "name": "Crushing Charge",
+      "description": "Tramples the strongest lane's front-liner; may Stun.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.7,
+      "cooldown_turns": 2,
+      "effects": [
+        {
+          "type": "STUN",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 0.35
+        }
+      ],
+      "icon_name": "Swords"
+    },
+    {
+      "id": "morg_bone_fortress",
+      "name": "Bone Fortress",
+      "description": "Locks its plates: big shield, Defense Up and Immunity.",
+      "target_type": "self",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "shield_grant": 900,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "DEF_UP",
+          "target": "self",
+          "value": 0.5,
+          "turns": 2,
+          "chance": 1.0
+        },
+        {
+          "type": "IMMUNITY",
+          "target": "self",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 1.0
+        }
+      ],
+      "icon_name": "Shield"
+    },
+    {
+      "id": "morg_ground_quake",
+      "name": "Ground Quake",
+      "description": "Stomps the whole front: light damage and Defense Down.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 0.5,
+      "cooldown_turns": 3,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "icon_name": "Mountain"
+    },
+    {
+      "id": "morg_siege_breach",
+      "name": "Siege Breach",
+      "description": "Rams a lane and its neighbours: heavy damage, may Stun.",
+      "target_type": "all_enemies",
+      "lane_scope": "adjacent_lanes",
+      "power_multiplier": 1.9,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "STUN",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 0.5
+        }
+      ],
+      "telegraph_turns": 1,
+      "phase": 1,
+      "icon_name": "Mountain"
+    },
+    {
+      "id": "morg_unstoppable_ram",
+      "name": "Unstoppable Ram",
+      "description": "Builds up a full-speed charge through one lane: massive damage and Defense Down.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 3.0,
+      "cooldown_turns": 5,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.4,
+          "turns": 2,
+          "chance": 0.8
+        }
+      ],
+      "telegraph_turns": 2,
+      "phase": 2,
+      "icon_name": "Skull"
+    }
+  ],
+  "phases": [
+    {
+      "threshold": 1.0,
+      "name": "Siege Line",
+      "description": "Charges and fortifies.",
+      "summons": []
+    },
+    {
+      "threshold": 0.6,
+      "name": "Breach",
+      "description": "+20% attack. Siege Brutes hold the center. Unlocks Siege Breach.",
+      "bonus": {
+        "attack": 0.2
+      },
+      "summons": [
+        {
+          "template_id": "morg_brutes",
+          "lanes": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "threshold": 0.3,
+      "name": "Last Bastion",
+      "description": "+35% attack, +20% speed, massive shield. Unlocks Unstoppable Ram.",
+      "bonus": {
+        "attack": 0.35,
+        "speed": 0.2
+      },
+      "summons": [],
+      "shield_pct": 0.1
+    }
+  ],
+  "summons": {
+    "morg_brutes": {
+      "name": "Siege Brutes",
+      "count": 4,
+      "unit_hp": 140,
+      "unit_attack": 16,
+      "defense": 30
+    }
+  },
+  "rewards": {
+    "credits": 1700,
+    "crystals": 95
+  },
+  "rank": "LIEUTENANT",
+  "superior": "boss_zargul",
+  "influence_required": 120,
+  "guard": {
+    "name": "Siege Warden",
+    "hp": 520,
+    "attack": 40,
+    "defense": 45,
+    "speed": 85,
+    "cards": [
+      {
+        "id": "siege_warden_slam",
+        "name": "Plated Slam",
+        "description": "A crushing blow that cracks armor.",
+        "target_type": "single_enemy",
+        "lane_scope": "same_lane",
+        "power_multiplier": 1.4,
+        "cooldown_turns": 2,
+        "effects": [
+          {
+            "type": "DEF_DOWN",
+            "target": "hit",
+            "value": 0.25,
+            "turns": 2,
+            "chance": 0.6
+          }
+        ],
+        "icon_name": "Shield"
+      }
+    ]
+  }
+}

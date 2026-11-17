@@ -43,5 +43,6 @@ export const HERO_ART_PLACEHOLDER = '/assets/characters/full/placeholder.png';
 
 export function heroArtFor(name = '') {
   if (name.includes('Zeratul')) return '/assets/characters/full/warrior.png';
+  if (name.includes('Kerrigan')) return '/assets/characters/full/kerrigan.png';
   return HERO_ART_PLACEHOLDER;
 }

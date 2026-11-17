@@ -1,0 +1,118 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_terran_raynor",
+  "order": 1,
+  "name": "Jim Raynor",
+  "title": "Rebel Marshal",
+  "faction": "Terran Vanguard",
+  "role": "Assault",
+  "rarity": "Legendary",
+  "stats": {
+    "hp": 380,
+    "shields": 80,
+    "attack": 52,
+    "defense": 32,
+    "speed": 105,
+    "crit_rate": 0.2,
+    "crit_damage": 1.65,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "raynor_inspiring_leader",
+    "name": "Raider Command",
+    "description": "Allies fighting in Raynor's lane deal +12% attack.",
+    "kind": "LANE_AURA",
+    "stat": "attack",
+    "value": 0.12
+  },
+  "abilities": [
+    {
+      "id": "raynor_penetrator",
+      "name": "Penetrator Round",
+      "description": "Fires a high-caliber sabot round through enemy defenses.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.6,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.75
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Crosshair",
+      "flavor_quote": "Right between the eyes."
+    },
+    {
+      "id": "raynor_hyperion_barrage",
+      "name": "Hyperion Salvo",
+      "description": "Calls down an orbital laser bombardment on all enemies.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 1.35,
+      "cooldown_turns": 0,
+      "energy_cost": 2,
+      "flavor_quote": "Rain fire from above!"
+    },
+    {
+      "id": "raynor_inspire",
+      "name": "Inspire Squad",
+      "description": "Rallies the team, restoring HP and granting combat shields.",
+      "target_type": "all_allies",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "heal_multiplier": 0.8,
+      "shield_grant": 50,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "ATK_UP",
+          "target": "allies",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Shield",
+      "flavor_quote": "Give 'em some pepper!"
+    },
+    {
+      "id": "raynor_drop_pods",
+      "name": "Drop-Pod Marines",
+      "description": "Call a fresh Marine Squad into any lane.",
+      "target_type": "self",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "troop_marine",
+      "energy_cost": 2,
+      "icon_name": "Users",
+      "flavor_quote": "Boys, we got company!"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "enemy_count_over_1",
+      "card_id": "raynor_hyperion_barrage"
+    },
+    {
+      "priority": 2,
+      "condition": "ally_hp_under_50",
+      "card_id": "raynor_inspire"
+    },
+    {
+      "priority": 3,
+      "condition": "always",
+      "card_id": "raynor_penetrator"
+    }
+  ],
+  "avatar_color": "#3b82f6",
+  "avatar_icon": "Crosshair"
+}

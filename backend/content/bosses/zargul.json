@@ -1,0 +1,215 @@
+{
+  "$schema": "../schema/bosse.schema.json",
+  "id": "boss_zargul",
+  "name": "Zar'gul",
+  "title": "The World Eater",
+  "description": "A leviathan-class broodmother that burrowed under Char's magma seas. Its body spans the whole front: every lane faces it at once. Watch its wind-ups — brace the targeted lane, or stun it.",
+  "planet": "biome_char",
+  "arena_name": "Char — Magma Rift",
+  "image": "/assets/bosses/zargul.svg",
+  "color": "#f97316",
+  "recommended_power": 2400,
+  "stats": {
+    "hp": 27000,
+    "attack": 155,
+    "defense": 60,
+    "speed": 95,
+    "crit_rate": 0.1,
+    "crit_damage": 1.5,
+    "accuracy": 45,
+    "resistance": 70
+  },
+  "max_difficulty": 10,
+  "passive": {
+    "id": "zargul_carapace",
+    "name": "Colossal Carapace",
+    "description": "Hardens every turn: +3% defense per turn, up to 10 stacks. The longer the fight, the tougher it gets.",
+    "kind": "STACK_ON_TURN_END",
+    "stat": "defense",
+    "value": 0.03,
+    "max_stacks": 10
+  },
+  "abilities": [
+    {
+      "id": "zargul_rending_maw",
+      "name": "Rending Maw",
+      "description": "Bites the strongest lane's front-liner for heavy damage and leaves it Marked.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.7,
+      "cooldown_turns": 2,
+      "effects": [
+        {
+          "type": "MARKED",
+          "target": "hit",
+          "value": 0.25,
+          "turns": 2,
+          "chance": 0.7
+        }
+      ],
+      "icon_name": "Skull"
+    },
+    {
+      "id": "zargul_acid_bile",
+      "name": "Acid Bile",
+      "description": "Sprays every lane with corrosive bile: light damage and Defense Down.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 0.45,
+      "cooldown_turns": 3,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "icon_name": "Droplets"
+    },
+    {
+      "id": "zargul_spawn",
+      "name": "Brood Spawn",
+      "description": "Births a pack of spawn in the emptiest lane.",
+      "target_type": "self",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 4,
+      "summon_troop_id": "boss_zargul_spawn",
+      "icon_name": "Bug"
+    },
+    {
+      "id": "zargul_tectonic_slam",
+      "name": "Tectonic Slam",
+      "description": "Rears up and crashes down on one lane: massive damage to everything there, may Stun.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 2.2,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "STUN",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 0.5
+        }
+      ],
+      "telegraph_turns": 1,
+      "phase": 1,
+      "icon_name": "Mountain"
+    },
+    {
+      "id": "zargul_cataclysm",
+      "name": "Magma Cataclysm",
+      "description": "Splits the crust open beneath the whole front: devastating damage to every lane and Burn.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 1.6,
+      "cooldown_turns": 5,
+      "effects": [
+        {
+          "type": "BURN",
+          "target": "hit",
+          "value": 0.05,
+          "turns": 2,
+          "chance": 0.8
+        }
+      ],
+      "telegraph_turns": 2,
+      "phase": 2,
+      "icon_name": "Flame"
+    }
+  ],
+  "phases": [
+    {
+      "threshold": 1.0,
+      "name": "Awakening",
+      "description": "Zar'gul tests your lines with bites and bile.",
+      "summons": []
+    },
+    {
+      "threshold": 0.6,
+      "name": "Frenzy",
+      "description": "+20% attack, +15% speed. Unlocks Tectonic Slam. Spawn erupt on both flanks.",
+      "bonus": {
+        "attack": 0.2,
+        "speed": 0.15
+      },
+      "summons": [
+        {
+          "template_id": "boss_zargul_spawn",
+          "lanes": [
+            0,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "threshold": 0.3,
+      "name": "Death Throes",
+      "description": "Sheds its debuffs, +40% attack, +25% speed, regrows a carapace shield. Unlocks Magma Cataclysm.",
+      "bonus": {
+        "attack": 0.4,
+        "speed": 0.25
+      },
+      "effects": [
+        {
+          "type": "CLEANSE",
+          "target": "self",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 1.0,
+          "count": 5
+        }
+      ],
+      "summons": [],
+      "shield_pct": 0.08
+    }
+  ],
+  "summons": {
+    "boss_zargul_spawn": {
+      "name": "Spawn of Zar'gul",
+      "count": 5,
+      "unit_hp": 110,
+      "unit_attack": 18,
+      "defense": 15
+    }
+  },
+  "rewards": {
+    "credits": 2500,
+    "crystals": 140
+  },
+  "rank": "OVERLORD",
+  "influence_required": 200,
+  "guard": {
+    "name": "Magma Behemoth",
+    "hp": 620,
+    "attack": 50,
+    "defense": 42,
+    "speed": 90,
+    "cards": [
+      {
+        "id": "behemoth_magma_slam",
+        "name": "Magma Slam",
+        "description": "Slams its lane with molten carapace.",
+        "target_type": "all_enemies",
+        "lane_scope": "same_lane",
+        "power_multiplier": 0.9,
+        "cooldown_turns": 2,
+        "effects": [
+          {
+            "type": "BURN",
+            "target": "hit",
+            "value": 0.04,
+            "turns": 2,
+            "chance": 0.5
+          }
+        ],
+        "icon_name": "Flame"
+      }
+    ]
+  }
+}

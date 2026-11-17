@@ -1,0 +1,164 @@
+{
+  "$schema": "../schema/bosse.schema.json",
+  "id": "boss_grubhalk",
+  "name": "Grubhalk",
+  "title": "The Burrower",
+  "description": "Morghast's sapper. It tunnels under your lines and bursts out where you are weakest; wounding it only makes it dig in harder.",
+  "planet": "biome_char",
+  "arena_name": "Char — Collapsed Mines",
+  "image": "/assets/bosses/zargul.svg",
+  "art_hue": 40,
+  "color": "#eab308",
+  "recommended_power": 1600,
+  "stats": {
+    "hp": 18000,
+    "attack": 110,
+    "defense": 55,
+    "speed": 94,
+    "crit_rate": 0.1,
+    "crit_damage": 1.5,
+    "accuracy": 35,
+    "resistance": 60
+  },
+  "max_difficulty": 10,
+  "passive": {
+    "id": "grub_bulk",
+    "name": "Burrowed Bulk",
+    "description": "+40% defense below 50% HP.",
+    "kind": "LOW_HP",
+    "stat": "defense",
+    "value": 0.4,
+    "threshold": 0.5
+  },
+  "abilities": [
+    {
+      "id": "grub_tunnel_ambush",
+      "name": "Tunnel Ambush",
+      "description": "Erupts under the strongest lane's front-liner: damage and Defense Down.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.8,
+      "cooldown_turns": 2,
+      "effects": [
+        {
+          "type": "DEF_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "icon_name": "Mountain"
+    },
+    {
+      "id": "grub_chitin_harden",
+      "name": "Chitin Harden",
+      "description": "Hardens its shell: shield and Defense Up.",
+      "target_type": "self",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "shield_grant": 600,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "DEF_UP",
+          "target": "self",
+          "value": 0.4,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "icon_name": "Shield"
+    },
+    {
+      "id": "grub_tunnel_collapse",
+      "name": "Tunnel Collapse",
+      "description": "Undermines a lane, then collapses it: heavy damage and Speed Down.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 2.1,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.7
+        }
+      ],
+      "telegraph_turns": 1,
+      "phase": 1,
+      "icon_name": "Mountain"
+    }
+  ],
+  "phases": [
+    {
+      "threshold": 1.0,
+      "name": "Tremors",
+      "description": "Ambushes and hardens.",
+      "summons": []
+    },
+    {
+      "threshold": 0.5,
+      "name": "Deep Burrow",
+      "description": "+30% defense, +15% attack, larvae in the center. Unlocks Tunnel Collapse.",
+      "bonus": {
+        "defense": 0.3,
+        "attack": 0.15
+      },
+      "summons": [
+        {
+          "template_id": "grub_larvae",
+          "lanes": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "summons": {
+    "grub_larvae": {
+      "name": "Burrower Larvae",
+      "count": 5,
+      "unit_hp": 70,
+      "unit_attack": 10,
+      "defense": 14
+    }
+  },
+  "rewards": {
+    "credits": 1100,
+    "crystals": 60
+  },
+  "rank": "CAPTAIN",
+  "superior": "boss_morghast",
+  "influence_required": 60,
+  "guard": {
+    "name": "Tunnel Guardian",
+    "hp": 460,
+    "attack": 38,
+    "defense": 40,
+    "speed": 90,
+    "cards": [
+      {
+        "id": "tunnel_guardian_bash",
+        "name": "Burrow Bash",
+        "description": "Bursts from below to bash a target.",
+        "target_type": "single_enemy",
+        "lane_scope": "same_lane",
+        "power_multiplier": 1.3,
+        "cooldown_turns": 2,
+        "effects": [
+          {
+            "type": "DEF_DOWN",
+            "target": "hit",
+            "value": 0.2,
+            "turns": 2,
+            "chance": 0.5
+          }
+        ],
+        "icon_name": "Mountain"
+      }
+    ]
+  }
+}

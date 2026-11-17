@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Rocket, Users, Swords, Heart, Shield, Check, Crown } from 'lucide-react';
+import { X, Rocket, Users, Swords, Heart, Shield, Check, Crown, Crosshair } from 'lucide-react';
 import { api } from '../../services/api';
 import { factionTone, getPortrait } from '../../utils/battleVisuals';
 import DifficultySelector from './DifficultySelector';
@@ -11,7 +11,7 @@ const MAX_BOSS_HEROES = 3;
  * Expedition: the squad's heroes. Boss encounter (`boss` set): pick up to 3 heroes first.
  * Troops follow their hero into whichever lane the hero is deployed to.
  */
-export default function RunSetupModal({ biome, boss = null, squad, champions, onClose, onLaunched }) {
+export default function RunSetupModal({ biome, boss = null, target = null, squad, champions, onClose, onLaunched }) {
   const [catalog, setCatalog] = useState(null);
   const [loadout, setLoadout] = useState({});
   const [launching, setLaunching] = useState(false);
@@ -104,6 +104,21 @@ export default function RunSetupModal({ biome, boss = null, squad, champions, on
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {!boss && target && (
+          <div className="mb-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 px-3 py-2 flex items-center gap-2 font-mono text-[13px] text-cyan-100">
+            <Crosshair className="w-4 h-4 text-cyan-300 shrink-0" />
+            <span>
+              Hunting <b>{target.name}</b> — battles won add Influence ({target.standing.influence}/{target.influence_required}).
+              Their {target.guard?.name || 'guards'} will be waiting.
+            </span>
+          </div>
+        )}
+        {boss?.adaptations?.length > 0 && (
+          <div className="mb-3 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2 font-mono text-[13px] text-red-200">
+            {boss.name} has adapted: {boss.adaptations.map((a) => a.name).join(', ')}.
+          </div>
+        )}
 
         <DifficultySelector biome={boss || biome} value={difficulty} onChange={setDifficulty} />
 

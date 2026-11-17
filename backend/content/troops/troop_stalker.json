@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_stalker",
+  "name": "Stalker Wing",
+  "faction": "Astral Templars",
+  "count": 3,
+  "unit_hp": 90,
+  "unit_attack": 12,
+  "defense": 20,
+  "description": "Blink-capable walkers with heavy shots.",
+  "icon_name": "Radio"
+}

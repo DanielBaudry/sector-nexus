@@ -44,7 +44,7 @@ class EncounterFactory:
     def __init__(self, rng: Optional[random.Random] = None):
         self.rng = rng or random.Random()
 
-    def build(self, biome: Biome, node: MapNode, difficulty: int = 1) -> Battle:
+    def build(self, biome: Biome, node: MapNode, difficulty: int = 1, guard: Optional[Dict[str, Any]] = None) -> Battle:
         diff = Difficulty(difficulty)
         self._diff = diff
         # Strength: biome tier (recommended power) x depth on the map x difficulty tier.
@@ -69,8 +69,13 @@ class EncounterFactory:
             mult += 0.15
             boss_proto = self.rng.choice(tier_bosses) if tier_bosses else self.rng.choice(elites + tier_elites)
             units.append(self._hero(boss_proto, mult, lane=1, boss=True))
+            flank_elites = []
+            if guard:  # the hunted champion sends its guard to defend the apex
+                flank_elites.append(guard)
             if tier_elites and diff.tier >= 8:
-                units.append(self._hero(self.rng.choice(tier_elites), mult, lane=self.rng.choice([0, 2])))
+                flank_elites.append(self.rng.choice(tier_elites))
+            for lane, proto in zip(self.rng.sample([0, 2], 2), flank_elites):
+                units.append(self._hero(proto, mult, lane=lane))
             for lane in range(LANE_COUNT):
                 units.append(self._pack(self.rng.choice(grunts), mult, lane))
             for i, turn in enumerate((7, 14, 21)):
@@ -84,8 +89,11 @@ class EncounterFactory:
             elite_lanes = self.rng.sample(range(LANE_COUNT), 2)
             for lane in range(LANE_COUNT):
                 if lane in elite_lanes:
-                    pool = tier_elites if (tier_elites and lane == elite_lanes[0]) else elites + tier_elites
-                    units.append(self._hero(self.rng.choice(pool), mult, lane))
+                    if guard and lane == elite_lanes[0]:
+                        units.append(self._hero(guard, mult, lane))
+                    else:
+                        pool = tier_elites if (tier_elites and lane == elite_lanes[1 if guard else 0]) else elites + tier_elites
+                        units.append(self._hero(self.rng.choice(pool), mult, lane))
                 units.append(self._pack(self.rng.choice(grunts), mult, lane))
             waves.append(Wave(turn=10, lane=self.rng.randrange(LANE_COUNT), units=[self._pack(self.rng.choice(grunts), mult)]))
             objectives.append(Objective(ObjectiveType.CLEAR_LANES, True, "Clear at least 2 lanes", {"count": 2, "progress": 0}))
@@ -117,6 +125,9 @@ class EncounterFactory:
                     ObjectiveType.SURVIVE_TURNS, True, f"Survive {turns} turns until extraction",
                     {"turns": turns, "progress": 0},
                 ))
+            # The hunted champion's guard patrols some regular fights.
+            if guard and self.rng.random() < 0.3:
+                units.append(self._hero(guard, mult * 0.85, self.rng.randrange(LANE_COUNT)))
             # High tiers: a difficulty elite may lead one lane of a regular fight.
             if tier_elites and diff.tier >= 8 and self.rng.random() < 0.4:
                 units.append(self._hero(self.rng.choice(tier_elites), mult, self.rng.randrange(LANE_COUNT)))
@@ -182,14 +193,23 @@ class EncounterFactory:
             resistance=boss.resistance + 12 * diff.step,
             passive=Passive.from_dict(boss.passive) if boss.passive else None,
             avatar_color=boss.color,
+            art={"image": boss.image, "hue": boss.art_hue},
         )
+        units: List[LaneUnit] = [unit]
+        # Phase 1 escorts (e.g. a champion's "Reinforcements" adaptation) are on the field from the start.
+        for summon in (boss.phases[0].get("summons", []) if boss.phases else []):
+            template = summon_templates.get(summon["template_id"])
+            for lane in summon.get("lanes", []) if template else []:
+                units.append(LaneUnit.troop_from_template(
+                    unit_id=f"en_{uuid.uuid4().hex[:6]}", template=template, side=Side.ENEMY, lane=lane,
+                ))
         rewards = {k: int(v * diff.reward_mult) for k, v in boss.rewards.items()}
         rewards.update(LootService(self.rng).node_loot(biome, NodeType.BOSS, node.threat, diff.tier))
         return Battle(
             id=f"bat_{uuid.uuid4().hex[:8]}",
             node_id=node.id,
             status=BattleStatus.DEPLOYMENT,
-            units=[unit],
+            units=units,
             objectives=[Objective(ObjectiveType.ELIMINATE_BOSS, True, f"Slay {boss.name}, {boss.title}")],
             rewards=rewards,
             max_turns=400,

@@ -1,0 +1,116 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_protoss_artanis",
+  "order": 9,
+  "name": "Hierarch Artanis",
+  "title": "Firstborn Champion",
+  "faction": "Astral Templars",
+  "role": "Vanguard",
+  "rarity": "Legendary",
+  "stats": {
+    "hp": 410,
+    "shields": 200,
+    "attack": 49,
+    "defense": 40,
+    "speed": 100,
+    "crit_rate": 0.18,
+    "crit_damage": 1.6,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "artanis_hierarch",
+    "name": "Hierarch's Resolve",
+    "description": "Allies fighting in Artanis' lane gain +20% defense.",
+    "kind": "LANE_AURA",
+    "stat": "defense",
+    "value": 0.2
+  },
+  "abilities": [
+    {
+      "id": "artanis_twin_blades",
+      "name": "Twin Psi-Blades",
+      "description": "Strikes with dual psychic blades infused with Khala fury.",
+      "target_type": "single_enemy",
+      "lane_scope": "same_lane",
+      "power_multiplier": 1.65,
+      "cooldown_turns": 0,
+      "energy_cost": 1,
+      "icon_name": "Swords",
+      "flavor_quote": "My life for Aiur!"
+    },
+    {
+      "id": "artanis_shield_overcharge",
+      "name": "Shield Overcharge",
+      "description": "Overcharges matrix shielding on self and allies.",
+      "target_type": "all_allies",
+      "lane_scope": "adjacent_lanes",
+      "power_multiplier": 0.0,
+      "shield_grant": 80,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "DEF_UP",
+          "target": "allies",
+          "value": 0.5,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Shield"
+    },
+    {
+      "id": "artanis_solar_bombardment",
+      "name": "Orbital Solar Lance",
+      "description": "Beams concentrated stellar plasma disintegrating all foes.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 1.5,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "BURN",
+          "target": "hit",
+          "value": 0.05,
+          "turns": 2,
+          "chance": 0.5
+        }
+      ],
+      "energy_cost": 2,
+      "icon_name": "Sun"
+    },
+    {
+      "id": "artanis_stalker_warp",
+      "name": "Stalker Warp",
+      "description": "Warp a Stalker Wing into this lane.",
+      "target_type": "self",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "troop_stalker",
+      "energy_cost": 2,
+      "icon_name": "Users",
+      "flavor_quote": "En Taro Tassadar!"
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "self_shield_depleted",
+      "card_id": "artanis_shield_overcharge"
+    },
+    {
+      "priority": 2,
+      "condition": "enemy_count_over_1",
+      "card_id": "artanis_solar_bombardment"
+    },
+    {
+      "priority": 3,
+      "condition": "always",
+      "card_id": "artanis_twin_blades"
+    }
+  ],
+  "avatar_color": "#eab308",
+  "avatar_icon": "Swords"
+}

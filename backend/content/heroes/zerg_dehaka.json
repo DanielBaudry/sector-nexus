@@ -1,0 +1,99 @@
+{
+  "$schema": "../schema/hero.schema.json",
+  "id": "tmpl_zerg_dehaka",
+  "order": 7,
+  "name": "Dehaka",
+  "title": "Primal Packleader",
+  "faction": "Bio-Swarm",
+  "role": "Assault",
+  "rarity": "Epic",
+  "stats": {
+    "hp": 430,
+    "attack": 54,
+    "defense": 36,
+    "speed": 104,
+    "crit_rate": 0.18,
+    "crit_damage": 1.6,
+    "accuracy": 10,
+    "resistance": 30
+  },
+  "passive": {
+    "id": "dehaka_primal_rage",
+    "name": "Primal Rage",
+    "description": "+40% attack while below 50% HP.",
+    "kind": "LOW_HP",
+    "stat": "attack",
+    "value": 0.4,
+    "threshold": 0.5
+  },
+  "abilities": [
+    {
+      "id": "dehaka_drag",
+      "name": "Apex Tongue Drag",
+      "description": "Lashes out tongue dragging target into claws.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 1.65,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "SPD_DOWN",
+          "target": "hit",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 0.75
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Target"
+    },
+    {
+      "id": "dehaka_consume",
+      "name": "Essence Devour",
+      "description": "Devours enemy essence, restoring health and buffing next turn.",
+      "target_type": "lowest_hp_ally",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "heal_multiplier": 1.5,
+      "cooldown_turns": 0,
+      "effects": [
+        {
+          "type": "ATK_UP",
+          "target": "self",
+          "value": 0.3,
+          "turns": 2,
+          "chance": 1.0
+        }
+      ],
+      "energy_cost": 1,
+      "icon_name": "Utensils"
+    },
+    {
+      "id": "dehaka_primal_pack",
+      "name": "Primal Pack",
+      "description": "Call a Hydralisk Brood into this lane.",
+      "target_type": "self",
+      "lane_scope": "same_lane",
+      "power_multiplier": 0.0,
+      "cooldown_turns": 3,
+      "summon_troop_id": "troop_hydralisk",
+      "energy_cost": 2,
+      "icon_name": "Users",
+      "flavor_quote": "Pack hunts together."
+    }
+  ],
+  "gambits": [
+    {
+      "priority": 1,
+      "condition": "ally_hp_under_50",
+      "card_id": "dehaka_consume"
+    },
+    {
+      "priority": 2,
+      "condition": "always",
+      "card_id": "dehaka_drag"
+    }
+  ],
+  "avatar_color": "#a855f7",
+  "avatar_icon": "Target"
+}

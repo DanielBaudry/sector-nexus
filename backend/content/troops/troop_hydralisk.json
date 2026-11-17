@@ -1,0 +1,11 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_hydralisk",
+  "name": "Hydralisk Brood",
+  "faction": "Bio-Swarm",
+  "count": 5,
+  "unit_hp": 40,
+  "unit_attack": 8,
+  "defense": 10,
+  "description": "Spine-launching damage dealers."
+}

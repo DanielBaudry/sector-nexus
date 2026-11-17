@@ -1,0 +1,171 @@
+{
+  "$schema": "../schema/bosse.schema.json",
+  "id": "boss_ixil",
+  "name": "Ixil",
+  "title": "The Venomspine",
+  "description": "A spined artillery-beast lurking in Vex'thara's tunnels. Its toxins stop wounds from closing — bring cleanses.",
+  "planet": "biome_char",
+  "arena_name": "Char — Sulfur Vents",
+  "image": "/assets/bosses/zargul.svg",
+  "art_hue": 80,
+  "color": "#a3e635",
+  "recommended_power": 1600,
+  "stats": {
+    "hp": 16000,
+    "attack": 115,
+    "defense": 35,
+    "speed": 104,
+    "crit_rate": 0.1,
+    "crit_damage": 1.5,
+    "accuracy": 55,
+    "resistance": 45
+  },
+  "max_difficulty": 10,
+  "passive": {
+    "id": "ixil_glands",
+    "name": "Venom Glands",
+    "description": "Every hit has a 35% chance to Poison.",
+    "kind": "ON_HIT_EFFECT",
+    "value": 0.0,
+    "effect": {
+      "type": "POISON",
+      "target": "hit",
+      "value": 0.04,
+      "turns": 2,
+      "chance": 0.35
+    }
+  },
+  "abilities": [
+    {
+      "id": "ixil_spine_volley",
+      "name": "Spine Volley",
+      "description": "Rains spines on one lane: damage and Poison.",
+      "target_type": "all_enemies",
+      "lane_scope": "any_lane",
+      "power_multiplier": 0.9,
+      "cooldown_turns": 2,
+      "effects": [
+        {
+          "type": "POISON",
+          "target": "hit",
+          "value": 0.05,
+          "turns": 2,
+          "chance": 0.6
+        }
+      ],
+      "icon_name": "Droplets"
+    },
+    {
+      "id": "ixil_toxic_cloud",
+      "name": "Toxic Cloud",
+      "description": "Vents toxic gas across the front: light damage and Heal Block.",
+      "target_type": "all_enemies",
+      "lane_scope": "all_lanes",
+      "power_multiplier": 0.35,
+      "cooldown_turns": 3,
+      "effects": [
+        {
+          "type": "HEAL_BLOCK",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 0.5
+        }
+      ],
+      "icon_name": "Droplets"
+    },
+    {
+      "id": "ixil_neurotoxin_lance",
+      "name": "Neurotoxin Lance",
+      "description": "Aims a huge spine at one target: massive damage and a likely Stun.",
+      "target_type": "single_enemy",
+      "lane_scope": "any_lane",
+      "power_multiplier": 2.6,
+      "cooldown_turns": 4,
+      "effects": [
+        {
+          "type": "STUN",
+          "target": "hit",
+          "value": 0.0,
+          "turns": 1,
+          "chance": 0.7
+        }
+      ],
+      "telegraph_turns": 1,
+      "phase": 1,
+      "icon_name": "Skull"
+    }
+  ],
+  "phases": [
+    {
+      "threshold": 1.0,
+      "name": "Skirmish",
+      "description": "Volleys and gas.",
+      "summons": []
+    },
+    {
+      "threshold": 0.5,
+      "name": "Toxic Bloom",
+      "description": "+20% attack, sheds debuffs, light shield. Unlocks Neurotoxin Lance.",
+      "bonus": {
+        "attack": 0.2
+      },
+      "effects": [
+        {
+          "type": "CLEANSE",
+          "target": "self",
+          "value": 0.0,
+          "turns": 2,
+          "chance": 1.0,
+          "count": 5
+        }
+      ],
+      "summons": [],
+      "shield_pct": 0.05
+    }
+  ],
+  "summons": {
+    "ixil_spawn": {
+      "name": "Spine Crawlers",
+      "count": 5,
+      "unit_hp": 60,
+      "unit_attack": 10,
+      "defense": 10
+    }
+  },
+  "rewards": {
+    "credits": 1100,
+    "crystals": 60
+  },
+  "rank": "CAPTAIN",
+  "superior": "boss_vexthara",
+  "influence_required": 60,
+  "guard": {
+    "name": "Venomspine Stalker",
+    "hp": 340,
+    "attack": 46,
+    "defense": 20,
+    "speed": 105,
+    "cards": [
+      {
+        "id": "stalker_venom_spit",
+        "name": "Venom Spit",
+        "description": "Poisoned spine shot.",
+        "target_type": "single_enemy",
+        "lane_scope": "same_lane",
+        "power_multiplier": 1.3,
+        "cooldown_turns": 2,
+        "effects": [
+          {
+            "type": "POISON",
+            "target": "hit",
+            "value": 0.05,
+            "turns": 2,
+            "chance": 0.6
+          }
+        ],
+        "icon_name": "Droplets"
+      }
+    ]
+  }
+}

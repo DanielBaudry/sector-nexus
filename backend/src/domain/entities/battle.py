@@ -63,6 +63,7 @@ class LaneUnit:
     phase: int = 0
     # Wind-up of a telegraphed boss ability: {"card_id", "name", "lanes", "turns"}
     intent: Optional[Dict[str, Any]] = None
+    art: Optional[Dict[str, Any]] = None  # boss art: {"image", "hue"}
     # Troop fields
     template_id: str = ""
     unit_hp: int = 0
@@ -171,6 +172,8 @@ class LaneUnit:
                     for p in self.phases
                 ],
                 "intent": self.intent,
+                "title": self.title,
+                "art": self.art,
             })
         if self.is_hero:
             data.update({

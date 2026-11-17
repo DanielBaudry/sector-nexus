@@ -42,6 +42,10 @@ class CardChoiceDTO(BaseModel):
     card_id: Optional[str] = None
 
 
+class SetHierarchyTargetDTO(BaseModel):
+    boss_id: str
+
+
 class StartBossRunDTO(BaseModel):
     boss_id: str
     champion_ids: List[str] = Field(..., min_length=1, max_length=3)

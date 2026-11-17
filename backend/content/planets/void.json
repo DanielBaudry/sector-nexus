@@ -1,0 +1,45 @@
+{
+  "$schema": "../schema/planet.schema.json",
+  "id": "biome_void",
+  "order": 4,
+  "name": "Derelict Station: Void Sector",
+  "description": "Deep space laboratory contaminated by void anomalies and cyber-mutants.",
+  "hazard_name": "Null-Atmosphere",
+  "hazard_description": "Void entities deal bonus critical strikes.",
+  "recommended_power": 1500,
+  "allowed_artifact_sets": [
+    "Bio-Leech",
+    "Precision Matrix",
+    "Psionic Aegis"
+  ],
+  "color": "#a855f7",
+  "bg_gradient": "from-purple-950 via-zinc-900 to-black",
+  "icon_name": "Radio",
+  "max_difficulty": 1,
+  "enemy_pool": [
+    {
+      "name": "Void Shade",
+      "hp": 270,
+      "shields": 100,
+      "attack": 45,
+      "defense": 22,
+      "speed": 118
+    },
+    {
+      "name": "Corrupted Hybrid",
+      "hp": 580,
+      "shields": 200,
+      "attack": 62,
+      "defense": 45,
+      "speed": 102,
+      "is_elite": true,
+      "passive": {
+        "id": "hybrid_predator",
+        "name": "Void Predator",
+        "description": "+30% damage against debuffed targets.",
+        "kind": "DAMAGE_VS_DEBUFFED",
+        "value": 0.3
+      }
+    }
+  ]
+}

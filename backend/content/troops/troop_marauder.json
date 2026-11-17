@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/troop.schema.json",
+  "id": "troop_marauder",
+  "name": "Marauder Team",
+  "faction": "Terran Vanguard",
+  "count": 4,
+  "unit_hp": 70,
+  "unit_attack": 9,
+  "defense": 25,
+  "description": "Armored grenadiers. Hold the line.",
+  "icon_name": "Shield"
+}
