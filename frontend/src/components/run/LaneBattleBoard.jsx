@@ -562,7 +562,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
           </div>
         </div>
       </div>
-      <BattleFxLayer tracers={replay.tracers} floaters={replay.floaters} />
+      <BattleFxLayer projectiles={replay.projectiles} floaters={replay.floaters} />
       {announce && (
         <div key={announce.key} className="fixed inset-x-0 top-1/3 z-[60] flex justify-center pointer-events-none">
           <div className={`fx-announce px-10 py-4 rounded-2xl border-2 backdrop-blur-sm text-center ${

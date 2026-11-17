@@ -88,7 +88,6 @@
   70% { opacity: 1; }
   100% { opacity: 0; transform: translate(-50%, -52px) scale(1); }
 }
-@keyframes fx-tracer { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes fx-lane-alert { 0%, 100% { box-shadow: inset 0 0 0 0 rgba(251, 191, 36, 0); } 30% { box-shadow: inset 0 0 0 3px rgba(251, 191, 36, 0.9), inset 0 0 40px rgba(251, 191, 36, 0.25); } }
 
 .fx-attack-up { animation: fx-lunge-up 0.38s ease-out; }
@@ -97,8 +96,105 @@
 .fx-crit { animation: fx-shake-strong 0.45s ease-out; }
 .fx-flash { animation: fx-flash 0.45s ease-out forwards; }
 .fx-float { animation: fx-float 1.15s ease-out forwards; }
-.fx-tracer { animation: fx-tracer 0.42s ease-out forwards; }
 .fx-lane-alert { animation: fx-lane-alert 0.9s ease-out 2; }
+
+/* ── Projectiles ─────────────────────────────────────────────────────────
+   A projectile rides its offset-path (set inline) from attacker to target;
+   offset-rotate keeps streaks and trails pointing along the flight. */
+@keyframes fx-fly { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.fx-proj {
+  position: absolute; left: 0; top: 0;
+  offset-anchor: center; offset-rotate: auto;
+  animation-name: fx-fly; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+.fx-proj-small { scale: 0.6; }
+.fx-proj-crit { scale: 1.45; filter: brightness(1.35) saturate(1.3); }
+
+/* Terran: tracer round */
+.fx-proj.fx-bullet {
+  width: 30px; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fde68a 55%, #ffffff);
+  box-shadow: 0 0 6px 1px #fbbf24;
+}
+/* Zerg: acid glob lobbed on an arc, dripping a trail */
+.fx-proj.fx-glob {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ecfccb, #a3e635 40%, #4d7c0f);
+  box-shadow: 0 0 10px #a3e635;
+  animation-timing-function: cubic-bezier(0.35, 0.1, 0.65, 1);
+}
+.fx-proj.fx-glob::after {
+  content: ''; position: absolute; right: 55%; top: 50%; width: 26px; height: 7px; translate: 0 -50%;
+  border-radius: 4px; background: linear-gradient(90deg, transparent, #84cc16aa);
+}
+/* Protoss: psi orb */
+.fx-proj.fx-psi, .fx-proj.fx-void {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0 20%, #67e8f9 45%, #0891b200 72%);
+  box-shadow: 0 0 14px #22d3ee, 0 0 26px #0891b2;
+}
+.fx-proj.fx-void {
+  background: radial-gradient(circle, #ffffff 0 18%, #d8b4fe 42%, #7e22ce00 72%);
+  box-shadow: 0 0 14px #a855f7, 0 0 28px #6b21a8;
+}
+.fx-proj.fx-psi::after, .fx-proj.fx-void::after {
+  content: ''; position: absolute; right: 50%; top: 50%; width: 30px; height: 5px; translate: 0 -50%;
+  border-radius: 3px; background: linear-gradient(90deg, transparent, #67e8f988);
+}
+.fx-proj.fx-void::after { background: linear-gradient(90deg, transparent, #c084fc88); }
+/* Colossal boss: molten fireball */
+.fx-proj.fx-boss {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff7ed, #fb923c 35%, #dc2626 65%, #7f1d1d00 75%);
+  box-shadow: 0 0 18px #f97316, 0 0 36px #dc2626;
+}
+.fx-proj.fx-boss::after {
+  content: ''; position: absolute; right: 45%; top: 50%; width: 46px; height: 12px; translate: 0 -50%;
+  border-radius: 6px; background: linear-gradient(90deg, transparent, #f9731699);
+}
+/* Heal: soft green mote */
+.fx-proj.fx-heal {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle, #f0fdf4, #4ade80 50%, #16a34a00 75%);
+  box-shadow: 0 0 12px #4ade80;
+}
+
+/* Muzzle flash at the shooter */
+@keyframes fx-muzzle { 0% { opacity: 1; scale: 0.4; } 100% { opacity: 0; scale: 1.4; } }
+.fx-muzzle {
+  width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+  background: radial-gradient(circle, #ffffff, #fde047 40%, transparent 70%);
+  animation: fx-muzzle 0.14s ease-out forwards;
+}
+
+/* Impact at the target (delayed until the projectile lands) */
+@keyframes fx-impact {
+  0% { opacity: 0; scale: 0.25; }
+  12% { opacity: 1; }
+  100% { opacity: 0; scale: 1.7; }
+}
+.fx-impact {
+  width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%;
+  opacity: 0; animation: fx-impact 0.34s ease-out both;
+}
+.fx-impact-small { width: 22px; height: 22px; margin: -11px 0 0 -11px; }
+.fx-impact-crit { width: 60px; height: 60px; margin: -30px 0 0 -30px; }
+.fx-impact.fx-bullet { background: radial-gradient(circle, #ffffff 0 12%, #fde047 30%, #f59e0b55 52%, transparent 70%); }
+.fx-impact.fx-glob { border: 3px solid #a3e635; background: radial-gradient(circle, #d9f99d99, transparent 62%); }
+.fx-impact.fx-psi { border: 2px solid #67e8f9; background: radial-gradient(circle, #cffafe88, transparent 60%); box-shadow: 0 0 16px #22d3ee; }
+.fx-impact.fx-void { border: 2px solid #c084fc; background: radial-gradient(circle, #f3e8ff88, transparent 60%); box-shadow: 0 0 16px #a855f7; }
+.fx-impact.fx-boss { width: 70px; height: 70px; margin: -35px 0 0 -35px; background: radial-gradient(circle, #fff7ed, #fb923c 30%, #dc262688 55%, transparent 72%); }
+.fx-impact.fx-heal { border: 2px solid #4ade80; background: radial-gradient(circle, #bbf7d088, transparent 60%); }
+.fx-impact.fx-slash { background: radial-gradient(circle, #ffffffaa, transparent 60%); }
+
+/* Melee: blade arcs drawn across the target */
+@keyframes fx-slash-draw { 0% { stroke-dashoffset: 1; opacity: 1; } 55% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.fx-slash-stroke {
+  fill: none; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 2px #fff);
+  animation: fx-slash-draw 0.32s ease-out forwards;
+}
+.fx-slash-late { animation-delay: 0.09s; }
 
 /* Boss phase / wind-up announcement */
 @keyframes fx-announce {
@@ -112,4 +208,5 @@
 @media (prefers-reduced-motion: reduce) {
   .fx-attack-up, .fx-attack-down, .fx-hit, .fx-crit { animation: none; }
   .fx-announce { animation: none; }
+  .fx-proj, .fx-muzzle, .fx-slash { display: none; }
 }

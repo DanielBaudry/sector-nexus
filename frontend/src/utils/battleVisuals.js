@@ -75,3 +75,41 @@ export function getTroopArt(unit) {
   const hit = HOSTILE_KEYWORDS.find(([kw]) => name.includes(kw));
   return `/assets/troops/${hit ? hit[1] : 'hostile'}.svg`;
 }
+
+// ── Battle projectiles ─────────────────────────────────────────────────────
+// Close-combat units slash their target instead of firing a projectile.
+const MELEE_KEYWORDS = [
+  'zeratul', 'artanis', 'dehaka', 'torrasque', 'kerrigan', 'zealot', 'zergling', 'baneling',
+  'ultralisk', 'ravager', 'skarn', 'morghast', 'grubhalk', 'packleader', 'pack',
+];
+
+/**
+ * Visual style of a unit's attacks: bullet (Terran), glob (Zerg acid, arcs), psi (Protoss orb),
+ * void (void-touched orb), boss (colossal fireball) or slash (melee).
+ */
+export function projectileStyleFor(unit) {
+  if (!unit) return 'bullet';
+  if (unit.spans_lanes) return 'boss';
+  const name = (unit.name || '').toLowerCase();
+  if (MELEE_KEYWORDS.some((k) => name.includes(k))) return 'slash';
+  if (/void|hybrid|shade/.test(name)) return 'void';
+  const f = unit.faction || '';
+  if (f.includes('Terran')) return 'bullet';
+  if (f.includes('Bio')) return 'glob';
+  if (f.includes('Astral')) return 'psi';
+  // Hostiles: match their look.
+  const art = getTroopArt(unit);
+  if (art.includes('marine') || art.includes('marauder')) return 'bullet';
+  if (art.includes('stalker')) return 'psi';
+  return 'glob';
+}
+
+/** Slash colour per allegiance / faction. */
+export function slashColorFor(unit) {
+  if (!unit) return '#f8fafc';
+  if (unit.side === 'ENEMY') return '#f87171';
+  const f = unit.faction || '';
+  if (f.includes('Astral')) return '#67e8f9';
+  if (f.includes('Bio')) return '#d8b4fe';
+  return '#f8fafc';
+}

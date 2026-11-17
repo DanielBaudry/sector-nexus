@@ -1,13 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 
-const TRACER = {
-  hero: { stroke: '#fde68a', width: 3 },
-  crit: { stroke: '#f59e0b', width: 4 },
-  volley: { stroke: '#e2e8f0', width: 1.5 },
-  heal: { stroke: '#4ade80', width: 2.5 },
-};
-
 const FLOATER = {
   damage: 'text-red-400 text-lg',
   crit: 'text-amber-300 text-2xl',
@@ -21,25 +14,44 @@ const FLOATER = {
   passive: 'text-violet-100 text-xs font-orbitron tracking-wider bg-violet-950/85 px-1.5 rounded border border-violet-400/70',
 };
 
-/** Screen-space combat effects: tracer lines (attacker → target) and floating numbers. */
-export default function BattleFxLayer({ tracers, floaters }) {
+/** Melee hit: one (or, on crits, two) blade arcs drawn across the target. */
+function Slash({ p }) {
+  const size = p.crit ? 96 : 76;
+  return (
+    <svg className="fx-slash absolute" style={{ left: p.x2 - size / 2, top: p.y2 - size / 2, color: p.color }} width={size} height={size} viewBox="0 0 80 80">
+      <path d="M12 66 Q34 38 70 12" pathLength="1" className="fx-slash-stroke" stroke={p.color} />
+      {p.crit && <path d="M8 34 Q42 30 74 52" pathLength="1" className="fx-slash-stroke fx-slash-late" stroke={p.color} />}
+    </svg>
+  );
+}
+
+/** One shot: muzzle flash, projectile travelling along its path, impact at the target. */
+function Projectile({ p }) {
+  const cls = `fx-${p.style}`;
+  return (
+    <>
+      {p.style === 'slash' ? (
+        <Slash p={p} />
+      ) : (
+        <span
+          className={`fx-proj ${cls} ${p.crit ? 'fx-proj-crit' : ''} ${p.small ? 'fx-proj-small' : ''}`}
+          style={{ offsetPath: `path('${p.path}')`, animationDuration: `${p.travel}ms` }}
+        />
+      )}
+      {p.style === 'bullet' && <span className="fx-muzzle absolute" style={{ left: p.x1, top: p.y1 }} />}
+      <span
+        className={`fx-impact absolute ${cls} ${p.crit ? 'fx-impact-crit' : ''} ${p.small ? 'fx-impact-small' : ''}`}
+        style={{ left: p.x2, top: p.y2, animationDelay: `${p.style === 'slash' ? 60 : p.travel}ms` }}
+      />
+    </>
+  );
+}
+
+/** Screen-space combat effects: projectiles (attacker → target), impacts and floating numbers. */
+export default function BattleFxLayer({ projectiles, floaters }) {
   return createPortal(
-    <div className="fixed inset-0 z-40 pointer-events-none">
-      <svg className="absolute inset-0 w-full h-full">
-        <defs>
-          <filter id="fx-glow"><feGaussianBlur stdDeviation="2.5" /></filter>
-        </defs>
-        {tracers.map((t) => {
-          const s = TRACER[t.tone] || TRACER.hero;
-          return (
-            <g key={t.key} className="fx-tracer">
-              <line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke={s.stroke} strokeWidth={s.width * 2.5} opacity="0.35" filter="url(#fx-glow)" />
-              <line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke={s.stroke} strokeWidth={s.width} strokeLinecap="round" />
-              <circle cx={t.x2} cy={t.y2} r={s.width * 2.5} fill={s.stroke} opacity="0.7" />
-            </g>
-          );
-        })}
-      </svg>
+    <div className="fixed inset-0 z-40 pointer-events-none overflow-hidden">
+      {projectiles.map((p) => <Projectile key={p.key} p={p} />)}
       {floaters.map((f) => (
         <span
           key={f.key}

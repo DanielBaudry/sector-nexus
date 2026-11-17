@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { projectileStyleFor, slashColorFor } from '../../utils/battleVisuals';
 
 // Pacing (ms). Tuned so one enemy/drill action reads in ~1s without dragging.
 const T = {
   turn: 260,
   ability: 380,
-  hit: 420,
-  volleyHit: 300,
+  hit: 340,
+  volleyHit: 240,
   heal: 340,
   shield: 280,
   summon: 420,
@@ -18,8 +19,27 @@ const T = {
   announce: 1900,
   endGap: 260,
   floater: 1150,
-  tracer: 420,
+  impact: 380,
 };
+
+// Projectile flight: base ms + ms per pixel, capped; arc = control-point lift (share of distance).
+const FLIGHT = {
+  bullet: { base: 90, perPx: 0.14, max: 230, arc: 0 },
+  glob: { base: 190, perPx: 0.2, max: 380, arc: 0.28 },
+  psi: { base: 160, perPx: 0.18, max: 320, arc: 0.08 },
+  void: { base: 170, perPx: 0.18, max: 330, arc: 0.12 },
+  boss: { base: 240, perPx: 0.2, max: 420, arc: 0.22 },
+  heal: { base: 210, perPx: 0.15, max: 360, arc: 0.18 },
+  slash: { base: 140, perPx: 0, max: 140, arc: 0 },
+};
+
+function flightPath(a, b, arc) {
+  if (!arc) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+  const dist = Math.hypot(b.x - a.x, b.y - a.y);
+  const cx = (a.x + b.x) / 2;
+  const cy = Math.min(a.y, b.y) - dist * arc;
+  return `M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`;
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -48,7 +68,7 @@ export default function useBattleReplay(battle) {
   const [fx, setFx] = useState({});            // unitId -> { kind, key }
   const [laneFx, setLaneFx] = useState({});    // lane -> key
   const [floaters, setFloaters] = useState([]);
-  const [tracers, setTracers] = useState([]);
+  const [projectiles, setProjectiles] = useState([]);
   const [animating, setAnimating] = useState(false);
   const [announce, setAnnounce] = useState(null);   // big centred banner (boss phase / wind-up)
 
@@ -79,13 +99,29 @@ export default function useBattleReplay(battle) {
     setTimeout(() => aliveRef.current && setFloaters((f) => f.filter((x) => x.key !== key)), T.floater);
   }, []);
 
-  const traceLine = useCallback((fromId, toId, tone) => {
+  /**
+   * Fire a projectile (or a melee slash) from one unit to another.
+   * Returns how long it takes to land, so the hit is applied on arrival.
+   */
+  const shoot = useCallback((fromId, toId, tone) => {
     const a = anchorOf(fromId);
     const b = anchorOf(toId);
-    if (!a || !b || fromId === toId) return;
+    if (!a || !b || fromId === toId) return 0;
+    const source = (battleRef.current?.units || []).find((u) => u.id === fromId);
+    const style = tone === 'heal' ? 'heal' : projectileStyleFor(source);
+    const f = FLIGHT[style];
+    const small = tone === 'volley';
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const travel = Math.round(Math.min(f.max, f.base + dist * f.perPx) * (small ? 0.85 : 1));
     const key = nextKey();
-    setTracers((t) => [...t, { key, x1: a.x, y1: a.y, x2: b.x, y2: b.y, tone }]);
-    setTimeout(() => aliveRef.current && setTracers((t) => t.filter((x) => x.key !== key)), T.tracer);
+    setProjectiles((list) => [...list, {
+      key, style, small, crit: tone === 'crit', travel,
+      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+      path: flightPath(a, b, f.arc),
+      color: slashColorFor(source),
+    }]);
+    setTimeout(() => aliveRef.current && setProjectiles((list) => list.filter((x) => x.key !== key)), travel + T.impact);
+    return travel;
   }, []);
 
   const shout = (data) => {
@@ -132,8 +168,7 @@ export default function useBattleReplay(battle) {
           break;
         case 'hit': {
           mark(ev.source_id, 'attack');
-          traceLine(ev.source_id, ev.target_id, ev.volley ? 'volley' : ev.crit ? 'crit' : 'hero');
-          await sleep(90);
+          await sleep(shoot(ev.source_id, ev.target_id, ev.volley ? 'volley' : ev.crit ? 'crit' : 'hero'));
           mark(ev.target_id, ev.crit ? 'crit' : 'hit');
           applyVitals(ev.target_id, { hp: ev.hp, shields: ev.shields, count: ev.count });
           if (ev.absorbed > 0) floatAt(ev.target_id, `-${ev.absorbed}`, 'shield');
@@ -147,8 +182,8 @@ export default function useBattleReplay(battle) {
           break;
         }
         case 'heal':
+          await sleep(shoot(ev.source_id, ev.target_id, 'heal'));
           mark(ev.target_id, 'heal');
-          traceLine(ev.source_id, ev.target_id, 'heal');
           applyVitals(ev.target_id, { hp: ev.hp, count: ev.count });
           if (ev.amount > 0) floatAt(ev.target_id, `+${ev.amount}`, 'heal');
           await sleep(T.heal);
@@ -244,7 +279,7 @@ export default function useBattleReplay(battle) {
     }
     // Events that arrived during the last step: keep going.
     if (aliveRef.current && queueRef.current.length) run();
-  }, [floatAt, traceLine]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [floatAt, shoot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!battle) return;
@@ -266,5 +301,5 @@ export default function useBattleReplay(battle) {
     run();
   }, [battle?.id, battle?.event_seq, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { overrides, fx, laneFx, floaters, tracers, animating, announce };
+  return { overrides, fx, laneFx, floaters, projectiles, animating, announce };
 }
