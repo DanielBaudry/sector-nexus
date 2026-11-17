@@ -42,7 +42,7 @@ export default function TimerBar({ startedAt, durationSeconds = 7.0, onTimeout, 
   if (compact) {
     return (
       <div className="w-full">
-        <div className={`flex items-center justify-between font-mono text-[11px] mb-1 ${textClass}`}>
+        <div className={`flex items-center justify-between font-mono text-[13px] mb-1 ${textClass}`}>
           <span className="flex items-center gap-1">
             {isDanger ? <AlertTriangle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
             {isDanger ? 'GAMBIT SOON' : 'DECISION'}

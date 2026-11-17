@@ -24,7 +24,7 @@ export default function ArtifactCard({ artifact, onUpgrade, onUnequip, onClick, 
           <div className={`font-orbitron font-bold text-sm truncate ${r.text}`}>{artifact.name}</div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <Stars value={artifact.rank} size="w-3 h-3" />
-            <span className="font-mono text-[11px] text-slate-500">{artifact.slot}</span>
+            <span className="font-mono text-[13px] text-slate-500">{artifact.slot}</span>
           </div>
         </div>
         <span className={`shrink-0 font-orbitron font-black text-base ${maxed ? 'text-amber-300' : 'text-slate-100'}`}>
@@ -40,7 +40,7 @@ export default function ArtifactCard({ artifact, onUpgrade, onUnequip, onClick, 
       {!compact && (
         <div className="space-y-1 min-h-[4.5rem]">
           {artifact.sub_stats?.length ? artifact.sub_stats.map((s, i) => (
-            <div key={i} className="flex items-center justify-between font-mono text-[13px]">
+            <div key={i} className="flex items-center justify-between font-mono text-[15px]">
               <span className="text-slate-400">
                 {statLabel(s.stat)}
                 {s.rolls > 1 && <span className="text-amber-400 ml-1">{'▲'.repeat(Math.min(4, s.rolls - 1))}</span>}
@@ -53,7 +53,7 @@ export default function ArtifactCard({ artifact, onUpgrade, onUnequip, onClick, 
         </div>
       )}
 
-      <div className="flex items-center justify-between font-mono text-[11px] text-slate-500">
+      <div className="flex items-center justify-between font-mono text-[13px] text-slate-500">
         <span className="text-amber-400/90">{artifact.set_type}</span>
         {equippedName && <span className="truncate ml-2">on {equippedName}</span>}
       </div>
@@ -64,7 +64,7 @@ export default function ArtifactCard({ artifact, onUpgrade, onUnequip, onClick, 
             <button
               disabled={busy || maxed}
               onClick={(e) => { e.stopPropagation(); onUpgrade(artifact); }}
-              className="flex-1 py-1 rounded bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-mono text-[11px] flex items-center justify-center gap-1 disabled:opacity-40"
+              className="flex-1 py-1 rounded bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-mono text-[13px] flex items-center justify-center gap-1 disabled:opacity-40"
               title={maxed ? 'Maxed' : `Success chance ${Math.round((artifact.upgrade_chance || 0) * 100)}% — credits are spent even on failure`}
             >
               <ArrowUpCircle className="w-3 h-3" />

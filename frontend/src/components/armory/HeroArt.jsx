@@ -106,7 +106,7 @@ export default function HeroArt({ name = '', className = '' }) {
         {placeholder && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <User className="w-1/2 h-1/2 text-slate-800" strokeWidth={0.75} />
-            <span className="font-mono text-[10px] tracking-[0.3em] text-slate-600 -mt-4">ART PENDING</span>
+            <span className="font-mono text-[12px] tracking-[0.3em] text-slate-600 -mt-4">ART PENDING</span>
           </div>
         )}
         {/* Glare: overlay blend only lights up the figure, not the black backdrop */}

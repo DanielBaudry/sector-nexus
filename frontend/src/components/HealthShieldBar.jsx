@@ -16,7 +16,7 @@ export default function HealthShieldBar({
   const meterPercent = Math.min(100, Math.max(0, turnMeter));
 
   return (
-    <div className={`flex flex-col gap-1 w-full font-mono text-[11px] ${!isAlive ? 'opacity-40 grayscale' : ''}`}>
+    <div className={`flex flex-col gap-1 w-full font-mono text-[13px] ${!isAlive ? 'opacity-40 grayscale' : ''}`}>
       {/* Name and Status */}
       <div className="flex items-center justify-between text-slate-300">
         <span className="font-semibold truncate">{name}</span>
@@ -59,7 +59,7 @@ export default function HealthShieldBar({
       {/* Turn Initiative Meter */}
       {showTurnMeter && isAlive && (
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[9px] text-amber-400 uppercase">INIT</span>
+          <span className="text-[11px] text-amber-400 uppercase">INIT</span>
           <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden border border-amber-500/20">
             <div
               className="h-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.6)] transition-all duration-100"

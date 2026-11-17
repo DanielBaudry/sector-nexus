@@ -9,6 +9,15 @@ const PROFILE_IMAGES = {
   Lisa: '/assets/characters/medic.svg',
 };
 
+const BOSS_ART = {
+  "Zar'gul": '/assets/bosses/zargul.svg',
+};
+
+export function getBossArt(name = '') {
+  const key = Object.keys(BOSS_ART).find((k) => name.includes(k));
+  return key ? BOSS_ART[key] : '/assets/troops/hostile.svg';
+}
+
 export function getPortrait(name = '') {
   const key = Object.keys(PROFILE_IMAGES).find((k) => name.includes(k));
   return key ? PROFILE_IMAGES[key] : null;

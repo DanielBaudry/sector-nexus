@@ -3,7 +3,7 @@ import { Crown, Swords, Skull, Crosshair } from 'lucide-react';
 import { factionTone, getPortrait, getTroopArt, pct } from '../../utils/battleVisuals';
 import { EffectBadges, PassiveMark } from './StatusEffects';
 
-function Bar({ value, max, className, height = 'h-1.5' }) {
+export function Bar({ value, max, className, height = 'h-1.5' }) {
   return (
     <div className={`w-full ${height} bg-slate-950 rounded-full overflow-hidden border border-black/60`}>
       <div className={`h-full transition-all duration-300 ${className}`} style={{ width: `${pct(value, max)}%` }} />
@@ -12,7 +12,7 @@ function Bar({ value, max, className, height = 'h-1.5' }) {
 }
 
 /** Life bar with the value written inside it. */
-function LifeBar({ hp, maxHp, height = 'h-3.5', text = 'text-[10px]' }) {
+export function LifeBar({ hp, maxHp, height = 'h-3.5', text = 'text-[12px]' }) {
   return (
     <div className={`relative w-full ${height} bg-slate-950 rounded-full overflow-hidden border border-black/60`}>
       <div className={`h-full transition-all duration-300 ${hpColor(hp / Math.max(1, maxHp))}`} style={{ width: `${pct(hp, maxHp)}%` }} />
@@ -31,14 +31,14 @@ function inspectHandler(unit, onInspect) {
 }
 
 /** Highlight while an ability is armed: pulsing ring + crosshair on valid targets, dim the rest. */
-function aimClasses(targetable, dimmed) {
+export function aimClasses(targetable, dimmed) {
   if (targetable === 'enemy') return 'ring-4 ring-red-400 ring-offset-2 ring-offset-black cursor-crosshair';
   if (targetable === 'ally') return 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-black cursor-crosshair';
   if (dimmed) return 'opacity-40';
   return '';
 }
 
-function AimMarker({ targetable }) {
+export function AimMarker({ targetable }) {
   if (!targetable) return null;
   return (
     <span className={`absolute inset-0 z-10 flex items-center justify-center pointer-events-none`}>
@@ -109,7 +109,7 @@ function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed
               </div>
             )}
             {(unit.is_boss || unit.is_elite) && (
-              <span className="absolute top-1 left-1 flex items-center gap-0.5 text-[10px] font-mono font-bold px-1 rounded bg-black/80 text-amber-300 border border-amber-400/60">
+              <span className="absolute top-1 left-1 flex items-center gap-0.5 text-[12px] font-mono font-bold px-1 rounded bg-black/80 text-amber-300 border border-amber-400/60">
                 {unit.is_boss && <Crown className="w-3 h-3" />}
                 {unit.is_boss ? 'BOSS' : 'ELITE'}
               </span>
@@ -124,7 +124,7 @@ function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed
 
           {/* Attached info strip */}
           <div className="px-1.5 pt-1 pb-1.5 bg-gradient-to-b from-slate-900 to-black border-t border-white/10">
-            <div className={`font-orbitron font-bold text-[11px] leading-tight text-center truncate ${enemy ? 'text-red-200' : 'text-slate-100'}`}>
+            <div className={`font-orbitron font-bold text-[13px] leading-tight text-center truncate ${enemy ? 'text-red-200' : 'text-slate-100'}`}>
               {unit.name}
             </div>
             {unit.max_shields > 0 && <div className="mt-1"><Bar value={unit.shields} max={unit.max_shields} className="bg-cyan-400" height="h-1" /></div>}
@@ -139,7 +139,7 @@ function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed
       <span className={`${corner} -bottom-1 -right-1 border-b-2 border-r-2 rounded-br`} />
       <AimMarker targetable={targetable} />
       {isActive && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold px-1.5 rounded bg-cyan-950 text-cyan-200 border border-cyan-300 z-10">
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[12px] font-mono font-bold px-1.5 rounded bg-cyan-950 text-cyan-200 border border-cyan-300 z-10">
           TURN
         </span>
       )}
@@ -174,7 +174,7 @@ function TroopCard({ unit, onInspect, targetable = null, dimmed = false }) {
       </div>
       <div className="px-1 py-1 bg-slate-950 space-y-0.5">
         {unit.shields > 0 && <Bar value={unit.shields} max={Math.max(unit.shields, unit.max_shields)} className="bg-cyan-400" height="h-1" />}
-        <LifeBar hp={unit.hp} maxHp={unit.max_hp} height="h-3" text="text-[9px]" />
+        <LifeBar hp={unit.hp} maxHp={unit.max_hp} height="h-3" text="text-[11px]" />
       </div>
     </div>
   );
@@ -194,7 +194,7 @@ const FLASH = {
  * lunge toward the front when attacking, shake + flash when hit.
  * The inner node is keyed by the effect so each new effect restarts the animation.
  */
-function FxWrap({ unit, fx, className = '', children }) {
+export function FxWrap({ unit, fx, className = '', children }) {
   const motion = !fx ? ''
     : fx.kind === 'attack' ? (unit.side === 'ALLY' ? 'fx-attack-up' : 'fx-attack-down')
     : fx.kind === 'crit' ? 'fx-crit'

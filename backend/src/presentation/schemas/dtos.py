@@ -42,10 +42,11 @@ class CardChoiceDTO(BaseModel):
     card_id: Optional[str] = None
 
 
-class DispatchBackgroundDTO(BaseModel):
-    biome_id: str
-    squad_id: str = "squad_alpha"
-    duration_seconds: int = 60
+class StartBossRunDTO(BaseModel):
+    boss_id: str
+    champion_ids: List[str] = Field(..., min_length=1, max_length=3)
+    troop_assignments: Optional[Dict[str, List[str]]] = None
+    difficulty: int = Field(1, ge=1, le=10)
 
 
 class StartRunDTO(BaseModel):

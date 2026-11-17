@@ -1,12 +1,11 @@
 import React from 'react';
-import { Shield, Sparkles, Compass, Users, Swords, Satellite, ArrowRight, Zap, Target } from 'lucide-react';
+import { Shield, Sparkles, Compass, Users, Swords, ArrowRight, Zap, Target } from 'lucide-react';
 
 export default function CommandDeck({
   player,
   squads,
   champions,
   activeExpedition,
-  backgroundExpeditions,
   setActiveTab,
 }) {
   const currentSquad = squads?.[0] || { champion_ids: [] };
@@ -83,14 +82,6 @@ export default function CommandDeck({
               POWER: {totalPower.toLocaleString()}
             </span>
           </div>
-
-          <button
-            onClick={() => setActiveTab('squad')}
-            className="text-xs font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-          >
-            <span>Edit Squad Formation</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </div>
 
         {/* Synergy Alert */}
@@ -132,7 +123,7 @@ export default function CommandDeck({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
                   {/* Position badge */}
-                  <span className="absolute top-2 right-2 font-mono text-[9px] px-1.5 py-px rounded bg-black/70 text-slate-300 border border-slate-700">
+                  <span className="absolute top-2 right-2 font-mono text-[11px] px-1.5 py-px rounded bg-black/70 text-slate-300 border border-slate-700">
                     POS {idx + 1}
                   </span>
                   {/* Name overlaid at bottom of image */}
@@ -140,22 +131,22 @@ export default function CommandDeck({
                     <h4 className="font-orbitron font-bold text-sm text-slate-100 truncate leading-tight drop-shadow-md">
                       {champ.name}
                     </h4>
-                    <span className="text-[10px] font-mono text-slate-400 block truncate">{champ.title}</span>
+                    <span className="text-[12px] font-mono text-slate-400 block truncate">{champ.title}</span>
                   </div>
                 </div>
 
                 {/* Stat row */}
-                <div className="grid grid-cols-3 gap-px bg-slate-800/40 text-[11px] font-mono text-center">
+                <div className="grid grid-cols-3 gap-px bg-slate-800/40 text-[13px] font-mono text-center">
                   <div className="bg-[#080e1c] p-1.5">
-                    <span className="text-slate-500 block text-[8px]">HP</span>
+                    <span className="text-slate-500 block text-[10px]">HP</span>
                     <span className="text-emerald-400 font-bold">{eff.max_hp}</span>
                   </div>
                   <div className="bg-[#080e1c] p-1.5">
-                    <span className="text-slate-500 block text-[8px]">ATK</span>
+                    <span className="text-slate-500 block text-[10px]">ATK</span>
                     <span className="text-amber-400 font-bold">{eff.attack}</span>
                   </div>
                   <div className="bg-[#080e1c] p-1.5">
-                    <span className="text-slate-500 block text-[8px]">SPD</span>
+                    <span className="text-slate-500 block text-[10px]">SPD</span>
                     <span className="text-cyan-400 font-bold">{eff.speed}</span>
                   </div>
                 </div>
@@ -166,7 +157,7 @@ export default function CommandDeck({
       </div>
 
       {/* Operational Quick Monitors */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {/* Active Combat Monitor */}
         <div className="hud-panel rounded-2xl p-5 border border-cyan-500/20 flex flex-col justify-between">
           <div>
@@ -190,7 +181,7 @@ export default function CommandDeck({
             <p className="text-xs text-slate-400 mt-1">
               {activeExpedition && activeExpedition.status === 'IN_PROGRESS'
                 ? `Route depth ${activeExpedition.room_index}/${activeExpedition.total_rooms - 1}. Lane battles and branching paths await.`
-                : 'Deploy to Char, Aiur, Mar Sara, or the Derelict Void Sector to test your squad and AI gambits.'}
+                : 'Deploy to Char, Aiur, Mar Sara, or the Derelict Void Sector to test your squad.'}
             </p>
           </div>
 
@@ -199,36 +190,6 @@ export default function CommandDeck({
             className="mt-4 w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition flex items-center justify-center gap-1.5"
           >
             <span>{activeExpedition ? 'Return to Tactical Combat' : 'Open Sector Map'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Orbital Background Missions */}
-        <div className="hud-panel rounded-2xl p-5 border border-cyan-500/20 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs text-slate-400 flex items-center gap-1.5">
-                <Satellite className="w-4 h-4 text-cyan-400" />
-                ORBITAL BACKGROUND FARMING
-              </span>
-              <span className="font-mono text-xs text-cyan-400 bg-cyan-950/60 border border-cyan-500/40 px-2 py-0.5 rounded">
-                {backgroundExpeditions?.length || 0} DEPLOYED
-              </span>
-            </div>
-
-            <h4 className="font-orbitron font-bold text-base text-slate-100">
-              Passive Resource Gathering
-            </h4>
-            <p className="text-xs text-slate-400 mt-1">
-              Squads dispatched into orbit automatically harvest crystals, credits, and gear over time using their preset AI behaviors.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setActiveTab('idle')}
-            className="mt-4 w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition flex items-center justify-center gap-1.5"
-          >
-            <span>Check Orbital Missions</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

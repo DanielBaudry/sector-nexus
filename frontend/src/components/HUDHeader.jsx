@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, Sparkles, Coins, Zap, RefreshCw, Radio, FlaskConical } from 'lucide-react';
 
-export default function HUDHeader({ player, onResupply, activeExpedition, backgroundCount }) {
+export default function HUDHeader({ player, onResupply, activeExpedition }) {
   if (!player) return null;
 
   return (
@@ -17,11 +17,11 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
               <span className="font-orbitron font-bold text-sm tracking-widest text-cyan-400">
                 {player.username.toUpperCase()}
               </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+              <span className="text-[12px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
                 LVL {player.level}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 font-mono">
+            <div className="text-[13px] text-slate-400 font-mono">
               COMMAND SECTOR // ALPHA-7
             </div>
           </div>
@@ -33,7 +33,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30">
             <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 font-mono uppercase">Crystals</span>
+              <span className="text-[12px] text-slate-400 font-mono uppercase">Crystals</span>
               <span className="font-orbitron text-sm font-bold text-cyan-300">{player.crystals.toLocaleString()}</span>
             </div>
           </div>
@@ -42,7 +42,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-500/30">
             <Coins className="w-4 h-4 text-amber-400" />
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 font-mono uppercase">Credits</span>
+              <span className="text-[12px] text-slate-400 font-mono uppercase">Credits</span>
               <span className="font-orbitron text-sm font-bold text-amber-300">{player.credits.toLocaleString()}</span>
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-950/40 border border-fuchsia-500/30" title="Champion XP capsules — distribute in the Armory">
             <FlaskConical className="w-4 h-4 text-fuchsia-400" />
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 font-mono uppercase">XP Pool</span>
+              <span className="text-[12px] text-slate-400 font-mono uppercase">XP Pool</span>
               <span className="font-orbitron text-sm font-bold text-fuchsia-300">{(player.champion_xp || 0).toLocaleString()}</span>
             </div>
           </div>
@@ -60,7 +60,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/40 border border-purple-500/30">
             <Zap className="w-4 h-4 text-purple-400" />
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 font-mono uppercase">Warp Shards</span>
+              <span className="text-[12px] text-slate-400 font-mono uppercase">Warp Shards</span>
               <span className="font-orbitron text-sm font-bold text-purple-300">{player.warp_shards}</span>
             </div>
           </div>
@@ -70,13 +70,6 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-950/60 border border-red-500/50 text-red-400 text-xs font-mono animate-pulse">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
               COMBAT ENGAGED
-            </div>
-          )}
-
-          {backgroundCount > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-950/60 border border-blue-500/40 text-blue-300 text-xs font-mono">
-              <Radio className="w-3 h-3 text-blue-400" />
-              {backgroundCount} ORBITAL AUTO
             </div>
           )}
 

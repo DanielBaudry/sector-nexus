@@ -100,6 +100,16 @@
 .fx-tracer { animation: fx-tracer 0.42s ease-out forwards; }
 .fx-lane-alert { animation: fx-lane-alert 0.9s ease-out 2; }
 
+/* Boss phase / wind-up announcement */
+@keyframes fx-announce {
+  0% { opacity: 0; transform: scale(1.35); letter-spacing: 0.2em; }
+  15% { opacity: 1; transform: scale(1); letter-spacing: normal; }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+.fx-announce { animation: fx-announce 1.9s ease-out forwards; }
+
 @media (prefers-reduced-motion: reduce) {
   .fx-attack-up, .fx-attack-down, .fx-hit, .fx-crit { animation: none; }
+  .fx-announce { animation: none; }
 }

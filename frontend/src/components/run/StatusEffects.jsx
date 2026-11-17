@@ -48,8 +48,8 @@ function grouped(effects = []) {
 export function EffectBadges({ effects, size = 'md', max = 6 }) {
   const list = grouped(effects);
   if (!list.length) return null;
-  const box = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
-  const icon = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
+  const box = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
+  const icon = size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5';
   const shown = list.slice(0, max);
   return (
     <div className="flex flex-wrap justify-center gap-0.5">
@@ -64,18 +64,18 @@ export function EffectBadges({ effects, size = 'md', max = 6 }) {
           >
             <Icon className={icon} style={{ color }} />
             {!e.is_buff && <span className="absolute -top-px -left-px w-1 h-1 rounded-full bg-red-500" />}
-            <span className="absolute -bottom-1 -right-1 min-w-[10px] px-px rounded-sm bg-black text-[8px] font-mono font-bold leading-[10px] text-white text-center">
+            <span className="absolute -bottom-1 -right-1 min-w-[12px] px-px rounded-sm bg-black text-[10px] font-mono font-bold leading-[12px] text-white text-center">
               {e.turns}
             </span>
             {e.stacks > 1 && (
-              <span className="absolute -top-1 -right-1 px-px rounded-sm bg-black text-[7px] font-mono leading-[9px]" style={{ color }}>
+              <span className="absolute -top-1 -right-1 px-px rounded-sm bg-black text-[9px] font-mono leading-[10px]" style={{ color }}>
                 ×{e.stacks}
               </span>
             )}
           </span>
         );
       })}
-      {list.length > max && <span className="text-[9px] font-mono text-slate-400">+{list.length - max}</span>}
+      {list.length > max && <span className="text-[11px] font-mono text-slate-400">+{list.length - max}</span>}
     </div>
   );
 }
@@ -86,7 +86,7 @@ export function PassiveMark({ passive, stacks = 0 }) {
   return (
     <span
       title={`PASSIVE — ${passive.name}: ${passive.description}${stacks ? ` (stacks: ${stacks})` : ''}`}
-      className="absolute top-1 right-1 flex items-center gap-0.5 text-[9px] font-mono font-bold px-1 rounded bg-black/85 text-violet-200 border border-violet-400/60"
+      className="absolute top-1 right-1 flex items-center gap-0.5 text-[11px] font-mono font-bold px-1 rounded bg-black/85 text-violet-200 border border-violet-400/60"
     >
       <Star className="w-2.5 h-2.5 fill-violet-300 text-violet-300" />
       {stacks > 0 && stacks}
@@ -97,7 +97,7 @@ export function PassiveMark({ passive, stacks = 0 }) {
 /** Chips summarising what an ability applies (used on ability cards). */
 export function EffectSpecChips({ effects, size = 'sm' }) {
   if (!effects?.length) return null;
-  const text = size === 'sm' ? 'text-[9px]' : 'text-[10px]';
+  const text = size === 'sm' ? 'text-[11px]' : 'text-[12px]';
   return (
     <div className="flex flex-wrap gap-0.5">
       {effects.map((e, i) => {
@@ -122,7 +122,7 @@ export function EffectSpecChips({ effects, size = 'sm' }) {
 /** Full list of active effects for the unit info panel. */
 export function EffectList({ effects }) {
   const list = grouped(effects);
-  if (!list.length) return <div className="font-mono text-[10px] text-slate-500">No active effects.</div>;
+  if (!list.length) return <div className="font-mono text-[12px] text-slate-500">No active effects.</div>;
   return (
     <div className="space-y-1">
       {list.map((e) => {
@@ -130,11 +130,11 @@ export function EffectList({ effects }) {
         return (
           <div key={e.type} className="flex items-center gap-2 rounded-md bg-slate-900/80 border px-2 py-1" style={{ borderColor: `${color}55` }}>
             <Icon className="w-3.5 h-3.5 shrink-0" style={{ color }} />
-            <span className="font-mono text-[10px] font-bold" style={{ color }}>
+            <span className="font-mono text-[12px] font-bold" style={{ color }}>
               {e.label}{e.stacks > 1 ? ` ×${e.stacks}` : ''}
             </span>
-            <span className="text-[10px] text-slate-300 truncate">{e.description}</span>
-            <span className="ml-auto font-mono text-[10px] text-slate-400 shrink-0">{e.turns}t</span>
+            <span className="text-[12px] text-slate-300 truncate">{e.description}</span>
+            <span className="ml-auto font-mono text-[12px] text-slate-400 shrink-0">{e.turns}t</span>
           </div>
         );
       })}
@@ -149,11 +149,11 @@ export function PassiveBlock({ passive, stacks = 0, compact = false }) {
     <div className={`rounded-lg border border-violet-500/40 bg-violet-950/30 ${compact ? 'px-2 py-1.5' : 'p-2.5'}`}>
       <div className="flex items-center gap-1.5">
         <Star className="w-3.5 h-3.5 fill-violet-300 text-violet-300 shrink-0" />
-        <span className="font-mono text-[10px] text-violet-400 tracking-wider">PASSIVE</span>
+        <span className="font-mono text-[12px] text-violet-400 tracking-wider">PASSIVE</span>
         <span className="font-orbitron font-bold text-xs text-violet-100 truncate">{passive.name}</span>
-        {stacks > 0 && <span className="ml-auto font-mono text-[10px] text-violet-300">×{stacks}</span>}
+        {stacks > 0 && <span className="ml-auto font-mono text-[12px] text-violet-300">×{stacks}</span>}
       </div>
-      <p className={`text-slate-300 leading-snug mt-0.5 ${compact ? 'text-[11px]' : 'text-xs'}`}>{passive.description}</p>
+      <p className={`text-slate-300 leading-snug mt-0.5 ${compact ? 'text-[13px]' : 'text-xs'}`}>{passive.description}</p>
     </div>
   );
 }

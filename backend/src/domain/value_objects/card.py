@@ -23,6 +23,10 @@ class CombatCard:
     summon_troop_id: Optional[str] = None
     # Lane battle: buffs / debuffs / cleanse / strip / steal applied by the ability.
     effects: List[EffectSpec] = field(default_factory=list)
+    # Boss abilities: own turns spent winding up (announced to the player) before it lands,
+    # and the boss phase (0-based) from which the ability is unlocked.
+    telegraph_turns: int = 0
+    phase: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -40,6 +44,8 @@ class CombatCard:
             "lane_scope": self.lane_scope.value if hasattr(self.lane_scope, "value") else str(self.lane_scope),
             "summon_troop_id": self.summon_troop_id,
             "effects": [e.to_dict() for e in self.effects],
+            "telegraph_turns": self.telegraph_turns,
+            "phase": self.phase,
         }
 
     @classmethod
@@ -59,4 +65,6 @@ class CombatCard:
             lane_scope=LaneScope(data.get("lane_scope", LaneScope.SAME_LANE)),
             summon_troop_id=data.get("summon_troop_id"),
             effects=[EffectSpec.from_dict(e) for e in data.get("effects", [])],
+            telegraph_turns=int(data.get("telegraph_turns", 0)),
+            phase=int(data.get("phase", 0)),
         )

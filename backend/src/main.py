@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Sector Nexus API - StarCraft Tactical Gacha RPG",
-    description="Clean Architecture backend for StarCraft-inspired Gacha with timed tactical card combat & idle expeditions.",
+    description="Clean Architecture backend for StarCraft-inspired Gacha with timed tactical card combat.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -98,6 +98,5 @@ def root():
             "/api/squads",
             "/api/expeditions/biomes",
             "/api/expeditions/active",
-            "/api/expeditions/background",
         ],
     }

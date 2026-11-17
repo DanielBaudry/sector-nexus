@@ -13,6 +13,9 @@ const T = {
   effect: 240,
   dot: 380,
   passive: 320,
+  telegraph: 700,
+  phase: 1600,
+  announce: 1900,
   endGap: 260,
   floater: 1150,
   tracer: 420,
@@ -47,6 +50,7 @@ export default function useBattleReplay(battle) {
   const [floaters, setFloaters] = useState([]);
   const [tracers, setTracers] = useState([]);
   const [animating, setAnimating] = useState(false);
+  const [announce, setAnnounce] = useState(null);   // big centred banner (boss phase / wind-up)
 
   const battleRef = useRef(battle);
   const lastSeqRef = useRef(null);
@@ -83,6 +87,12 @@ export default function useBattleReplay(battle) {
     setTracers((t) => [...t, { key, x1: a.x, y1: a.y, x2: b.x, y2: b.y, tone }]);
     setTimeout(() => aliveRef.current && setTracers((t) => t.filter((x) => x.key !== key)), T.tracer);
   }, []);
+
+  const shout = (data) => {
+    const key = nextKey();
+    setAnnounce({ ...data, key });
+    setTimeout(() => aliveRef.current && setAnnounce((a) => (a?.key === key ? null : a)), T.announce);
+  };
 
   const mark = (unitId, kind) => {
     if (!unitId) return;
@@ -183,6 +193,31 @@ export default function useBattleReplay(battle) {
           floatAt(ev.unit_id, `★ ${ev.text}`, 'passive');
           await sleep(T.passive);
           break;
+        case 'telegraph': {
+          if (ev.action === 'charge') {
+            ev.lanes.forEach((l) => setLaneFx((x) => ({ ...x, [l]: nextKey() })));
+            floatAt(ev.unit_id, `⚠ ${ev.name}`, 'ability');
+            shout({
+              kicker: 'INCOMING',
+              title: ev.name.toUpperCase(),
+              subtitle: `${ev.lanes.length === 3 ? 'All lanes' : ev.lanes.map((l) => ['Left flank', 'Center', 'Right flank'][l]).join(' + ')} · in ${ev.turns} boss turn${ev.turns > 1 ? 's' : ''} — brace or stun!`,
+              tone: 'telegraph',
+            });
+          } else if (ev.action === 'interrupted') {
+            mark(ev.unit_id, 'hit');
+            floatAt(ev.unit_id, `${ev.name} INTERRUPTED`, 'resist');
+          } else {
+            mark(ev.unit_id, 'attack');
+            floatAt(ev.unit_id, `${ev.name}!`, 'crit');
+          }
+          await sleep(T.telegraph);
+          break;
+        }
+        case 'phase':
+          mark(ev.unit_id, 'crit');
+          shout({ kicker: `PHASE ${ev.phase + 1}`, title: ev.name.toUpperCase(), subtitle: ev.description, tone: 'phase' });
+          await sleep(T.phase);
+          break;
         case 'wave':
           setLaneFx((l) => ({ ...l, [ev.lane]: nextKey() }));
           await sleep(T.wave);
@@ -231,5 +266,5 @@ export default function useBattleReplay(battle) {
     run();
   }, [battle?.id, battle?.event_seq, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { overrides, fx, laneFx, floaters, tracers, animating };
+  return { overrides, fx, laneFx, floaters, tracers, animating, announce };
 }

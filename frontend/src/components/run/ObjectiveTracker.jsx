@@ -25,7 +25,7 @@ export default function ObjectiveTracker({ objectives = [], compact = false }) {
         return (
           <div
             key={i}
-            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[10px] ${
+            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[12px] ${
               failed
                 ? 'border-red-500/60 bg-red-950/50 text-red-300'
                 : done
@@ -36,7 +36,7 @@ export default function ObjectiveTracker({ objectives = [], compact = false }) {
             }`}
           >
             {done ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : failed ? <XCircle className="w-3.5 h-3.5 shrink-0" /> : <Icon className="w-3.5 h-3.5 shrink-0" />}
-            <span className="uppercase text-[8px] opacity-70">{o.is_primary ? 'Primary' : 'Must hold'}</span>
+            <span className="uppercase text-[10px] opacity-70">{o.is_primary ? 'Primary' : 'Must hold'}</span>
             <span className="truncate">{o.description}</span>
             {progress && <span className="ml-auto font-bold pl-1">{progress}</span>}
           </div>

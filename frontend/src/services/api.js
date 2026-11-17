@@ -91,6 +91,13 @@ export const api = {
   // Expedition Runs (node map + 3-lane battles)
   getTroopCatalog: () => fetch(`${BASE_URL}/runs/troops`).then(handleResponse),
   getActiveRun: () => fetch(`${BASE_URL}/runs/active`).then(handleResponse),
+  getBosses: () => fetch(`${BASE_URL}/runs/bosses`).then(handleResponse),
+  startBossRun: (boss_id, champion_ids, troop_assignments = null, difficulty = 1) =>
+    fetch(`${BASE_URL}/runs/boss/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boss_id, champion_ids, troop_assignments, difficulty }),
+    }).then(handleResponse),
   startRun: (biome_id, squad_id = 'squad_alpha', troop_assignments = null, difficulty = 1) =>
     fetch(`${BASE_URL}/runs/start`, {
       method: 'POST',
@@ -118,17 +125,4 @@ export const api = {
   tickRun: () => fetch(`${BASE_URL}/runs/active/tick`, { method: 'POST' }).then(handleResponse),
   abandonRun: () => fetch(`${BASE_URL}/runs/active/abandon`, { method: 'POST' }).then(handleResponse),
   dismissRun: () => fetch(`${BASE_URL}/runs/active`, { method: 'DELETE' }).then(handleResponse),
-
-  // Background Idle Expeditions
-  getBackgroundExpeditions: () => fetch(`${BASE_URL}/expeditions/background`).then(handleResponse),
-  dispatchBackground: (biome_id, squad_id = 'squad_alpha', duration_seconds = 60) =>
-    fetch(`${BASE_URL}/expeditions/background/dispatch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ biome_id, squad_id, duration_seconds }),
-    }).then(handleResponse),
-  claimBackground: (expeditionId) =>
-    fetch(`${BASE_URL}/expeditions/background/${expeditionId}/claim`, {
-      method: 'POST',
-    }).then(handleResponse),
 };

@@ -1,15 +1,13 @@
 import React from 'react';
-import { LayoutDashboard, Sparkles, Shield, Users, Compass, Swords, Satellite } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Shield, Compass, Swords } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, hasActiveCombat }) {
   const tabs = [
     { id: 'deck', label: 'Command Deck', icon: LayoutDashboard },
     { id: 'gacha', label: 'Warp Beacon', icon: Sparkles, badge: 'SUMMON' },
     { id: 'champions', label: 'Armory & AI', icon: Shield },
-    { id: 'squad', label: 'Strike Team', icon: Users },
     { id: 'expeditions', label: 'Sector Map', icon: Compass },
     { id: 'combat', label: 'Tactical Combat', icon: Swords, alert: hasActiveCombat },
-    { id: 'idle', label: 'Orbital Idle', icon: Satellite },
   ];
 
   return (
@@ -33,7 +31,7 @@ export default function Navbar({ activeTab, setActiveTab, hasActiveCombat }) {
               <span className="font-semibold">{tab.label}</span>
 
               {tab.badge && (
-                <span className="text-[9px] px-1 py-0.2 rounded bg-purple-900/60 text-purple-300 border border-purple-500/40 font-mono">
+                <span className="text-[11px] px-1 py-0.2 rounded bg-purple-900/60 text-purple-300 border border-purple-500/40 font-mono">
                   {tab.badge}
                 </span>
               )}

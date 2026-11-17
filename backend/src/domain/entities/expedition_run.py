@@ -51,6 +51,8 @@ class ExpeditionRun:
     payout: Optional[Dict[str, Any]] = None  # what the player actually banks (set when the run ends)
     rewards_paid: bool = False
     difficulty: int = 1  # 1-10, see value_objects.difficulty
+    mode: str = "expedition"  # "expedition" (node map) | "boss" (single boss encounter)
+    boss_id: Optional[str] = None
 
     def get_node(self, node_id: Optional[str]) -> Optional[MapNode]:
         return next((n for n in self.nodes if n.id == node_id), None)
@@ -80,6 +82,8 @@ class ExpeditionRun:
             "biome_name": self.biome_name,
             "squad_id": self.squad_id,
             "difficulty": self.difficulty,
+            "mode": self.mode,
+            "boss_id": self.boss_id,
             "status": self.status.value,
             "nodes": [n.to_dict() for n in self.nodes],
             "current_node_id": self.current_node_id,

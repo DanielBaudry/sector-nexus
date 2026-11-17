@@ -8,6 +8,7 @@ import { HeroTile, TroopTile } from './LaneUnits';
 import ObjectiveTracker from './ObjectiveTracker';
 import UnitInfoPopover from './UnitInfoPopover';
 import BattleFxLayer from './BattleFxLayer';
+import BossBanner from './BossBanner';
 import useBattleReplay from './useBattleReplay';
 import { LANE_NAMES, SCOPE_LABEL, factionTone, getPortrait, lanesInReach } from '../../utils/battleVisuals';
 
@@ -16,7 +17,7 @@ const EXPIRY_POLL_MS = 500;
 
 function DrillMeter({ value, enemy }) {
   return (
-    <div className="shrink-0 flex items-center gap-1.5 font-mono text-[10px] text-slate-400 px-1" title="Leaderless troops fire on their own (slower) drill meter">
+    <div className="shrink-0 flex items-center gap-1.5 font-mono text-[12px] text-slate-400 px-1" title="Leaderless troops fire on their own (slower) drill meter">
       <Radio className="w-3.5 h-3.5" /> DRILL
       <div className="flex-1 h-1.5 bg-slate-950 rounded-full overflow-hidden">
         <div className={`h-full ${enemy ? 'bg-red-500/70' : 'bg-cyan-500/70'}`} style={{ width: `${Math.min(100, value)}%` }} />
@@ -62,7 +63,7 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
     >
       <div className="relative flex-1 min-h-0 bg-black/60 flex items-center justify-center overflow-hidden">
         {img ? <img src={img} alt="" className="h-full w-full object-contain p-1" /> : isSummon ? <Users className="w-1/3 h-1/3 text-emerald-300" /> : <Crosshair className="w-1/3 h-1/3 text-cyan-300" />}
-        <span className="absolute top-0.5 left-0.5 font-mono text-[9px] px-1 rounded bg-black/80 border border-slate-600 text-slate-300">{index + 1}</span>
+        <span className="absolute top-0.5 left-0.5 font-mono text-[11px] px-1 rounded bg-black/80 border border-slate-600 text-slate-300">{index + 1}</span>
         {card.effects?.length > 0 && (
           <span className="absolute top-0.5 right-0.5 flex flex-col gap-0.5">
             {card.effects.slice(0, 3).map((e, i) => {
@@ -79,18 +80,18 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
         )}
       </div>
       <div className="shrink-0 px-1.5 py-1 border-t border-white/10">
-        <div className="font-orbitron font-bold text-[10px] leading-tight text-slate-100 truncate">{card.name}</div>
+        <div className="font-orbitron font-bold text-[12px] leading-tight text-slate-100 truncate">{card.name}</div>
         <div className="flex items-center justify-between gap-1 mt-0.5">
-          <span className="font-mono text-[8px] px-1 rounded bg-black/60 border border-cyan-600/60 text-cyan-300 truncate">
+          <span className="font-mono text-[10px] px-1 rounded bg-black/60 border border-cyan-600/60 text-cyan-300 truncate">
             {SCOPE_LABEL[card.lane_scope] || 'LANE'}
           </span>
-          {card.cooldown_turns > 0 && <span className="font-mono text-[8px] text-slate-500 shrink-0">CD{card.cooldown_turns}</span>}
+          {card.cooldown_turns > 0 && <span className="font-mono text-[10px] text-slate-500 shrink-0">CD{card.cooldown_turns}</span>}
         </div>
       </div>
       {onCooldown && (
         <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 font-orbitron font-black text-slate-200">
           <span className="text-2xl">{card.cooldown_remaining}</span>
-          <span className="font-mono text-[9px] text-slate-400">TURNS</span>
+          <span className="font-mono text-[11px] text-slate-400">TURNS</span>
         </span>
       )}
     </button>
@@ -112,7 +113,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
   const [busy, setBusy] = useState(false);
 
   const replay = useBattleReplay(battle);
-  const { overrides, fx, laneFx, animating } = replay;
+  const { overrides, fx, laneFx, animating, announce } = replay;
   useEffect(() => { onAnimatingChange?.(animating); }, [animating, onAnimatingChange]);
 
   // While replaying, vitals come from the event stream so bars drop hit by hit.
@@ -189,7 +190,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
     const side = targetSide(targeting);
     if (!side) return false;
     const wanted = side === 'ALLY' ? actor.side : actor.side === 'ALLY' ? 'ENEMY' : 'ALLY';
-    return unit.side === wanted && lanesInReach(targeting.lane_scope, actor.lane).includes(unit.lane);
+    return unit.side === wanted && (unit.spans_lanes || lanesInReach(targeting.lane_scope, actor.lane).includes(unit.lane));
   };
 
   // Hotkeys: 1-5 abilities, Esc cancels targeting, 1-3 pick a lane while targeting
@@ -259,9 +260,13 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
   const inspected = inspect ? allKnownUnits.find((u) => u.id === inspect.id) : null;
   const inspectedOwner = inspected?.owner_id ? allKnownUnits.find((u) => u.id === inspected.owner_id)?.name : null;
 
+  // A colossal boss spans every lane: drawn once above the lanes, not inside them.
+  const boss = units.find((u) => u.spans_lanes);
+  const intentLanes = new Set(boss?.is_alive && boss.intent ? boss.intent.lanes : []);
+
   const laneData = [0, 1, 2].map((lane) => {
     const meta = battle.lanes[lane];
-    const enemies = units.filter((u) => u.side === 'ENEMY' && u.lane === lane);
+    const enemies = units.filter((u) => u.side === 'ENEMY' && u.lane === lane && !u.spans_lanes);
     let allies = units.filter((u) => u.side === 'ALLY' && u.lane === lane);
     if (deploying) {
       const heroId = Object.keys(placement).find((hid) => placement[hid] === lane);
@@ -279,6 +284,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
         <div className="lg:hidden shrink-0">
           <ObjectiveTracker objectives={battle.objectives} compact />
         </div>
+        {boss && <BossBanner boss={boss} fx={fx[boss.id]} onInspect={onInspect} {...aim(boss)} />}
         <div className="grid grid-cols-3 grid-rows-1 gap-2 flex-1 min-h-0">
           {laneData.map(({ lane, meta, enemies, allies, defend }) => {
             const enemyHero = enemies.find((u) => u.kind === 'HERO');
@@ -291,6 +297,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
             const activeLane = actor && actor.lane === lane;
             const enemyLeaderless = !enemyHero?.is_alive && enemyTroops.some((t) => t.is_alive);
             const allyLeaderless = !deploying && !allyHero?.is_alive && allyTroops.some((t) => t.is_alive);
+            const threatened = intentLanes.has(lane);
 
             return (
               <div
@@ -303,8 +310,13 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                     : activeLane
                     ? 'border-cyan-400/70 bg-[#06101f]'
                     : 'border-slate-800 bg-[#060a14]/90'
-                } ${inReach ? 'ring-2 ring-cyan-400/70' : ''} ${pickable ? 'cursor-pointer hover:ring-cyan-300' : ''} ${laneFx[lane] ? 'fx-lane-alert' : ''}`}
+                } ${inReach ? 'ring-2 ring-cyan-400/70' : ''} ${pickable ? 'cursor-pointer hover:ring-cyan-300' : ''} ${laneFx[lane] ? 'fx-lane-alert' : ''} ${
+                  threatened ? '!border-orange-400 shadow-[inset_0_0_40px_rgba(249,115,22,0.25)]' : ''
+                }`}
               >
+                {threatened && (
+                  <div className="absolute inset-0 pointer-events-none z-0 bg-[repeating-linear-gradient(135deg,rgba(249,115,22,0.10)_0,rgba(249,115,22,0.10)_12px,transparent_12px,transparent_24px)] animate-pulse" />
+                )}
                 {/* Lane header */}
                 <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-black/50">
                   <span className="font-orbitron font-bold text-sm tracking-wider text-slate-200">
@@ -313,12 +325,17 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                   </span>
                   <div className="flex items-center gap-1">
                     {defend && (
-                      <span className={`font-mono text-[11px] px-1.5 rounded border ${defend.status === 'FAILED' ? 'border-red-500 text-red-300' : 'border-amber-500/60 text-amber-300'}`}>
+                      <span className={`font-mono text-[13px] px-1.5 rounded border ${defend.status === 'FAILED' ? 'border-red-500 text-red-300' : 'border-amber-500/60 text-amber-300'}`}>
                         HOLD
                       </span>
                     )}
+                    {threatened && (
+                      <span className="flex items-center gap-1 font-mono text-[13px] px-1.5 rounded border border-orange-400 bg-orange-950/80 text-orange-200 animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5" /> {boss.intent.name.toUpperCase()} · {boss.intent.turns}T
+                      </span>
+                    )}
                     {meta.cleared && (
-                      <span className="flex items-center gap-1 font-mono text-[11px] px-1.5 rounded border border-emerald-500/60 text-emerald-300">
+                      <span className="flex items-center gap-1 font-mono text-[13px] px-1.5 rounded border border-emerald-500/60 text-emerald-300">
                         <CheckCircle2 className="w-3.5 h-3.5" /> CLEARED
                       </span>
                     )}
@@ -328,7 +345,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                 {/* Enemy zone */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1.5 bg-gradient-to-b from-red-950/25 to-transparent">
                   {meta.incoming_waves.map((w, i) => (
-                    <div key={i} className="shrink-0 flex items-center gap-1.5 font-mono text-[11px] text-amber-300 bg-amber-950/40 border border-amber-500/30 rounded px-1.5 py-0.5">
+                    <div key={i} className="shrink-0 flex items-center gap-1.5 font-mono text-[13px] text-amber-300 bg-amber-950/40 border border-amber-500/30 rounded px-1.5 py-0.5">
                       <AlertTriangle className="w-3.5 h-3.5" /> Wave @ turn {w.turn}: {w.unit_names.join(', ')}
                     </div>
                   ))}
@@ -340,14 +357,16 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                     </div>
                   )}
                   {enemies.length === 0 && !meta.incoming_waves.length && (
-                    <div className="flex-1 flex items-center justify-center font-mono text-xs text-slate-600">NO HOSTILES</div>
+                    <div className="flex-1 flex items-center justify-center font-mono text-xs text-slate-600">
+                      {boss?.is_alive ? `${boss.name.toUpperCase()} LOOMS OVER THIS LANE` : 'NO HOSTILES'}
+                    </div>
                   )}
                 </div>
 
                 {/* Front line */}
                 <div className="shrink-0 relative h-6 flex items-center justify-center">
                   <div className="absolute inset-x-2 top-1/2 border-t border-dashed border-slate-600/70" />
-                  <span className="relative font-mono text-[10px] px-2 bg-[#060a14] text-slate-500 tracking-widest">FRONT</span>
+                  <span className="relative font-mono text-[12px] px-2 bg-[#060a14] text-slate-500 tracking-widest">FRONT</span>
                 </div>
 
                 {/* Ally zone */}
@@ -410,7 +429,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                       </div>
                       <div>
                         <div className="font-orbitron font-bold text-sm text-slate-100">{h.name}</div>
-                        <div className="font-mono text-[11px] text-slate-400">
+                        <div className="font-mono text-[13px] text-slate-400">
                           {h.hp}/{h.max_hp} HP · {packs.length} pack{packs.length === 1 ? '' : 's'} ·{' '}
                           <span className={lane === undefined ? 'text-slate-500' : 'text-cyan-300'}>
                             {lane === undefined ? 'RESERVE' : LANE_NAMES[lane]}
@@ -422,7 +441,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                 })}
               </div>
               {laneData.some((l) => l.defend && l.allies.length === 0) && (
-                <span className="flex items-center gap-1 font-mono text-[10px] text-amber-300 sm:max-w-[200px]">
+                <span className="flex items-center gap-1 font-mono text-[12px] text-amber-300 sm:max-w-[200px]">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   A HOLD lane is empty — the objective fails on engage.
                 </span>
@@ -447,9 +466,9 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                 <div className="flex-1 min-w-[120px] flex flex-col justify-center gap-2">
                   <div>
                     <div className="font-orbitron font-black text-base text-cyan-200 leading-tight truncate">{actor.name}</div>
-                    <div className="font-mono text-[11px] text-slate-400">{LANE_NAMES[actor.lane]} · HP {actor.hp}/{actor.max_hp}</div>
+                    <div className="font-mono text-[13px] text-slate-400">{LANE_NAMES[actor.lane]} · HP {actor.hp}/{actor.max_hp}</div>
                     {actor.passive && (
-                      <div className="font-mono text-[10px] text-violet-300 truncate" title={actor.passive.description}>
+                      <div className="font-mono text-[12px] text-violet-300 truncate" title={actor.passive.description}>
                         ★ {actor.passive.name}{actor.passive_stacks ? ` ×${actor.passive_stacks}` : ''}
                       </div>
                     )}
@@ -466,7 +485,7 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
 
               {/* Abilities */}
               <div className="flex-1 min-w-0 flex flex-col gap-1.5 min-h-0">
-                <div className={`shrink-0 flex items-center justify-between gap-2 rounded-md px-2 py-1 font-mono text-[11px] ${
+                <div className={`shrink-0 flex items-center justify-between gap-2 rounded-md px-2 py-1 font-mono text-[13px] ${
                   targeting ? 'bg-cyan-950/60 border border-cyan-400/60 text-cyan-100' : 'text-slate-500'
                 }`}>
                   {targeting ? (
@@ -514,26 +533,26 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
               {animating ? 'COMBAT IN PROGRESS…' : live ? 'INITIATIVE RUNNING — hostiles and drills acting…' : 'Battle resolved.'}
             </div>
           )}
-          {error && <div className="mt-1 font-mono text-[10px] text-red-400">{error}</div>}
+          {error && <div className="mt-1 font-mono text-[12px] text-red-400">{error}</div>}
         </div>
       </div>
 
       {/* ── SIDEBAR: OBJECTIVES + LOG ── */}
       <div className="hidden lg:flex lg:w-60 shrink-0 flex-col gap-2 min-h-0">
         <div className="hud-panel rounded-xl p-2 border border-cyan-500/20">
-          <div className="flex items-center justify-between font-mono text-[9px] text-slate-400 mb-1.5">
+          <div className="flex items-center justify-between font-mono text-[11px] text-slate-400 mb-1.5">
             <span>OBJECTIVES</span>
             <span>TURN {battle.turn}</span>
           </div>
           <ObjectiveTracker objectives={battle.objectives} />
         </div>
         <div className="hud-panel rounded-xl p-2 border border-slate-800 flex-1 min-h-0 overflow-hidden flex flex-col">
-          <div className="font-mono text-[8px] text-slate-500 mb-1">BATTLE LOG</div>
+          <div className="font-mono text-[10px] text-slate-500 mb-1">BATTLE LOG</div>
           <div className="flex-1 overflow-y-auto flex flex-col-reverse gap-0.5">
             {[...battle.log].reverse().slice(0, 30).map((line, i) => (
               <div
                 key={battle.log.length - i}
-                className={`font-mono text-[9px] leading-snug ${
+                className={`font-mono text-[11px] leading-snug ${
                   i === 0 ? 'text-slate-100' : i < 4 ? 'text-slate-300' : 'text-slate-500'
                 } ${line.includes('💀') ? '!text-red-400' : ''} ${line.includes('🚨') ? '!text-amber-300' : ''} ${line.includes('🏆') ? '!text-emerald-300' : ''}`}
               >
@@ -544,6 +563,17 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
         </div>
       </div>
       <BattleFxLayer tracers={replay.tracers} floaters={replay.floaters} />
+      {announce && (
+        <div key={announce.key} className="fixed inset-x-0 top-1/3 z-[60] flex justify-center pointer-events-none">
+          <div className={`fx-announce px-10 py-4 rounded-2xl border-2 backdrop-blur-sm text-center ${
+            announce.tone === 'phase' ? 'border-red-400 bg-red-950/85 shadow-[0_0_60px_rgba(239,68,68,0.5)]' : 'border-orange-400 bg-orange-950/85 shadow-[0_0_60px_rgba(249,115,22,0.5)]'
+          }`}>
+            <div className="font-mono text-[13px] tracking-[0.3em] text-orange-200">{announce.kicker}</div>
+            <div className="font-orbitron font-black text-3xl text-white">{announce.title}</div>
+            {announce.subtitle && <div className="font-mono text-sm text-slate-200 mt-1 max-w-xl">{announce.subtitle}</div>}
+          </div>
+        </div>
+      )}
       {inspected && inspect.el?.isConnected && (
         <UnitInfoPopover
           unit={inspected}

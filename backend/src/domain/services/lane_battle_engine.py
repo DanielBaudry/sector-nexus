@@ -18,6 +18,10 @@ Rules
   SURVIVE objectives key off that counter.
 * Buffs / debuffs (see value_objects.status_effect) tick on the holder's own turns
   (troop packs: their volleys). Passives hook into turn start / end, kills, hits and stats.
+* Colossal bosses (`spans_lanes`) stand in every lane at once. They use abilities on
+  cooldown like heroes, wind up telegraphed attacks on a lane before unleashing them
+  (a stun interrupts the wind-up) and shift phase at HP thresholds.
+* When the board is empty, the next scheduled wave arrives immediately.
 """
 import random
 import time
@@ -134,7 +138,10 @@ class LaneBattleEngine:
             if unit is None:
                 continue
             battle.emit("turn", actor_id=unit.id, side=unit.side.value, lane=unit.lane, drill=False)
-            self._enemy_hero_turn(battle, unit)
+            if unit.spans_lanes:
+                self._boss_turn(battle, unit)
+            else:
+                self._enemy_hero_turn(battle, unit)
             self._end_action(battle)
 
     def play_ally_turn(
@@ -231,6 +238,7 @@ class LaneBattleEngine:
     def _end_action(self, battle: Battle) -> None:
         battle.emit("end")
         battle.turn += 1
+        self._check_boss_phases(battle)
         self._spawn_waves(battle)
         self._evaluate(battle)
 
@@ -255,7 +263,7 @@ class LaneBattleEngine:
         if not wants_ally and target.side == actor.side:
             raise ValueError(f"{card.name} must target an enemy.")
         reach = self._scope_lanes(card.lane_scope, actor.lane, target.lane)
-        if target.lane not in reach:
+        if target.lane not in reach and not target.spans_lanes:
             raise ValueError(f"{target.name} is out of reach for {card.name}.")
         return target
 
@@ -293,9 +301,9 @@ class LaneBattleEngine:
 
     def _resolve_ability(
         self, battle: Battle, actor: LaneUnit, card: CombatCard, target_lane: Optional[int],
-        target_unit: Optional[LaneUnit] = None,
+        target_unit: Optional[LaneUnit] = None, origin_lane: Optional[int] = None,
     ) -> None:
-        origin = actor.lane if actor.lane is not None else 0
+        origin = origin_lane if origin_lane is not None else (actor.lane if actor.lane is not None else 0)
         lanes = self._scope_lanes(card.lane_scope, origin, target_lane)
         foe = Side.ENEMY if actor.side == Side.ALLY else Side.ALLY
         friend = actor.side
@@ -305,7 +313,7 @@ class LaneBattleEngine:
 
         attack = battle.effective(actor, "attack")
         hit_targets: List[LaneUnit] = []
-        foes = [u for l in lanes for u in battle.living(foe, l)]
+        foes = self._units_in(battle, foe, lanes)
 
         # Damage
         if card.power_multiplier > 0:
@@ -326,7 +334,7 @@ class LaneBattleEngine:
         # Shields
         if card.shield_grant > 0:
             if card.target_type == TargetType.ALL_ALLIES:
-                for ally in [u for l in lanes for u in battle.living(friend, l)]:
+                for ally in self._units_in(battle, friend, lanes):
                     self._grant_shields(ally, card.shield_grant)
                     battle.emit("shield", source_id=actor.id, target_id=ally.id, amount=card.shield_grant,
                                 shields=ally.shields, max_shields=ally.max_shields)
@@ -338,7 +346,7 @@ class LaneBattleEngine:
                 battle.log.append(f"🛡️ {actor.name} gains +{card.shield_grant} shields.")
 
         # Healing (troop packs regain soldiers when healed)
-        friends = [u for l in lanes for u in battle.living(friend, l)]
+        friends = self._units_in(battle, friend, lanes)
         chosen_ally: Optional[LaneUnit] = None
         if friends and card.target_type in (TargetType.LOWEST_HP_ALLY, TargetType.SELF, TargetType.ALL_ALLIES):
             if target_unit is not None and target_unit in friends:
@@ -399,6 +407,17 @@ class LaneBattleEngine:
                     self._apply_spec(battle, actor, target, p.effect)
 
     @staticmethod
+    def _units_in(battle: Battle, side: Side, lanes: List[int]) -> List[LaneUnit]:
+        """Living units of `side` across `lanes`, each once (lane-spanning bosses sit in every lane)."""
+        seen, out = set(), []
+        for lane in lanes:
+            for u in battle.living(side, lane):
+                if u.id not in seen:
+                    seen.add(u.id)
+                    out.append(u)
+        return out
+
+    @staticmethod
     def _pick_enemy(foes: List[LaneUnit], target_unit: Optional[LaneUnit]) -> LaneUnit:
         # Heroes can pick off any target in reach (no screening): the chosen one, else the priority one.
         if target_unit is not None and target_unit in foes:
@@ -441,6 +460,149 @@ class LaneBattleEngine:
         self._end_turn(battle, hero)
         if hero.is_alive:
             self._volley(battle, Side.ENEMY, hero.lane)
+
+    # ── Colossal boss ───────────────────────────────────────────────────────
+    def _boss_turn(self, battle: Battle, boss: LaneUnit) -> None:
+        """
+        A lane-spanning boss: unleash a wound-up attack when it is due, otherwise cast the
+        best ready ability (telegraphed ones start winding up instead), else a claw strike.
+        """
+        if boss.has_effect(EffectType.STUN):
+            self._interrupt(battle, boss)
+            self._skip_turn(battle, boss)
+            return
+        if self._start_turn(battle, boss) == "dead":
+            return
+        self._acting_id = boss.id
+        self._tick_cooldowns(boss)
+
+        intent = boss.intent
+        if intent:
+            intent["turns"] -= 1
+            card = next((c for c in boss.cards if c.id == intent["card_id"]), None)
+            if intent["turns"] <= 0 or card is None:
+                boss.intent = None
+                if card is not None:
+                    battle.emit("telegraph", unit_id=boss.id, card_id=card.id, name=card.name,
+                                lanes=intent["lanes"], turns=0, action="unleash")
+                    self._resolve_ability(battle, boss, card, intent["lanes"][0], origin_lane=intent["lanes"][0])
+                    boss.cooldowns[card.id] = card.cooldown_turns
+            else:
+                battle.log.append(f"⏳ {boss.name} keeps charging {intent['name']} ({intent['turns']} turn(s) left).")
+                self._boss_basic_attack(battle, boss)
+        else:
+            card = self._boss_pick_card(battle, boss)
+            if card is not None and card.telegraph_turns > 0:
+                lane = self._boss_target_lane(battle, boss, card)
+                lanes = self._scope_lanes(card.lane_scope, lane, lane)
+                boss.intent = {"card_id": card.id, "name": card.name, "lanes": lanes,
+                               "turns": card.telegraph_turns, "description": card.description}
+                label = "ALL LANES" if len(lanes) == LANE_COUNT else " + ".join(LANE_NAMES[l] for l in lanes)
+                battle.emit("telegraph", unit_id=boss.id, card_id=card.id, name=card.name,
+                            lanes=lanes, turns=card.telegraph_turns, action="charge")
+                battle.log.append(
+                    f"⚠️ {boss.name} winds up {card.name} → {label} in {card.telegraph_turns} turn(s)! Brace or stun it."
+                )
+                self._boss_basic_attack(battle, boss)
+            elif card is not None:
+                lane = self._boss_target_lane(battle, boss, card)
+                self._resolve_ability(battle, boss, card, lane, origin_lane=lane)
+                if card.cooldown_turns > 0:
+                    boss.cooldowns[card.id] = card.cooldown_turns
+            else:
+                self._boss_basic_attack(battle, boss)
+
+        boss.turn_meter = 0.0
+        boss.actions_taken += 1
+        self._end_turn(battle, boss)
+        if boss.is_alive:
+            for lane in range(LANE_COUNT):
+                self._volley(battle, Side.ENEMY, lane)
+
+    def _boss_pick_card(self, battle: Battle, boss: LaneUnit) -> Optional[CombatCard]:
+        """Ready abilities unlocked in the current phase; signature (later-phase) abilities first."""
+        ready = [
+            (i, c) for i, c in enumerate(boss.cards)
+            if c.phase <= boss.phase and boss.cooldowns.get(c.id, 0) <= 0 and self._enemy_card_useful(battle, boss, c)
+        ]
+        if not ready:
+            return None
+        ready.sort(key=lambda ic: (-ic[1].phase, ic[0]))
+        return ready[0][1]
+
+    def _boss_target_lane(self, battle: Battle, boss: LaneUnit, card: CombatCard) -> int:
+        """Hit where it hurts: the lane holding the most allied strength (heroes weigh double)."""
+        if card.summon_troop_id:
+            return min(range(LANE_COUNT), key=lambda l: (len([u for u in battle.living(Side.ENEMY, l) if u.is_troop]), self.rng.random()))
+
+        def weight(lane: int) -> float:
+            return sum((2.0 if u.is_hero else 1.0) * (u.hp + u.shields) for u in battle.living(Side.ALLY, lane))
+        lanes = [l for l in range(LANE_COUNT) if battle.living(Side.ALLY, l)]
+        if not lanes:
+            return 1
+        return max(lanes, key=lambda l: (weight(l), self.rng.random()))
+
+    def _boss_basic_attack(self, battle: Battle, boss: LaneUnit) -> None:
+        lanes = [l for l in range(LANE_COUNT) if battle.living(Side.ALLY, l)]
+        if not lanes:
+            return
+        lane = self.rng.choice(lanes)
+        target = battle.front_target(Side.ENEMY, lane)
+        if target is None:
+            return
+        battle.log.append(f"🦴 {boss.name} lashes out at {LANE_NAMES[lane]}.")
+        self._strike(battle, boss, target, battle.effective(boss, "attack"), can_crit=True)
+        p = boss.passive
+        if p and p.kind == PassiveKind.ON_HIT_EFFECT and p.effect and target.is_alive:
+            self._apply_spec(battle, boss, target, p.effect)
+
+    def _interrupt(self, battle: Battle, boss: LaneUnit) -> None:
+        """A stun breaks a wind-up: the attack is lost and goes on cooldown."""
+        if not boss.intent:
+            return
+        intent, boss.intent = boss.intent, None
+        boss.cooldowns[intent["card_id"]] = next(
+            (c.cooldown_turns for c in boss.cards if c.id == intent["card_id"]), 0
+        )
+        battle.emit("telegraph", unit_id=boss.id, card_id=intent["card_id"], name=intent["name"],
+                    lanes=intent["lanes"], turns=0, action="interrupted")
+        battle.log.append(f"💥 {boss.name}'s {intent['name']} is INTERRUPTED!")
+
+    def _check_boss_phases(self, battle: Battle) -> None:
+        for boss in battle.units:
+            if not boss.phases or not boss.is_alive or boss.lane is None:
+                continue
+            ratio = boss.hp / max(1, boss.max_hp)
+            while boss.phase + 1 < len(boss.phases) and ratio <= boss.phases[boss.phase + 1].get("threshold", 0):
+                boss.phase += 1
+                self._enter_phase(battle, boss, boss.phases[boss.phase])
+
+    def _enter_phase(self, battle: Battle, boss: LaneUnit, phase: dict) -> None:
+        battle.emit("phase", unit_id=boss.id, phase=boss.phase, name=phase.get("name", ""),
+                    description=phase.get("description", ""))
+        battle.log.append(f"🔥 {boss.name} enters PHASE {boss.phase + 1}: {phase.get('name', '')}! {phase.get('description', '')}")
+        self._acting_id = boss.id
+        for spec_data in phase.get("effects", []):
+            spec = spec_data if isinstance(spec_data, EffectSpec) else EffectSpec.from_dict(spec_data)
+            self._apply_spec(battle, boss, boss, spec)
+        shield = int(boss.max_hp * phase.get("shield_pct", 0.0))
+        if shield > 0:
+            self._grant_shields(boss, shield)
+            battle.emit("shield", source_id=boss.id, target_id=boss.id, amount=shield,
+                        shields=boss.shields, max_shields=boss.max_shields)
+        for summon in phase.get("summons", []):
+            template = battle.summon_templates.get(summon["template_id"])
+            if not template:
+                continue
+            for lane in summon.get("lanes", []):
+                pack = LaneUnit.troop_from_template(
+                    unit_id=f"sum_{uuid.uuid4().hex[:6]}", template=template, side=boss.side,
+                    owner_id=boss.id, lane=lane,
+                )
+                battle.units.append(pack)
+                battle.emit("summon", source_id=boss.id, unit_id=pack.id, lane=lane, name=pack.name)
+                battle.log.append(f"📦 {pack.name} ×{pack.count} burst into {LANE_NAMES[lane]}.")
+        self._acting_id = None
 
     def _enemy_card_useful(self, battle: Battle, hero: LaneUnit, card: CombatCard) -> bool:
         """Skip pure-heal abilities when no nearby hostile is hurt, and summons when the summon is unknown."""
@@ -517,7 +679,8 @@ class LaneBattleEngine:
         hero.actions_taken += 1
         self._end_turn(battle, hero)
         if state != "dead" and hero.is_alive:
-            self._volley(battle, hero.side, hero.lane)
+            for lane in (range(LANE_COUNT) if hero.spans_lanes else [hero.lane]):
+                self._volley(battle, hero.side, lane)
 
     def _apply_spec(self, battle: Battle, source: LaneUnit, target: LaneUnit, spec: EffectSpec) -> None:
         op = spec.op
@@ -668,6 +831,13 @@ class LaneBattleEngine:
 
     # ── Waves & objectives ──────────────────────────────────────────────────
     def _spawn_waves(self, battle: Battle) -> None:
+        # Never leave the board empty: with no hostile left, the next wave drops in now.
+        pending = battle.pending_waves()
+        if pending and not battle.living(Side.ENEMY):
+            soonest = min(w.turn for w in pending)
+            for w in pending:
+                if w.turn == soonest:
+                    w.turn = battle.turn
         for wave in battle.waves:
             if wave.spawned or battle.turn < wave.turn:
                 continue
@@ -691,8 +861,10 @@ class LaneBattleEngine:
                 obj.params["progress"] = cleared
                 obj.status = "COMPLETE" if cleared >= obj.params.get("count", 2) else "PENDING"
             elif obj.type == ObjectiveType.SURVIVE_TURNS:
-                obj.params["progress"] = min(battle.turn, obj.params.get("turns", 0))
-                obj.status = "COMPLETE" if battle.turn >= obj.params.get("turns", 0) else "PENDING"
+                turns = obj.params.get("turns", 0)
+                wiped_out = not battle.living(Side.ENEMY) and not battle.pending_waves()
+                obj.params["progress"] = turns if wiped_out else min(battle.turn, turns)
+                obj.status = "COMPLETE" if battle.turn >= turns or wiped_out else "PENDING"
             elif obj.type == ObjectiveType.ELIMINATE_BOSS:
                 boss_alive = any(u.is_boss for u in battle.living(Side.ENEMY))
                 boss_pending = any(u.is_boss for w in battle.pending_waves() for u in w.units)

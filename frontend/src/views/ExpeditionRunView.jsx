@@ -11,7 +11,7 @@ function LootList({ artifacts = [], title }) {
   if (!artifacts.length) return null;
   return (
     <div className="text-left">
-      {title && <div className="font-mono text-[10px] text-slate-400 uppercase mb-1">{title}</div>}
+      {title && <div className="font-mono text-[12px] text-slate-400 uppercase mb-1">{title}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-56 overflow-y-auto">
         {artifacts.map((a) => <ArtifactCard key={a.id} artifact={a} compact />)}
       </div>
@@ -21,7 +21,7 @@ function LootList({ artifacts = [], title }) {
 
 function Rewards({ rewards }) {
   return (
-    <div className="flex items-center gap-3 font-mono text-[10px]">
+    <div className="flex items-center gap-3 font-mono text-[12px]">
       <span className="text-amber-400 font-bold">+{rewards?.credits || 0} CR</span>
       <span className="text-cyan-400 font-bold">+{rewards?.crystals || 0} CRYS</span>
       <span className="text-purple-400 font-bold">+{rewards?.champion_xp || 0} XP</span>
@@ -46,14 +46,14 @@ function RosterPanel({ run }) {
                 {portrait ? <img src={portrait} alt="" className="w-full h-full object-cover object-top" /> : h.is_alive ? <Users className={`w-4 h-4 ${tone.text}`} /> : <Skull className="w-4 h-4 text-red-500" />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between font-orbitron text-[10px] font-bold text-slate-100">
+                <div className="flex justify-between font-orbitron text-[12px] font-bold text-slate-100">
                   <span className="truncate">{h.name}</span>
-                  {!h.is_alive && <span className="text-red-400 font-mono text-[9px]">KIA</span>}
+                  {!h.is_alive && <span className="text-red-400 font-mono text-[11px]">KIA</span>}
                 </div>
                 <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden mt-0.5">
                   <div className="h-full bg-emerald-500" style={{ width: `${pct(h.hp, h.max_hp)}%` }} />
                 </div>
-                <div className="font-mono text-[9px] text-slate-500 mt-0.5 flex items-center gap-1">
+                <div className="font-mono text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
                   <Heart className="w-2.5 h-2.5" /> {h.hp}/{h.max_hp}
                 </div>
               </div>
@@ -61,7 +61,7 @@ function RosterPanel({ run }) {
             {packs.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {packs.map((p) => (
-                  <span key={p.id} className={`font-mono text-[9px] px-1 rounded border ${tone.border} ${tone.text} bg-black/40`}>
+                  <span key={p.id} className={`font-mono text-[11px] px-1 rounded border ${tone.border} ${tone.text} bg-black/40`}>
                     {p.name} ×{p.count}/{p.max_count}
                   </span>
                 ))}
@@ -113,6 +113,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
   const battleReport = battle && ['WON', 'LOST'].includes(battle.status) && dismissedBattleId !== battle.id;
   const currentNode = run.nodes.find((n) => n.id === run.current_node_id);
   const nodeStyle = NODE_STYLE[currentNode?.type] || NODE_STYLE.COMBAT;
+  const bossMode = run.mode === 'boss';
 
   const abandon = () => {
     setConfirmExtract(false);
@@ -130,16 +131,22 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
       <div className="shrink-0 hud-panel rounded-xl px-3 py-2 border border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-          <span className="font-orbitron font-bold text-slate-100 text-[11px] tracking-wider truncate">{run.biome_name.toUpperCase()}</span>
-          <span className="px-1.5 py-px rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-mono text-[10px]">
-            DEPTH {currentNode?.row ?? 0}/{Math.max(...run.nodes.map((n) => n.row))}
-          </span>
+          <span className="font-orbitron font-bold text-slate-100 text-[13px] tracking-wider truncate">{run.biome_name.toUpperCase()}</span>
+          {bossMode ? (
+            <span className="px-1.5 py-px rounded bg-orange-950/70 text-orange-300 border border-orange-500/50 font-mono text-[12px]">
+              BOSS ENCOUNTER
+            </span>
+          ) : (
+            <span className="px-1.5 py-px rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-mono text-[12px]">
+              DEPTH {currentNode?.row ?? 0}/{Math.max(...run.nodes.map((n) => n.row))}
+            </span>
+          )}
           {run.difficulty > 1 && (
-            <span className="px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 font-mono text-[10px]">
+            <span className="px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 font-mono text-[12px]">
               DIFFICULTY {run.difficulty}
             </span>
           )}
-          <span className="px-1.5 py-px rounded border font-mono text-[10px]" style={{ borderColor: nodeStyle.color, color: nodeStyle.color }}>
+          <span className="px-1.5 py-px rounded border font-mono text-[12px]" style={{ borderColor: nodeStyle.color, color: nodeStyle.color }}>
             {run.status === 'MAP' ? 'NAVIGATING' : run.status}
           </span>
         </div>
@@ -156,7 +163,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
               <Rocket className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
               <span className="leading-none text-left">
                 EXTRACT
-                <span className="block font-mono font-normal text-[9px] tracking-normal text-red-100/80">keep 50% loot</span>
+                <span className="block font-mono font-normal text-[11px] tracking-normal text-red-100/80">keep 50% loot</span>
               </span>
             </button>
           )}
@@ -170,7 +177,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
         ) : (
           <div className="h-full flex flex-col lg:flex-row gap-2 min-h-0">
             <div className="flex-1 hud-panel rounded-xl border border-cyan-500/20 p-3 flex flex-col min-h-0">
-              <div className="flex items-center justify-between font-mono text-[10px] text-slate-400 mb-1">
+              <div className="flex items-center justify-between font-mono text-[12px] text-slate-400 mb-1">
                 <span className="flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-cyan-400" /> PLANETARY ROUTE</span>
                 <span>{run.status === 'MAP' ? 'SELECT A GLOWING NODE' : ''}</span>
               </div>
@@ -183,17 +190,17 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
                   onChoose={(id) => act(() => api.chooseRunNode(id))}
                 />
               </div>
-              {error && <div className="font-mono text-[10px] text-red-400">{error}</div>}
+              {error && <div className="font-mono text-[12px] text-red-400">{error}</div>}
             </div>
             <div className="lg:w-72 shrink-0 flex flex-col gap-2 min-h-0">
               <div className="hud-panel rounded-xl p-2 border border-cyan-500/20 overflow-y-auto">
-                <div className="font-mono text-[9px] text-slate-400 mb-1.5">STRIKE TEAM</div>
+                <div className="font-mono text-[11px] text-slate-400 mb-1.5">STRIKE TEAM</div>
                 <RosterPanel run={run} />
               </div>
               <div className="hud-panel rounded-xl p-2 border border-slate-800 flex-1 min-h-[100px] overflow-y-auto">
-                <div className="font-mono text-[9px] text-slate-500 mb-1">EXPEDITION LOG</div>
+                <div className="font-mono text-[11px] text-slate-500 mb-1">EXPEDITION LOG</div>
                 {[...run.log].reverse().map((l, i) => (
-                  <div key={i} className={`font-mono text-[10px] leading-tight ${i === 0 ? 'text-slate-100' : 'text-slate-500'}`}>{l}</div>
+                  <div key={i} className={`font-mono text-[12px] leading-tight ${i === 0 ? 'text-slate-100' : 'text-slate-500'}`}>{l}</div>
                 ))}
               </div>
             </div>
@@ -215,7 +222,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
                     <Rocket className="w-6 h-6 text-red-300" />
                   </div>
                   <div>
-                    <div className="font-mono text-[10px] tracking-widest text-red-300">EMERGENCY EXTRACTION</div>
+                    <div className="font-mono text-[12px] tracking-widest text-red-300">EMERGENCY EXTRACTION</div>
                     <h3 className="font-orbitron font-black text-lg text-slate-100">Abort the expedition?</h3>
                   </div>
                 </div>
@@ -226,7 +233,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
                 The dropship pulls your squad out now. Only half of the loot gathered so far makes it back to base.
               </p>
               <div className="mt-4 rounded-xl border border-slate-700 bg-black/50 p-3 font-mono text-xs">
-                <div className="grid grid-cols-3 text-[10px] text-slate-500 mb-1.5"><span /><span className="text-right">GATHERED</span><span className="text-right">YOU KEEP</span></div>
+                <div className="grid grid-cols-3 text-[12px] text-slate-500 mb-1.5"><span /><span className="text-right">GATHERED</span><span className="text-right">YOU KEEP</span></div>
                 {[
                   ['Credits', r.credits, keep(r.credits), 'text-amber-300'],
                   ['Crystals', r.crystals, keep(r.crystals), 'text-cyan-300'],
@@ -262,7 +269,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
             <div className="my-4 text-left"><ObjectiveTracker objectives={battle.objectives} /></div>
             <div className="flex justify-center mb-3"><Rewards rewards={battle.rewards} /></div>
             <div className="mb-4"><LootList artifacts={battle.rewards?.artifacts} title="Artifacts recovered" /></div>
-            <p className="font-mono text-[10px] text-slate-400 mb-4">Wounds and troop losses carry over. Rest at a field camp to recover.</p>
+            <p className="font-mono text-[12px] text-slate-400 mb-4">Wounds and troop losses carry over. Rest at a field camp to recover.</p>
             <button
               onClick={() => setDismissedBattleId(battle.id)}
               className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2"
@@ -281,17 +288,21 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
           }`}>
             {run.status === 'VICTORY' ? <Trophy className="w-16 h-16 text-amber-400 mx-auto mb-3 animate-bounce" /> : <Skull className="w-16 h-16 text-red-500 mx-auto mb-3" />}
             <h3 className="font-orbitron font-black text-2xl text-slate-100">
-              {run.status === 'VICTORY' ? 'PLANET CONQUERED' : run.status === 'ABANDONED' ? 'EXTRACTION COMPLETE' : 'EXPEDITION LOST'}
+              {run.status === 'VICTORY'
+                ? (bossMode ? 'BOSS SLAIN' : 'PLANET CONQUERED')
+                : run.status === 'ABANDONED' ? 'EXTRACTION COMPLETE' : bossMode ? 'SQUAD WIPED' : 'EXPEDITION LOST'}
             </h3>
             <p className="text-xs font-mono text-slate-300 mt-1 mb-4">
-              {run.status === 'VICTORY' ? 'The apex threat is down. Full spoils secured.' : 'Survivors evacuated. Half of the gathered loot was recovered.'}
+              {run.status === 'VICTORY'
+                ? (bossMode ? 'The colossus collapses. Its hoard is yours.' : 'The apex threat is down. Full spoils secured.')
+                : bossMode ? 'The boss still stands. Gear up, read its wind-ups, and try again.' : 'Survivors evacuated. Half of the gathered loot was recovered.'}
             </p>
             {battle && <div className="mb-4 text-left"><ObjectiveTracker objectives={battle.objectives} /></div>}
             <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-700 flex justify-center mb-5">
               <Rewards rewards={run.payout || run.rewards} />
             </div>
             {run.payout?.artifacts_lost > 0 && (
-              <p className="font-mono text-[11px] text-amber-300 -mt-3 mb-3">{run.payout.artifacts_lost} artifact(s) lost in extraction.</p>
+              <p className="font-mono text-[13px] text-amber-300 -mt-3 mb-3">{run.payout.artifacts_lost} artifact(s) lost in extraction.</p>
             )}
             <div className="mb-5"><LootList artifacts={(run.payout || run.rewards)?.artifacts} title="Artifacts banked to your vault" /></div>
             <button onClick={closeRun} className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold text-xs uppercase tracking-wider">

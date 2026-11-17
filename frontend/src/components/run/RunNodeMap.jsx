@@ -84,7 +84,7 @@ export default function RunNodeMap({ nodes, currentNodeId, reachableIds, onChoos
               {isCurrent && <span className="absolute -inset-1.5 rounded-full border-2 border-cyan-300 animate-ping opacity-60" />}
             </span>
             <span
-              className={`mt-1 font-mono text-[9px] uppercase tracking-wider whitespace-nowrap px-1 rounded ${
+              className={`mt-1 font-mono text-[11px] uppercase tracking-wider whitespace-nowrap px-1 rounded ${
                 canGo ? 'text-slate-100 bg-black/70' : 'text-slate-500'
               }`}
             >

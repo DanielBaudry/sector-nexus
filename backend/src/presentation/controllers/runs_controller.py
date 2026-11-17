@@ -8,7 +8,7 @@ from src.infrastructure.repositories.expedition_repository_sql import Expedition
 from src.infrastructure.repositories.hero_kit_repository_seed import HeroKitRepositorySeed
 from src.infrastructure.repositories.player_repository_sql import PlayerRepositorySQL
 from src.infrastructure.repositories.squad_repository_sql import SquadRepositorySQL
-from src.presentation.schemas.dtos import ChooseNodeDTO, DeployHeroesDTO, PlayAbilityDTO, StartRunDTO
+from src.presentation.schemas.dtos import ChooseNodeDTO, DeployHeroesDTO, PlayAbilityDTO, StartBossRunDTO, StartRunDTO
 from src.use_cases.expeditions.run_use_cases import (
     AbandonRunUseCase,
     ChooseRunNodeUseCase,
@@ -16,7 +16,9 @@ from src.use_cases.expeditions.run_use_cases import (
     DismissRunUseCase,
     GetActiveRunUseCase,
     GetTroopCatalogUseCase,
+    ListBossEncountersUseCase,
     PlayHeroAbilityUseCase,
+    StartBossEncounterUseCase,
     StartExpeditionRunUseCase,
     TickRunUseCase,
 )
@@ -51,6 +53,23 @@ def start_run(req: StartRunDTO, session: Session = Depends(get_session)):
         HeroKitRepositorySeed(),
     )
     return _bad_request(lambda: use_case.execute(req.biome_id, req.squad_id, req.troop_assignments, req.difficulty))
+
+
+@router.get("/bosses")
+def boss_encounters(session: Session = Depends(get_session)):
+    return ListBossEncountersUseCase(ExpeditionRepositorySQL(session)).execute()
+
+
+@router.post("/boss/start")
+def start_boss(req: StartBossRunDTO, session: Session = Depends(get_session)):
+    use_case = StartBossEncounterUseCase(
+        ExpeditionRepositorySQL(session),
+        SquadRepositorySQL(session),
+        ChampionRepositorySQL(session),
+        ArtifactRepositorySQL(session),
+        HeroKitRepositorySeed(),
+    )
+    return _bad_request(lambda: use_case.execute(req.boss_id, req.champion_ids, req.troop_assignments, req.difficulty))
 
 
 @router.post("/active/node")

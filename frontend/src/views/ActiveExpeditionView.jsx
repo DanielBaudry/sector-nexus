@@ -128,17 +128,17 @@ export default function ActiveExpeditionView({
       {/* ══════════════════════════════════════════════════════════════════════ */}
       <div className="hud-panel rounded-xl px-3 py-2 border border-red-500/30 bg-[#0c0812]/95 shrink-0">
         {/* Mission status bar */}
-        <div className="flex items-center justify-between font-mono text-[10px] mb-2 pb-1.5 border-b border-red-500/15">
+        <div className="flex items-center justify-between font-mono text-[12px] mb-2 pb-1.5 border-b border-red-500/15">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-            <span className="font-orbitron font-bold text-slate-100 text-[11px] tracking-wider">
+            <span className="font-orbitron font-bold text-slate-100 text-[13px] tracking-wider">
               {expedition.biome_name.toUpperCase()}
             </span>
             <span className="px-1.5 py-px rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
               ROOM {expedition.room_index + 1} / {expedition.total_rooms}
             </span>
           </div>
-          <div className="flex items-center gap-4 text-[10px]">
+          <div className="flex items-center gap-4 text-[12px]">
             <span className="text-amber-400 font-bold">+{expedition.accumulated_rewards?.credits || 0} CR</span>
             <span className="text-cyan-400 font-bold">+{expedition.accumulated_rewards?.crystals || 0} CRYS</span>
             <span className="text-red-400 font-bold uppercase tracking-wider">
@@ -178,7 +178,7 @@ export default function ActiveExpeditionView({
                   <div className="absolute inset-0 opacity-10 scanlines pointer-events-none" />
                   {!alive && (
                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                      <span className="font-orbitron text-[10px] text-red-400 font-bold tracking-widest">NEUTRALIZED</span>
+                      <span className="font-orbitron text-[12px] text-red-400 font-bold tracking-widest">NEUTRALIZED</span>
                     </div>
                   )}
                 </div>
@@ -186,12 +186,12 @@ export default function ActiveExpeditionView({
                 {/* Enemy info + HP */}
                 <div className="p-2 flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-orbitron font-bold text-[11px] text-slate-100 truncate">{enemy.name}</span>
+                    <span className="font-orbitron font-bold text-[13px] text-slate-100 truncate">{enemy.name}</span>
                     {enemy.is_elite && (
-                      <span className="text-[8px] font-mono px-1 rounded bg-red-950 text-red-300 border border-red-500/40 shrink-0 ml-1">ELITE</span>
+                      <span className="text-[10px] font-mono px-1 rounded bg-red-950 text-red-300 border border-red-500/40 shrink-0 ml-1">ELITE</span>
                     )}
                   </div>
-                  <span className="text-[9px] font-mono text-slate-500">ATK {enemy.attack} · DEF {enemy.defense}</span>
+                  <span className="text-[11px] font-mono text-slate-500">ATK {enemy.attack} · DEF {enemy.defense}</span>
                   <HealthShieldBar
                     name=""
                     hp={enemy.hp}
@@ -213,7 +213,7 @@ export default function ActiveExpeditionView({
       {/* MIDDLE: CINEMATIC COMBAT LOG (subtitle-style, fading messages)        */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
       <div className="hud-panel rounded-xl px-4 py-2 border border-slate-800/60 bg-[#040814]/80 shrink-0 h-24 overflow-hidden relative">
-        <div className="absolute top-2 left-3 flex items-center gap-1.5 font-mono text-[9px] text-slate-600">
+        <div className="absolute top-2 left-3 flex items-center gap-1.5 font-mono text-[11px] text-slate-600">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
           ENCOUNTER LOG
         </div>
@@ -232,7 +232,7 @@ export default function ActiveExpeditionView({
             if (isTimeout) colorClass = 'text-cyan-300 italic';
 
             return (
-              <div key={i} className={`font-mono text-[11px] leading-tight transition-opacity ${colorClass} ${opacity}`}>
+              <div key={i} className={`font-mono text-[13px] leading-tight transition-opacity ${colorClass} ${opacity}`}>
                 {log}
               </div>
             );
@@ -247,7 +247,7 @@ export default function ActiveExpeditionView({
 
         {/* ── STRIKE TEAM PORTRAITS ── */}
         <div className="flex-1 hud-panel rounded-xl p-2 border border-cyan-500/20 bg-[#060c18]/95 flex flex-col">
-          <div className="flex items-center justify-between font-mono text-[9px] text-cyan-400 border-b border-slate-800 pb-1 mb-2">
+          <div className="flex items-center justify-between font-mono text-[11px] text-cyan-400 border-b border-slate-800 pb-1 mb-2">
             <span className="flex items-center gap-1 font-bold">
               <Shield className="w-3 h-3" /> STRIKE TEAM
             </span>
@@ -287,13 +287,13 @@ export default function ActiveExpeditionView({
 
                     {/* TURN badge overlaid on portrait */}
                     {isCurrent && (
-                      <span className="absolute top-1.5 right-1.5 text-[8px] font-mono font-bold text-cyan-300 bg-cyan-950/90 px-1 rounded animate-pulse border border-cyan-400 z-10">
+                      <span className="absolute top-1.5 right-1.5 text-[10px] font-mono font-bold text-cyan-300 bg-cyan-950/90 px-1 rounded animate-pulse border border-cyan-400 z-10">
                         TURN
                       </span>
                     )}
 
                     {/* Role badge */}
-                    <span className="absolute top-1.5 left-1.5 text-[8px] font-mono px-1 py-px rounded bg-black/70 text-slate-300 border border-slate-700 z-10">
+                    <span className="absolute top-1.5 left-1.5 text-[10px] font-mono px-1 py-px rounded bg-black/70 text-slate-300 border border-slate-700 z-10">
                       {ally.role}
                     </span>
 
@@ -307,7 +307,7 @@ export default function ActiveExpeditionView({
 
                   {/* Info + bars — compact below portrait */}
                   <div className="px-1.5 py-1 bg-black/80">
-                    <span className="font-orbitron font-bold text-[9px] text-slate-100 block truncate leading-tight">
+                    <span className="font-orbitron font-bold text-[11px] text-slate-100 block truncate leading-tight">
                       {ally.name.split(' ').slice(-1)[0]}
                     </span>
                     <HealthShieldBar
@@ -331,14 +331,14 @@ export default function ActiveExpeditionView({
         <div className="w-56 hud-panel rounded-xl p-2 border-2 border-cyan-500/50 bg-[#071329]/95 flex flex-col gap-1.5 shadow-2xl shrink-0">
           {/* Header & timer */}
           <div>
-            <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+            <div className="flex items-center justify-between text-[12px] font-mono mb-1">
               <div className="flex items-center gap-1 text-cyan-300 font-bold">
                 <Zap className="w-3 h-3 text-cyan-400 fill-cyan-400 animate-bounce" />
-                <span className="font-orbitron text-[11px] truncate">
+                <span className="font-orbitron text-[13px] truncate">
                   {isAllyTurn ? activeAlly?.name.split(' ').slice(-1)[0].toUpperCase() : 'STANDBY'}
                 </span>
               </div>
-              <span className="text-[9px] text-slate-500">[1] [2] [3]</span>
+              <span className="text-[11px] text-slate-500">[1] [2] [3]</span>
             </div>
 
             {isAllyTurn ? (
@@ -348,7 +348,7 @@ export default function ActiveExpeditionView({
                 onTimeout={handleTimerTimeout}
               />
             ) : (
-              <div className="w-full py-1 text-center font-mono text-[9px] text-slate-500 bg-slate-900/60 rounded border border-slate-800">
+              <div className="w-full py-1 text-center font-mono text-[11px] text-slate-500 bg-slate-900/60 rounded border border-slate-800">
                 AWAITING INITIATIVE...
               </div>
             )}
@@ -367,7 +367,7 @@ export default function ActiveExpeditionView({
                 />
               ))
             ) : (
-              <div className="flex-1 flex items-center justify-center text-slate-600 font-mono text-[10px] text-center px-2">
+              <div className="flex-1 flex items-center justify-center text-slate-600 font-mono text-[12px] text-center px-2">
                 Cards activate on operative initiative.
               </div>
             )}
@@ -404,18 +404,18 @@ export default function ActiveExpeditionView({
 
             {/* Reward Summary */}
             <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-700 font-mono text-xs space-y-2 mb-6">
-              <span className="text-[10px] text-slate-400 uppercase block">HARVESTED REWARDS</span>
+              <span className="text-[12px] text-slate-400 uppercase block">HARVESTED REWARDS</span>
               <div className="flex justify-around">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">CREDITS</span>
+                  <span className="text-slate-400 block text-[12px]">CREDITS</span>
                   <span className="text-amber-400 font-bold text-sm">+{expedition.accumulated_rewards?.credits}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">CRYSTALS</span>
+                  <span className="text-slate-400 block text-[12px]">CRYSTALS</span>
                   <span className="text-cyan-400 font-bold text-sm">+{expedition.accumulated_rewards?.crystals}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">EXPERIENCE</span>
+                  <span className="text-slate-400 block text-[12px]">EXPERIENCE</span>
                   <span className="text-purple-400 font-bold text-sm">+{expedition.accumulated_rewards?.experience}</span>
                 </div>
               </div>

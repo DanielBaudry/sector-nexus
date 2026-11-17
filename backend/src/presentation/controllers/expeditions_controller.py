@@ -11,11 +11,7 @@ from src.use_cases.expeditions.expedition_use_cases import (
     ExecuteTimedCardChoiceUseCase,
     TickExpeditionUseCase,
 )
-from src.use_cases.background.background_use_cases import (
-    DispatchBackgroundExpeditionUseCase,
-    ClaimBackgroundRewardsUseCase,
-)
-from src.presentation.schemas.dtos import StartExpeditionDTO, CardChoiceDTO, DispatchBackgroundDTO
+from src.presentation.schemas.dtos import StartExpeditionDTO, CardChoiceDTO
 
 router = APIRouter(prefix="/api/expeditions", tags=["Expeditions"])
 
@@ -63,35 +59,3 @@ def tick_expedition(session: Session = Depends(get_session)):
     player_repo = PlayerRepositorySQL(session)
     use_case = TickExpeditionUseCase(exp_repo, player_repo)
     return use_case.execute()
-
-
-@router.get("/background")
-def get_background_expeditions(session: Session = Depends(get_session)):
-    repo = ExpeditionRepositorySQL(session)
-    return [e.to_dict() for e in repo.get_background_expeditions()]
-
-
-@router.post("/background/dispatch")
-def dispatch_background(req: DispatchBackgroundDTO, session: Session = Depends(get_session)):
-    try:
-        exp_repo = ExpeditionRepositorySQL(session)
-        squad_repo = SquadRepositorySQL(session)
-        champ_repo = ChampionRepositorySQL(session)
-        use_case = DispatchBackgroundExpeditionUseCase(exp_repo, squad_repo, champ_repo)
-        return use_case.execute(req.biome_id, req.squad_id, req.duration_seconds)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/background/{expedition_id}/claim")
-def claim_background(expedition_id: str, session: Session = Depends(get_session)):
-    try:
-        exp_repo = ExpeditionRepositorySQL(session)
-        squad_repo = SquadRepositorySQL(session)
-        champ_repo = ChampionRepositorySQL(session)
-        art_repo = ArtifactRepositorySQL(session)
-        player_repo = PlayerRepositorySQL(session)
-        use_case = ClaimBackgroundRewardsUseCase(exp_repo, squad_repo, champ_repo, art_repo, player_repo)
-        return use_case.execute(expedition_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))

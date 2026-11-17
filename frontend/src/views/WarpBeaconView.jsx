@@ -76,8 +76,8 @@ export default function WarpBeaconView({ banners, player, onSummonSuccess }) {
                 {isSelected && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>}
               </div>
               <h4 className="font-orbitron font-bold text-sm text-slate-100">{b.name}</h4>
-              <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">{b.subtitle}</p>
-              <div className="mt-3 text-[10px] font-mono text-amber-400 font-semibold">
+              <p className="text-[13px] text-slate-400 mt-1 line-clamp-1">{b.subtitle}</p>
+              <div className="mt-3 text-[12px] font-mono text-amber-400 font-semibold">
                 {b.featured_rarity}
               </div>
             </button>
@@ -108,7 +108,7 @@ export default function WarpBeaconView({ banners, player, onSummonSuccess }) {
               >
                 <Zap className="w-4 h-4 fill-black" />
                 <span>WARP 1X</span>
-                <span className="font-mono text-[11px] opacity-80">(1 Shard / 150 💎)</span>
+                <span className="font-mono text-[13px] opacity-80">(1 Shard / 150 💎)</span>
               </button>
 
               {/* 10x Summon Button */}
@@ -119,7 +119,7 @@ export default function WarpBeaconView({ banners, player, onSummonSuccess }) {
               >
                 <Sparkles className="w-4 h-4 text-purple-300" />
                 <span>WARP 10X</span>
-                <span className="font-mono text-[11px] opacity-80">(10 Shards / 1,500 💎)</span>
+                <span className="font-mono text-[13px] opacity-80">(10 Shards / 1,500 💎)</span>
               </button>
             </div>
           </div>
@@ -176,18 +176,18 @@ export default function WarpBeaconView({ banners, player, onSummonSuccess }) {
                       >
                         {c.name.slice(0, 2).toUpperCase()}
                       </div>
-                      <span className={`text-[10px] font-mono uppercase block ${rarityColor}`}>
+                      <span className={`text-[12px] font-mono uppercase block ${rarityColor}`}>
                         {c.rarity}
                       </span>
                       <h4 className="font-orbitron font-bold text-xs text-slate-100 mt-1 line-clamp-1">
                         {c.name}
                       </h4>
-                      <span className="text-[9px] font-mono text-slate-400 block line-clamp-1">
+                      <span className="text-[11px] font-mono text-slate-400 block line-clamp-1">
                         {c.title}
                       </span>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-800 text-[10px] font-mono text-slate-400">
+                    <div className="mt-3 pt-2 border-t border-slate-800 text-[12px] font-mono text-slate-400">
                       <span>{c.faction}</span>
                     </div>
                   </div>

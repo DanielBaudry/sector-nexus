@@ -4,7 +4,6 @@ from src.domain.value_objects.card import CombatCard
 from src.domain.value_objects.gambit import GambitRule
 from src.domain.services.gambit_evaluator import GambitEvaluator
 from src.domain.services.gacha_service import GachaService
-from src.domain.services.idle_service import IdleExpeditionService
 from src.domain.entities.biome import Biome
 from src.domain.entities.champion import Champion
 from src.domain.value_objects.stats import Stats
@@ -89,11 +88,3 @@ def test_gacha_service_summons_champion_and_generates_artifact():
     art = GachaService.generate_random_artifact()
     assert art.id.startswith("art_")
     assert art.main_stat_value > 0
-
-
-def test_idle_service_calculates_rewards():
-    biomes = get_seed_biomes()
-    biome = biomes[0]
-    preview = IdleExpeditionService.preview_rewards(squad_power=1000, biome=biome, duration_seconds=120)
-    assert preview["estimated_credits"] > 0
-    assert preview["estimated_crystals"] > 0

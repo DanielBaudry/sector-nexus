@@ -956,3 +956,76 @@ ENEMY_ABILITY_EFFECTS: Dict[str, List[Dict[str, Any]]] = {
     "tyrant_magma_eruption": [_fx("BURN", "hit", 0.04, 2, 0.6)],
     "tyrant_primal_regeneration": [_fx("ATK_UP", "self", 0.30, 2), _fx("CLEANSE", "self", count=3)],
 }
+
+
+# ── Boss encounters ──────────────────────────────────────────────────────────
+# A colossal boss spans all three lanes. Abilities run on cooldowns like hero kits;
+# "telegraph_turns" > 0 means the boss winds the attack up on a lane first (a stun breaks it);
+# "phase" is the phase index (0-based) from which the ability is unlocked.
+
+def get_seed_boss_encounters() -> List["BossEncounter"]:
+    from src.domain.entities.boss_encounter import BossEncounter
+
+    spawn = {"name": "Spawn of Zar'gul", "count": 5, "unit_hp": 110, "unit_attack": 18, "defense": 15}
+    return [
+        BossEncounter(
+            id="boss_zargul",
+            name="Zar'gul",
+            title="The World Eater",
+            description=(
+                "A leviathan-class broodmother that burrowed under Char's magma seas. Its body spans the "
+                "whole front: every lane faces it at once. Watch its wind-ups — brace the targeted lane, or stun it."
+            ),
+            arena_biome_id="biome_char",
+            arena_name="Char — Magma Rift",
+            image="/assets/bosses/zargul.svg",
+            recommended_power=2400,
+            hp=24000, shields=0, attack=150, defense=60, speed=95,
+            accuracy=45, resistance=70,
+            color="#f97316",
+            summons={"boss_zargul_spawn": spawn},
+            passive={
+                "id": "zargul_carapace", "name": "Colossal Carapace", "kind": "STACK_ON_TURN_END",
+                "stat": "defense", "value": 0.03, "max_stacks": 10,
+                "description": "Hardens every turn: +3% defense per turn, up to 10 stacks. The longer the fight, the tougher it gets.",
+            },
+            abilities=[
+                {"id": "zargul_rending_maw", "name": "Rending Maw", "target_type": "single_enemy",
+                 "description": "Bites the strongest lane's front-liner for heavy damage and leaves it Marked.",
+                 "power_multiplier": 1.7, "cooldown_turns": 2, "lane_scope": "any_lane", "icon_name": "Skull",
+                 "effects": [_fx("MARKED", "hit", 0.25, 2, 0.7)]},
+                {"id": "zargul_acid_bile", "name": "Acid Bile", "target_type": "all_enemies",
+                 "description": "Sprays every lane with corrosive bile: light damage and Defense Down.",
+                 "power_multiplier": 0.45, "cooldown_turns": 3, "lane_scope": "all_lanes", "icon_name": "Droplets",
+                 "effects": [_fx("DEF_DOWN", "hit", 0.30, 2, 0.6)]},
+                {"id": "zargul_spawn", "name": "Brood Spawn", "target_type": "self",
+                 "description": "Births a pack of spawn in the emptiest lane.",
+                 "power_multiplier": 0.0, "cooldown_turns": 4, "lane_scope": "any_lane",
+                 "summon_troop_id": "boss_zargul_spawn", "icon_name": "Bug"},
+                {"id": "zargul_tectonic_slam", "name": "Tectonic Slam", "target_type": "all_enemies",
+                 "description": "Rears up and crashes down on one lane: massive damage to everything there, may Stun.",
+                 "power_multiplier": 2.2, "cooldown_turns": 4, "telegraph_turns": 1, "phase": 1,
+                 "lane_scope": "any_lane", "icon_name": "Mountain",
+                 "effects": [_fx("STUN", "hit", 0, 1, 0.5)]},
+                {"id": "zargul_cataclysm", "name": "Magma Cataclysm", "target_type": "all_enemies",
+                 "description": "Splits the crust open beneath the whole front: devastating damage to every lane and Burn.",
+                 "power_multiplier": 1.6, "cooldown_turns": 5, "telegraph_turns": 2, "phase": 2,
+                 "lane_scope": "all_lanes", "icon_name": "Flame",
+                 "effects": [_fx("BURN", "hit", 0.05, 2, 0.8)]},
+            ],
+            phases=[
+                {"threshold": 1.0, "name": "Awakening",
+                 "description": "Zar'gul tests your lines with bites and bile."},
+                {"threshold": 0.6, "name": "Frenzy",
+                 "description": "+20% attack, +15% speed. Unlocks Tectonic Slam. Spawn erupt on both flanks.",
+                 "bonus": {"attack": 0.20, "speed": 0.15},
+                 "summons": [{"template_id": "boss_zargul_spawn", "lanes": [0, 2]}]},
+                {"threshold": 0.3, "name": "Death Throes",
+                 "description": "Sheds its debuffs, +40% attack, +25% speed, regrows a carapace shield. Unlocks Magma Cataclysm.",
+                 "bonus": {"attack": 0.40, "speed": 0.25},
+                 "effects": [_fx("CLEANSE", "self", count=5)],
+                 "shield_pct": 0.08},
+            ],
+            rewards={"credits": 2500, "crystals": 140},
+        ),
+    ]

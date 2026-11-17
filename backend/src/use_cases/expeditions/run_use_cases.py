@@ -1,11 +1,11 @@
 """Application workflows for lane-battle expedition runs (node map + 3-lane battles)."""
 import copy
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.domain.entities.artifact import Artifact
 from src.domain.entities.battle import LaneUnit
-from src.domain.entities.expedition_run import ExpeditionRun
+from src.domain.entities.expedition_run import ExpeditionRun, MapNode
 from src.domain.repositories.artifact_repository import IArtifactRepository
 from src.domain.repositories.champion_repository import IChampionRepository
 from src.domain.repositories.expedition_repository import IExpeditionRepository
@@ -14,7 +14,7 @@ from src.domain.repositories.player_repository import IPlayerRepository
 from src.domain.repositories.squad_repository import ISquadRepository
 from src.domain.services.expedition_run_service import ExpeditionRunService
 from src.domain.services.map_generator import MapGenerator
-from src.domain.value_objects.enums import RunStatus, Side, UnitKind
+from src.domain.value_objects.enums import NodeType, RunStatus, Side, UnitKind
 
 TROOPS_PER_HERO = 2
 MAX_HEROES = 3
@@ -111,6 +111,34 @@ class StartExpeditionRunUseCase(_RunUseCase):
         if not squad or not squad.champion_ids:
             raise ValueError("Invalid squad or empty squad.")
 
+        heroes, troops = self._build_roster(squad.champion_ids, troop_assignments)
+        if not heroes:
+            raise ValueError("Squad has no valid heroes.")
+
+        nodes = MapGenerator(self.service.rng).generate()
+        run = ExpeditionRun(
+            id=f"run_{uuid.uuid4().hex[:8]}",
+            biome_id=biome.id,
+            biome_name=biome.name,
+            squad_id=squad.id,
+            status=RunStatus.MAP,
+            nodes=nodes,
+            current_node_id=nodes[0].id,
+            heroes=heroes,
+            troops=troops,
+            difficulty=difficulty,
+            log=[
+                f"🚀 Strike team landed on {biome.name}" + (f" — difficulty {difficulty}." if biome.max_difficulty > 1 else "."),
+                f"⚠️ Hazard: {biome.hazard_name} — {biome.hazard_description}",
+                "🗺️ Choose your path. The apex threat waits at the end.",
+            ],
+        )
+        return self._save(run)
+
+    def _build_roster(
+        self, champion_ids: List[str], troop_assignments: Optional[Dict[str, List[str]]],
+    ) -> Tuple[List[LaneUnit], List[LaneUnit]]:
+        """Champions -> battle heroes (gear, kit, summons) plus the troop packs they lead."""
         templates = {t.id: t for t in self.expedition_repo.get_troop_templates()}
         lane_scopes = self.expedition_repo.get_ability_lane_scopes()
         artifacts = {a.id: a for a in self.artifact_repo.get_all()}
@@ -118,7 +146,7 @@ class StartExpeditionRunUseCase(_RunUseCase):
 
         heroes: List[LaneUnit] = []
         troops: List[LaneUnit] = []
-        for champ_id in squad.champion_ids:
+        for champ_id in champion_ids:
             champ = self.champion_repo.get_by_id(champ_id)
             if not champ:
                 continue
@@ -172,28 +200,67 @@ class StartExpeditionRunUseCase(_RunUseCase):
                     unit_id=f"tr_{uuid.uuid4().hex[:6]}", template=template, side=Side.ALLY, owner_id=champ.id,
                 ))
 
-        if not heroes:
-            raise ValueError("Squad has no valid heroes.")
+        return heroes, troops
 
-        nodes = MapGenerator(self.service.rng).generate()
+
+class StartBossEncounterUseCase(StartExpeditionRunUseCase):
+    """A single boss fight: up to three heroes (and their troops) against a colossal boss."""
+
+    def execute(
+        self, boss_id: str, champion_ids: List[str], troop_assignments: Optional[Dict[str, List[str]]] = None,
+        difficulty: int = 1,
+    ) -> Dict[str, Any]:
+        current = self.expedition_repo.get_active_run()
+        if current and not current.is_finished:
+            raise ValueError("An expedition run is already in progress. Finish or abandon it first.")
+        boss = self.expedition_repo.get_boss_encounter(boss_id)
+        if not boss:
+            raise ValueError(f"Boss {boss_id} not found.")
+        if not 1 <= difficulty <= boss.max_difficulty:
+            raise ValueError(f"{boss.name} supports difficulty 1 to {boss.max_difficulty}.")
+        ids = list(dict.fromkeys(champion_ids))
+        if not 1 <= len(ids) <= MAX_HEROES:
+            raise ValueError(f"Bring between 1 and {MAX_HEROES} heroes.")
+        biome = self.expedition_repo.get_biome_by_id(boss.arena_biome_id)
+        if not biome:
+            raise ValueError(f"Arena {boss.arena_biome_id} not found.")
+
+        heroes, troops = self._build_roster(ids, troop_assignments or {})
+        if not heroes:
+            raise ValueError("No valid heroes selected.")
+
+        node = MapNode(id="boss", row=0, col=1, type=NodeType.BOSS, visited=True, threat=3,
+                       objective_hint=f"Slay {boss.name}")
+        battle = self.service.encounters.build_boss(boss, biome, node, difficulty)
+        battle.summon_templates.update({**self._summon_templates(), **battle.summon_templates})
         run = ExpeditionRun(
             id=f"run_{uuid.uuid4().hex[:8]}",
             biome_id=biome.id,
-            biome_name=biome.name,
-            squad_id=squad.id,
-            status=RunStatus.MAP,
-            nodes=nodes,
-            current_node_id=nodes[0].id,
+            biome_name=f"{boss.name} — {boss.title}",
+            squad_id="",
+            status=RunStatus.DEPLOYMENT,
+            nodes=[node],
+            current_node_id=node.id,
             heroes=heroes,
             troops=troops,
+            battle=battle,
             difficulty=difficulty,
+            mode="boss",
+            boss_id=boss.id,
             log=[
-                f"🚀 Strike team landed on {biome.name}" + (f" — difficulty {difficulty}." if biome.max_difficulty > 1 else "."),
-                f"⚠️ Hazard: {biome.hazard_name} — {biome.hazard_description}",
-                "🗺️ Choose your path. The apex threat waits at the end.",
+                f"🐉 Boss encounter: {boss.name}, {boss.title} — difficulty {difficulty}.",
+                "🎯 One hero per lane. The boss stands in every lane: all of them can hit it, and it can hit all of them.",
             ],
         )
         return self._save(run)
+
+
+class ListBossEncountersUseCase:
+    def __init__(self, expedition_repo: IExpeditionRepository):
+        self.expedition_repo = expedition_repo
+
+    def execute(self) -> List[Dict[str, Any]]:
+        return [b.to_dict() for b in self.expedition_repo.get_boss_encounters()]
 
 
 class GetActiveRunUseCase(_RunUseCase):

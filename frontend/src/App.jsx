@@ -4,10 +4,8 @@ import Navbar from './components/Navbar';
 import CommandDeck from './views/CommandDeck';
 import WarpBeaconView from './views/WarpBeaconView';
 import ArmoryView from './views/ArmoryView';
-import SquadBuilderView from './views/SquadBuilderView';
 import ExpeditionMapView from './views/ExpeditionMapView';
 import ExpeditionRunView from './views/ExpeditionRunView';
-import BackgroundExpeditionView from './views/BackgroundExpeditionView';
 import { api } from './services/api';
 
 export default function App() {
@@ -19,7 +17,6 @@ export default function App() {
   const [squads, setSquads] = useState([]);
   const [biomes, setBiomes] = useState([]);
   const [activeRun, setActiveRun] = useState(null);
-  const [backgroundExpeditions, setBackgroundExpeditions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -36,7 +33,6 @@ export default function App() {
         squadsData,
         biomesData,
         activeRunData,
-        bgExpData,
       ] = await Promise.all([
         api.getPlayerProfile(),
         api.getBanners(),
@@ -45,7 +41,6 @@ export default function App() {
         api.getSquads(),
         api.getBiomes(),
         api.getActiveRun(),
-        api.getBackgroundExpeditions(),
       ]);
 
       setPlayer(playerData);
@@ -55,7 +50,6 @@ export default function App() {
       setSquads(squadsData);
       setBiomes(biomesData);
       setActiveRun(activeRunData);
-      setBackgroundExpeditions(bgExpData);
       setLoading(false);
     } catch (err) {
       if (attempts > 1) {
@@ -69,20 +63,6 @@ export default function App() {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
-
-  // Periodic poll for background expeditions (the run view drives its own battle ticks)
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const bgData = await api.getBackgroundExpeditions();
-        setBackgroundExpeditions(bgData);
-      } catch (err) {
-        // silent fail on poll
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const handleResupply = async () => {
@@ -108,20 +88,6 @@ export default function App() {
     } catch (err) {}
   };
 
-  const refreshSquads = async () => {
-    try {
-      const data = await api.getSquads();
-      setSquads(data);
-    } catch (err) {}
-  };
-
-  const refreshBackground = async () => {
-    try {
-      const data = await api.getBackgroundExpeditions();
-      setBackgroundExpeditions(data);
-    } catch (err) {}
-  };
-
   // Lock the player inside the expedition view while a run exists.
   useEffect(() => {
     if (activeRun && activeTab !== 'combat') setActiveTab('combat');
@@ -130,11 +96,6 @@ export default function App() {
   const handleStartCombat = (run) => {
     setActiveRun(run);
     setActiveTab('combat');
-  };
-
-  const handleDispatchIdle = async () => {
-    await refreshBackground();
-    setActiveTab('idle');
   };
 
   if (loading) {
@@ -193,7 +154,6 @@ export default function App() {
             player={player}
             onResupply={handleResupply}
             activeExpedition={expeditionSummary}
-            backgroundCount={backgroundExpeditions.filter((e) => !e.claimed).length}
           />
 
           {/* Navigation Bar */}
@@ -217,7 +177,6 @@ export default function App() {
             squads={squads}
             champions={champions}
             activeExpedition={expeditionSummary}
-            backgroundExpeditions={backgroundExpeditions}
             setActiveTab={setActiveTab}
           />
         )}
@@ -245,14 +204,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'squad' && (
-          <SquadBuilderView
-            squads={squads}
-            champions={champions}
-            onRefreshSquads={refreshSquads}
-          />
-        )}
-
         {activeTab === 'expeditions' && (
           <ExpeditionMapView
             biomes={biomes}
@@ -260,7 +211,6 @@ export default function App() {
             champions={champions}
             activeRun={activeRun}
             onStartCombat={handleStartCombat}
-            onDispatchIdle={handleDispatchIdle}
           />
         )}
 
@@ -284,24 +234,11 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'idle' && (
-          <BackgroundExpeditionView
-            backgroundExpeditions={backgroundExpeditions}
-            biomes={biomes}
-            squads={squads}
-            onClaimSuccess={(updatedPlayer) => {
-              setPlayer(updatedPlayer);
-              refreshArtifacts();
-            }}
-            onRefreshBackground={refreshBackground}
-            setActiveTab={setActiveTab}
-          />
-        )}
       </main>
 
       {/* Bottom Footer Info */}
       {activeTab !== 'combat' && (
-        <footer className="border-t border-slate-900 bg-[#04060d] py-3 px-4 text-center font-mono text-[11px] text-slate-500">
+        <footer className="border-t border-slate-900 bg-[#04060d] py-3 px-4 text-center font-mono text-[13px] text-slate-500">
           SECTOR NEXUS // FASTAPI CLEAN ARCHITECTURE & REACT HUD // V1.0.0
         </footer>
       )}

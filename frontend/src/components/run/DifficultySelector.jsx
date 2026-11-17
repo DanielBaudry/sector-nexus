@@ -15,11 +15,11 @@ const pctLabel = (v) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`;
 function Stat({ icon: Icon, label, value, sub, color }) {
   return (
     <div className="rounded-lg border border-slate-700/70 bg-slate-950/60 px-2.5 py-1.5 min-w-0">
-      <div className="flex items-center gap-1 text-[9px] font-mono text-slate-500 tracking-wider uppercase">
+      <div className="flex items-center gap-1 text-[11px] font-mono text-slate-500 tracking-wider uppercase">
         <Icon className="w-3 h-3" /> {label}
       </div>
       <div className="font-orbitron font-bold text-sm leading-tight" style={{ color }}>{value}</div>
-      {sub && <div className="text-[9px] font-mono text-slate-500 truncate">{sub}</div>}
+      {sub && <div className="text-[11px] font-mono text-slate-500 truncate">{sub}</div>}
     </div>
   );
 }
@@ -39,7 +39,7 @@ export default function DifficultySelector({ biome, value, onChange }) {
   return (
     <div className="rounded-xl border bg-black/40 p-3 mb-4" style={{ borderColor: `${color}66` }}>
       <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[10px] tracking-widest text-slate-400">THREAT LEVEL</span>
+        <span className="font-mono text-[12px] tracking-widest text-slate-400">THREAT LEVEL</span>
         <span className="font-orbitron font-black text-sm" style={{ color }}>DIFFICULTY {tier.tier}</span>
       </div>
 
@@ -98,7 +98,7 @@ export default function DifficultySelector({ biome, value, onChange }) {
       {/* Threat roster */}
       {threats.length > 0 && (
         <div className="mt-3">
-          <div className="font-mono text-[9px] tracking-widest text-slate-500 mb-1 flex items-center gap-1">
+          <div className="font-mono text-[11px] tracking-widest text-slate-500 mb-1 flex items-center gap-1">
             <Waves className="w-3 h-3" /> ESCALATION THREATS
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -109,7 +109,7 @@ export default function DifficultySelector({ biome, value, onChange }) {
                 <div
                   key={t.name}
                   title={t.abilities.length ? `Abilities: ${t.abilities.join(', ')}` : 'Troop pack'}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-mono transition ${
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[12px] font-mono transition ${
                     unlocked ? 'bg-black/60' : 'bg-slate-950/60 opacity-40'
                   }`}
                   style={{ borderColor: unlocked ? `${c}88` : '#334155' }}
@@ -129,7 +129,7 @@ export default function DifficultySelector({ biome, value, onChange }) {
       {tier.modifiers_available && (
         <div className="mt-3 rounded-lg border border-dashed border-violet-500/50 bg-violet-950/20 px-3 py-2 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-violet-300" />
-          <div className="text-[10px] font-mono text-violet-200">
+          <div className="text-[12px] font-mono text-violet-200">
             MODIFIERS — stack extra hazards for bigger rewards. <span className="text-violet-400">Coming soon.</span>
           </div>
         </div>

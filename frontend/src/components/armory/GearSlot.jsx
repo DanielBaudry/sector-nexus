@@ -36,13 +36,13 @@ export default function GearSlot({ slot, artifact, onClick }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">{slot}</div>
+          <div className="font-mono text-[12px] tracking-widest text-slate-500 uppercase">{slot}</div>
           {artifact ? (
             <>
               <div className={`font-orbitron font-bold text-sm truncate ${r.text}`}>{artifact.name}</div>
               <div className="flex items-center justify-between gap-1 mt-0.5">
                 <Stars value={artifact.rank} size="w-3 h-3" />
-                <span className="font-mono text-[13px] font-bold text-cyan-200">
+                <span className="font-mono text-[15px] font-bold text-cyan-200">
                   {statLabel(artifact.main_stat_name)} {formatStat(artifact.main_stat_name, artifact.main_stat_value)}
                 </span>
               </div>

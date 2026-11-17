@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from src.domain.entities.battle import LANE_COUNT, LANE_NAMES, Battle, LaneUnit, Objective, Wave
 from src.domain.entities.biome import Biome
+from src.domain.entities.boss_encounter import BossEncounter
 from src.domain.entities.expedition_run import MapNode
 from src.domain.services.loot_service import LootService
 from src.domain.value_objects.card import CombatCard
@@ -142,6 +143,58 @@ class EncounterFactory:
             rewards=rewards,
             log=[f"📡 Contact at node {node.id}: {', '.join(o.description for o in objectives)}."],
             summon_templates=dict(self._summon_templates),
+        )
+
+    def build_boss(self, boss: BossEncounter, biome: Biome, node: MapNode, difficulty: int = 1) -> Battle:
+        """A colossal boss standing across all three lanes; its adds arrive through abilities and phases."""
+        diff = Difficulty(difficulty)
+        self._diff = diff
+        mult = diff.enemy_mult
+        summon_templates = {
+            template_id: TroopTemplate(
+                id=template_id, name=s["name"], faction="Hostile", count=s["count"],
+                unit_hp=max(1, int(s["unit_hp"] * mult)), unit_attack=max(1, int(s["unit_attack"] * mult)),
+                defense=s.get("defense", 5),
+            )
+            for template_id, s in boss.summons.items()
+        }
+        hp = int(boss.hp * mult)
+        shields = int(boss.shields * mult)
+        unit = LaneUnit(
+            id=f"boss_{uuid.uuid4().hex[:6]}",
+            kind=UnitKind.HERO,
+            side=Side.ENEMY,
+            name=boss.name,
+            title=boss.title,
+            hp=hp, max_hp=hp, shields=shields, max_shields=shields,
+            attack=int(boss.attack * mult),
+            defense=boss.defense,
+            speed=boss.speed,
+            crit_rate=boss.crit_rate,
+            lane=1,
+            faction="Hostile",
+            is_elite=True,
+            is_boss=True,
+            spans_lanes=True,
+            cards=[CombatCard.from_dict({"energy_cost": 0, **a}) for a in boss.abilities],
+            phases=[dict(p) for p in boss.phases],
+            accuracy=boss.accuracy + 12 * diff.step,
+            resistance=boss.resistance + 12 * diff.step,
+            passive=Passive.from_dict(boss.passive) if boss.passive else None,
+            avatar_color=boss.color,
+        )
+        rewards = {k: int(v * diff.reward_mult) for k, v in boss.rewards.items()}
+        rewards.update(LootService(self.rng).node_loot(biome, NodeType.BOSS, node.threat, diff.tier))
+        return Battle(
+            id=f"bat_{uuid.uuid4().hex[:8]}",
+            node_id=node.id,
+            status=BattleStatus.DEPLOYMENT,
+            units=[unit],
+            objectives=[Objective(ObjectiveType.ELIMINATE_BOSS, True, f"Slay {boss.name}, {boss.title}")],
+            rewards=rewards,
+            max_turns=400,
+            log=[f"🐉 {boss.name}, {boss.title}, rises across the whole front. Deploy your heroes."],
+            summon_templates=summon_templates,
         )
 
     # ── Unit factories ──────────────────────────────────────────────────────

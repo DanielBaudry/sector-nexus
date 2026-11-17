@@ -59,17 +59,3 @@ class PlayerProfileSQL(SQLModel, table=True):
     level: int = 1
     experience: int = 0
     champion_xp: int = 0
-
-
-class BackgroundExpeditionSQL(SQLModel, table=True):
-    __tablename__ = "background_expeditions"
-
-    id: str = Field(primary_key=True)
-    biome_id: str
-    biome_name: str
-    squad_id: str
-    squad_name: str
-    start_time: float
-    duration_seconds: int
-    claimed: bool = False
-    reward_preview: dict = Field(default_factory=dict, sa_column=Column(JSON))

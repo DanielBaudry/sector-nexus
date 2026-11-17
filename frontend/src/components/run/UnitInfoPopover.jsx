@@ -36,13 +36,13 @@ function Stat({ icon: Icon, label, value, accent = 'text-slate-100', mod }) {
   return (
     <div className="flex items-center gap-2 rounded-md bg-slate-900/80 border border-slate-800 px-2 py-1.5">
       <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-      <span className="font-mono text-[10px] text-slate-400 uppercase">{label}</span>
+      <span className="font-mono text-[12px] text-slate-400 uppercase">{label}</span>
       <span className="ml-auto text-right">
         <span className={`font-orbitron font-bold text-xs ${mod ? (up ? 'text-emerald-300' : 'text-red-300') : accent}`}>
           {mod ? mod.value : value}
         </span>
         {mod && (
-          <span className={`block font-mono text-[9px] leading-none ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+          <span className={`block font-mono text-[11px] leading-none ${up ? 'text-emerald-400' : 'text-red-400'}`}>
             {up ? '+' : ''}{Math.round(mod.pct * 100)}% · base {value}
           </span>
         )}
@@ -63,24 +63,24 @@ function AbilityRow({ card }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-orbitron font-bold text-xs text-slate-100">{card.name}</span>
-            <span className="font-mono text-[9px] px-1 rounded border border-cyan-500/50 text-cyan-300 bg-cyan-950/40">
+            <span className="font-mono text-[11px] px-1 rounded border border-cyan-500/50 text-cyan-300 bg-cyan-950/40">
               {SCOPE_LABEL[card.lane_scope] || 'LANE'}
             </span>
             {card.cooldown_turns > 0 && (
-              <span className={`flex items-center gap-0.5 font-mono text-[9px] px-1 rounded border ${cd > 0 ? 'border-amber-500/60 text-amber-300' : 'border-slate-600 text-slate-400'}`}>
+              <span className={`flex items-center gap-0.5 font-mono text-[11px] px-1 rounded border ${cd > 0 ? 'border-amber-500/60 text-amber-300' : 'border-slate-600 text-slate-400'}`}>
                 <Timer className="w-2.5 h-2.5" /> {cd > 0 ? `${cd} left` : `CD ${card.cooldown_turns}`}
               </span>
             )}
           </div>
-          <p className="text-[11px] text-slate-300 leading-snug mt-0.5">{card.description}</p>
+          <p className="text-[13px] text-slate-300 leading-snug mt-0.5">{card.description}</p>
           {effectLines(card).map((l) => (
-            <div key={l} className="font-mono text-[10px] text-emerald-300/90">• {l}</div>
+            <div key={l} className="font-mono text-[12px] text-emerald-300/90">• {l}</div>
           ))}
           {card.effects?.map((e, i) => (
-            <div key={i} className={`font-mono text-[10px] ${e.is_buff ? 'text-cyan-300/90' : 'text-red-300/90'}`}>• {e.description}</div>
+            <div key={i} className={`font-mono text-[12px] ${e.is_buff ? 'text-cyan-300/90' : 'text-red-300/90'}`}>• {e.description}</div>
           ))}
           <div className="mt-1"><EffectSpecChips effects={card.effects} /></div>
-          {card.flavor_quote && <div className="text-[10px] italic text-slate-500 mt-0.5">“{card.flavor_quote}”</div>}
+          {card.flavor_quote && <div className="text-[12px] italic text-slate-500 mt-0.5">“{card.flavor_quote}”</div>}
         </div>
       </div>
     </div>
@@ -147,18 +147,18 @@ export default function UnitInfoPopover({ unit, anchorEl, ownerName, onClose }) 
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {unit.title && <div className="text-[11px] text-slate-400">{unit.title}</div>}
+            {unit.title && <div className="text-[13px] text-slate-400">{unit.title}</div>}
             <div className="flex flex-wrap gap-1 mt-1.5">
-              <span className={`font-mono text-[9px] px-1.5 rounded border ${enemy ? 'border-red-500/60 text-red-300' : 'border-cyan-500/50 text-cyan-300'}`}>
+              <span className={`font-mono text-[11px] px-1.5 rounded border ${enemy ? 'border-red-500/60 text-red-300' : 'border-cyan-500/50 text-cyan-300'}`}>
                 {enemy ? 'HOSTILE' : 'ALLY'} {isHero ? 'HERO' : 'TROOPS'}
               </span>
-              {unit.role && <span className="font-mono text-[9px] px-1.5 rounded border border-slate-600 text-slate-300">{unit.role}</span>}
-              {unit.faction && unit.faction !== 'Hostile' && <span className={`font-mono text-[9px] px-1.5 rounded border ${tone.border} ${tone.text}`}>{unit.faction}</span>}
-              {unit.is_boss && <span className="flex items-center gap-0.5 font-mono text-[9px] px-1.5 rounded border border-amber-400/70 text-amber-300"><Crown className="w-2.5 h-2.5" />BOSS</span>}
-              {!unit.is_boss && unit.is_elite && <span className="font-mono text-[9px] px-1.5 rounded border border-amber-400/70 text-amber-300">ELITE</span>}
-              {!unit.is_alive && <span className="font-mono text-[9px] px-1.5 rounded border border-red-500 text-red-400">{isHero ? 'KIA' : 'DESTROYED'}</span>}
+              {unit.role && <span className="font-mono text-[11px] px-1.5 rounded border border-slate-600 text-slate-300">{unit.role}</span>}
+              {unit.faction && unit.faction !== 'Hostile' && <span className={`font-mono text-[11px] px-1.5 rounded border ${tone.border} ${tone.text}`}>{unit.faction}</span>}
+              {unit.is_boss && <span className="flex items-center gap-0.5 font-mono text-[11px] px-1.5 rounded border border-amber-400/70 text-amber-300"><Crown className="w-2.5 h-2.5" />BOSS</span>}
+              {!unit.is_boss && unit.is_elite && <span className="font-mono text-[11px] px-1.5 rounded border border-amber-400/70 text-amber-300">ELITE</span>}
+              {!unit.is_alive && <span className="font-mono text-[11px] px-1.5 rounded border border-red-500 text-red-400">{isHero ? 'KIA' : 'DESTROYED'}</span>}
             </div>
-            <div className="font-mono text-[10px] text-slate-500 mt-1">
+            <div className="font-mono text-[12px] text-slate-500 mt-1">
               {unit.lane !== null && unit.lane !== undefined ? LANE_NAMES[unit.lane] : 'RESERVE'}
               {ownerName && <> · led by <span className="text-slate-300">{ownerName}</span></>}
             </div>
@@ -169,14 +169,14 @@ export default function UnitInfoPopover({ unit, anchorEl, ownerName, onClose }) 
         <div className="p-3 space-y-1.5">
           <div className="relative h-5 rounded-full bg-slate-950 border border-slate-700 overflow-hidden">
             <div className={`h-full ${hpRatio < 0.3 ? 'bg-red-500' : hpRatio < 0.6 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct(unit.hp, unit.max_hp)}%` }} />
-            <span className="absolute inset-0 flex items-center justify-center font-orbitron font-bold text-[11px] text-white drop-shadow">
+            <span className="absolute inset-0 flex items-center justify-center font-orbitron font-bold text-[13px] text-white drop-shadow">
               {unit.hp} / {unit.max_hp} HP
             </span>
           </div>
           {unit.max_shields > 0 && (
             <div className="relative h-3.5 rounded-full bg-slate-950 border border-slate-700 overflow-hidden">
               <div className="h-full bg-cyan-400" style={{ width: `${pct(unit.shields, unit.max_shields)}%` }} />
-              <span className="absolute inset-0 flex items-center justify-center font-mono font-bold text-[9px] text-white drop-shadow">
+              <span className="absolute inset-0 flex items-center justify-center font-mono font-bold text-[11px] text-white drop-shadow">
                 {unit.shields} / {unit.max_shields} SHIELDS
               </span>
             </div>
@@ -213,24 +213,24 @@ export default function UnitInfoPopover({ unit, anchorEl, ownerName, onClose }) 
         <div className="px-3 pb-3 space-y-2">
           {unit.passive && <PassiveBlock passive={unit.passive} stacks={unit.passive_stacks} compact />}
           <div>
-            <div className="font-mono text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Buffs & debuffs</div>
+            <div className="font-mono text-[12px] text-slate-400 mb-1 uppercase tracking-wider">Buffs & debuffs</div>
             <EffectList effects={unit.effects} />
           </div>
         </div>
 
         {/* Abilities / behaviour */}
         <div className="px-3 pb-3">
-          <div className="font-mono text-[10px] text-slate-400 mb-1.5 uppercase tracking-wider">{isHero ? 'Abilities' : 'Behaviour'}</div>
+          <div className="font-mono text-[12px] text-slate-400 mb-1.5 uppercase tracking-wider">{isHero ? 'Abilities' : 'Behaviour'}</div>
           {isHero && unit.cards?.length > 0 ? (
             <div className="space-y-1.5">
               {unit.cards.map((c) => <AbilityRow key={c.id} card={c} />)}
             </div>
           ) : isHero ? (
-            <p className="text-[11px] text-slate-300 leading-snug">
+            <p className="text-[13px] text-slate-300 leading-snug">
               Strikes the unit in front of it in its lane{unit.is_elite || unit.is_boss ? ' with +20% power' : ''}. If its lane is empty, it fires into a neighbouring lane.
             </p>
           ) : (
-            <p className="text-[11px] text-slate-300 leading-snug">
+            <p className="text-[13px] text-slate-300 leading-snug">
               Stays in its lane. Fires one volley (soldiers × ATK) at the front enemy each time its lane&apos;s hero acts — or on its own slower drill meter if the lane has no hero. Shields the hero behind it: enemies must cut through troops first.
             </p>
           )}

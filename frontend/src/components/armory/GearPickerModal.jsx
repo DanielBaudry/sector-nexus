@@ -18,7 +18,7 @@ function ItemTile({ artifact, selected, equippedHere, ownerName, onClick }) {
     >
       <Icon className={`w-7 h-7 ${r.text}`} />
       <Stars value={artifact.rank} size="w-2.5 h-2.5" />
-      <span className="font-mono text-[11px] font-bold text-cyan-200 leading-none">
+      <span className="font-mono text-[13px] font-bold text-cyan-200 leading-none">
         {statLabel(artifact.main_stat_name)} {formatStat(artifact.main_stat_name, artifact.main_stat_value)}
       </span>
       <span className="absolute top-0.5 right-1 font-orbitron font-black text-xs text-slate-100">+{artifact.level}</span>
@@ -26,7 +26,7 @@ function ItemTile({ artifact, selected, equippedHere, ownerName, onClick }) {
         <span className="absolute top-0.5 left-1 text-emerald-300"><Check className="w-3 h-3" /></span>
       )}
       {!equippedHere && ownerName && (
-        <span className="absolute bottom-0 inset-x-0 bg-black/70 font-mono text-[8px] text-amber-300 truncate px-1">
+        <span className="absolute bottom-0 inset-x-0 bg-black/70 font-mono text-[10px] text-amber-300 truncate px-1">
           {ownerName}
         </span>
       )}
@@ -81,11 +81,11 @@ export default function GearPickerModal({
               <Icon className="w-5 h-5 text-cyan-300" />
             </div>
             <div>
-              <div className="font-mono text-[10px] tracking-widest text-cyan-400">{champion.name.toUpperCase()} · INVENTORY</div>
+              <div className="font-mono text-[12px] tracking-widest text-cyan-400">{champion.name.toUpperCase()} · INVENTORY</div>
               <h3 className="font-orbitron font-black text-lg text-slate-100">{slot.toUpperCase()}</h3>
             </div>
           </div>
-          <div className="flex items-center gap-2 font-mono text-[10px]">
+          <div className="flex items-center gap-2 font-mono text-[12px]">
             <span className="text-slate-500">SORT</span>
             {Object.keys(SORTS).map((k) => (
               <button
@@ -132,7 +132,7 @@ export default function GearPickerModal({
           <div className="min-h-0 overflow-y-auto border-t md:border-t-0 md:border-l border-slate-800 bg-black/30 p-4 flex flex-col gap-3">
             {selected ? (
               <>
-                <div className="font-mono text-[10px] tracking-widest text-slate-500">
+                <div className="font-mono text-[12px] tracking-widest text-slate-500">
                   {isEquippedHere ? 'EQUIPPED' : 'SELECTED'}
                 </div>
                 <ArtifactCard
@@ -144,11 +144,11 @@ export default function GearPickerModal({
 
                 {!isEquippedHere && (
                   <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-2.5">
-                    <div className="font-mono text-[11px] tracking-widest text-slate-500 mb-1.5 flex items-center gap-1">
+                    <div className="font-mono text-[13px] tracking-widest text-slate-500 mb-1.5 flex items-center gap-1">
                       {equipped ? <>VS EQUIPPED <ArrowRight className="w-3 h-3" /> {equipped.name}</> : 'SLOT IS EMPTY'}
                     </div>
                     {diffs.length === 0 ? (
-                      <div className="font-mono text-[10px] text-slate-500">Identical stats.</div>
+                      <div className="font-mono text-[12px] text-slate-500">Identical stats.</div>
                     ) : (
                       <div className="space-y-0.5">
                         {diffs.map((d) => (

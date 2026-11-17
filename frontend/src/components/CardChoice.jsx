@@ -73,44 +73,44 @@ export default function CardChoice({ card, index, onSelect, disabled }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
         {/* Hotkey badge — top left */}
-        <span className="absolute top-1.5 left-1.5 w-5 h-5 rounded bg-black/80 border border-cyan-400 text-cyan-300 font-mono text-[10px] flex items-center justify-center font-bold z-10">
+        <span className="absolute top-1.5 left-1.5 w-5 h-5 rounded bg-black/80 border border-cyan-400 text-cyan-300 font-mono text-[12px] flex items-center justify-center font-bold z-10">
           {index + 1}
         </span>
 
         {/* AP cost — top right */}
-        <span className={`absolute top-1.5 right-1.5 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/80 border ${theme.badge} z-10`}>
+        <span className={`absolute top-1.5 right-1.5 font-mono text-[12px] font-bold px-1.5 py-0.5 rounded bg-black/80 border ${theme.badge} z-10`}>
           {card.energy_cost} AP
         </span>
       </div>
 
       {/* Card info block */}
       <div className="px-2 py-1.5 flex flex-col gap-0.5">
-        <h4 className={`font-orbitron font-bold text-[11px] leading-tight ${theme.accent} group-hover:brightness-125 transition truncate`}>
+        <h4 className={`font-orbitron font-bold text-[13px] leading-tight ${theme.accent} group-hover:brightness-125 transition truncate`}>
           {card.name}
         </h4>
 
-        <p className="text-[9px] text-slate-400 line-clamp-2 leading-tight">
+        <p className="text-[11px] text-slate-400 line-clamp-2 leading-tight">
           {card.description}
         </p>
 
         {/* Stat tags */}
         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
           {card.power_multiplier > 0 && (
-            <span className="px-1 py-px rounded bg-amber-950/80 text-amber-300 font-mono text-[8px] font-semibold border border-amber-500/30">
+            <span className="px-1 py-px rounded bg-amber-950/80 text-amber-300 font-mono text-[10px] font-semibold border border-amber-500/30">
               {Math.round(card.power_multiplier * 100)}% ATK
             </span>
           )}
           {card.shield_grant > 0 && (
-            <span className="px-1 py-px rounded bg-cyan-950/80 text-cyan-300 font-mono text-[8px] font-semibold border border-cyan-500/30">
+            <span className="px-1 py-px rounded bg-cyan-950/80 text-cyan-300 font-mono text-[10px] font-semibold border border-cyan-500/30">
               +{card.shield_grant} SHIELD
             </span>
           )}
           {card.heal_multiplier > 0 && (
-            <span className="px-1 py-px rounded bg-emerald-950/80 text-emerald-300 font-mono text-[8px] font-semibold border border-emerald-500/30">
+            <span className="px-1 py-px rounded bg-emerald-950/80 text-emerald-300 font-mono text-[10px] font-semibold border border-emerald-500/30">
               +{Math.round(card.heal_multiplier * 100)}% HEAL
             </span>
           )}
-          <span className="text-slate-600 text-[8px] uppercase truncate">
+          <span className="text-slate-600 text-[10px] uppercase truncate">
             [{card.target_type.replace('_', ' ')}]
           </span>
         </div>

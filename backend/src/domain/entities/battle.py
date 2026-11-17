@@ -56,6 +56,13 @@ class LaneUnit:
     is_elite: bool = False
     is_boss: bool = False
     actions_taken: int = 0
+    # Colossal bosses stand across every lane: reachable (and acting) from all of them.
+    spans_lanes: bool = False
+    # Boss phases: [{"threshold", "name", "description", "bonus": {stat: pct}, "effects", "summons", "shield_pct"}]
+    phases: List[Dict[str, Any]] = field(default_factory=list)
+    phase: int = 0
+    # Wind-up of a telegraphed boss ability: {"card_id", "name", "lanes", "turns"}
+    intent: Optional[Dict[str, Any]] = None
     # Troop fields
     template_id: str = ""
     unit_hp: int = 0
@@ -155,6 +162,16 @@ class LaneUnit:
             "passive": self.passive.to_dict() if self.passive else None,
             "passive_stacks": self.passive_stacks,
         }
+        if self.spans_lanes or self.phases:
+            data.update({
+                "spans_lanes": self.spans_lanes,
+                "phase": self.phase,
+                "phases": [
+                    {"threshold": p.get("threshold", 1.0), "name": p.get("name", ""), "description": p.get("description", "")}
+                    for p in self.phases
+                ],
+                "intent": self.intent,
+            })
         if self.is_hero:
             data.update({
                 "title": self.title,
@@ -253,7 +270,7 @@ class Battle:
         return [
             u for u in self.units
             if u.side == side and u.is_alive and u.lane is not None
-            and (lane is None or u.lane == lane)
+            and (lane is None or u.lane == lane or u.spans_lanes)
         ]
 
     def lane_hero(self, side: Side, lane: int) -> Optional[LaneUnit]:
@@ -275,6 +292,8 @@ class Battle:
             mod = STAT_MODIFIERS.get(e.type)
             if mod and mod[0] == stat:
                 pct += mod[1] * e.value
+        if unit.phases and 0 <= unit.phase < len(unit.phases):
+            pct += unit.phases[unit.phase].get("bonus", {}).get(stat, 0.0)
         p = unit.passive
         if p and p.stat == stat:
             if p.kind == PassiveKind.STACK_ON_TURN_END:

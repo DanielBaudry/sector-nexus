@@ -224,7 +224,7 @@ export default function ArmoryView({
             </h3>
           </div>
 
-          <div className="grid grid-cols-4 gap-1 my-2 text-[10px] font-mono">
+          <div className="grid grid-cols-4 gap-1 my-2 text-[12px] font-mono">
             {['ALL', 'Terran Vanguard', 'Bio-Swarm', 'Astral Templars'].map((f) => (
               <button
                 key={f}
@@ -259,11 +259,11 @@ export default function ArmoryView({
                     <div className="flex items-center justify-between gap-1">
                       <h4 className="font-bold text-xs text-slate-100 truncate">{c.name}</h4>
                       {inSquad.has(c.id) && (
-                        <span className="text-[8px] font-mono px-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 shrink-0">SQUAD</span>
+                        <span className="text-[10px] font-mono px-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 shrink-0">SQUAD</span>
                       )}
                     </div>
                     <Stars value={c.rank} size="w-2.5 h-2.5" />
-                    <span className="text-[10px] font-mono text-slate-400 block truncate">
+                    <span className="text-[12px] font-mono text-slate-400 block truncate">
                       <span className={r.text}>{c.rarity}</span> · LVL {c.level}/{c.max_level}
                       {c.can_rank_up && <span className="ml-1 text-amber-300">▲</span>}
                     </span>
@@ -312,7 +312,7 @@ export default function ArmoryView({
                   <div className="relative px-4 pt-3 flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h2 className="font-orbitron font-black text-xl text-slate-100 truncate drop-shadow">{selectedChamp.name}</h2>
-                      <p className="text-[11px] font-mono text-slate-400 truncate">{selectedChamp.title} — {selectedChamp.faction}</p>
+                      <p className="text-[13px] font-mono text-slate-400 truncate">{selectedChamp.title} — {selectedChamp.faction}</p>
                       <Stars value={selectedChamp.rank} size="w-4 h-4" className="mt-1" />
                       {selectedChamp.passive && (
                         <div className="mt-2 max-w-[260px]">
@@ -321,13 +321,13 @@ export default function ArmoryView({
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className={`font-mono text-[10px] uppercase px-2 py-0.5 rounded border ${rarityStyle(selectedChamp.rarity).border} ${rarityStyle(selectedChamp.rarity).text} bg-black/60`}>
+                      <div className={`font-mono text-[12px] uppercase px-2 py-0.5 rounded border ${rarityStyle(selectedChamp.rarity).border} ${rarityStyle(selectedChamp.rarity).text} bg-black/60`}>
                         {selectedChamp.rarity} · {selectedChamp.role}
                       </div>
                       <div className="font-orbitron font-black text-2xl text-slate-100 mt-1 drop-shadow">
                         {selectedChamp.level}<span className="text-sm text-slate-500">/{selectedChamp.max_level}</span>
                       </div>
-                      <div className="font-mono text-[9px] text-slate-500 -mt-1">LEVEL</div>
+                      <div className="font-mono text-[11px] text-slate-500 -mt-1">LEVEL</div>
                     </div>
                   </div>
 
@@ -339,10 +339,10 @@ export default function ArmoryView({
                         const bonus = base && typeof base[key] === 'number' ? v - base[key] : 0;
                         return (
                           <div key={key} className="rounded-lg bg-slate-950/80 border border-slate-800 py-1.5 px-1" title={bonus ? `Base ${fmt ? fmt(base[key]) : base[key]}` : undefined}>
-                            <div className="text-[11px] text-slate-400 truncate">{label}</div>
+                            <div className="text-[13px] text-slate-400 truncate">{label}</div>
                             <div className={`text-lg leading-tight font-bold ${color}`}>{fmt ? fmt(v) : v}</div>
                             {bonus > 0.0001 && (
-                              <div className="text-[11px] text-emerald-400 leading-none">+{fmt ? fmt(bonus) : Math.round(bonus)}</div>
+                              <div className="text-[13px] text-emerald-400 leading-none">+{fmt ? fmt(bonus) : Math.round(bonus)}</div>
                             )}
                           </div>
                         );
@@ -373,14 +373,14 @@ export default function ArmoryView({
                           <button
                             disabled={busy || !player?.champion_xp}
                             onClick={() => handleFeed(selectedChamp.xp_to_next - selectedChamp.experience)}
-                            className="px-2.5 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/50 text-purple-200 font-mono text-[10px] disabled:opacity-40"
+                            className="px-2.5 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/50 text-purple-200 font-mono text-[12px] disabled:opacity-40"
                           >
                             +1 LVL
                           </button>
                           <button
                             disabled={busy || !player?.champion_xp}
                             onClick={() => handleFeed(null)}
-                            className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-mono text-[10px] font-bold disabled:opacity-40"
+                            className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-mono text-[12px] font-bold disabled:opacity-40"
                           >
                             FEED MAX
                           </button>
@@ -389,12 +389,12 @@ export default function ArmoryView({
                         <button
                           disabled={busy}
                           onClick={() => { setFodder([]); setRankUpOpen(true); }}
-                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-orbitron font-bold text-[10px] flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-orbitron font-bold text-[12px] flex items-center gap-1"
                         >
                           <ChevronsUp className="w-4 h-4" /> RANK UP
                         </button>
                       ) : (
-                        <span className="font-mono text-[10px] text-amber-300">MAX RANK</span>
+                        <span className="font-mono text-[12px] text-amber-300">MAX RANK</span>
                       )}
                     </div>
                   </div>
@@ -410,12 +410,12 @@ export default function ArmoryView({
                       <button
                         key={id}
                         onClick={() => setRightTab(id)}
-                        className={`py-1.5 rounded-lg font-orbitron font-bold text-[11px] tracking-wider flex items-center justify-center gap-1.5 transition ${
+                        className={`py-1.5 rounded-lg font-orbitron font-bold text-[13px] tracking-wider flex items-center justify-center gap-1.5 transition ${
                           rightTab === id ? 'bg-cyan-950 text-cyan-200 border border-cyan-500/50 shadow shadow-cyan-500/20' : 'text-slate-400 hover:text-slate-200 border border-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" /> {label.toUpperCase()}
-                        <span className="font-mono text-[10px] text-slate-500">{badge}</span>
+                        <span className="font-mono text-[12px] text-slate-500">{badge}</span>
                       </button>
                     ))}
                   </div>
@@ -434,15 +434,15 @@ export default function ArmoryView({
                     </div>
 
                     <div className="mt-1 rounded-xl border border-slate-800 bg-black/40 p-2.5">
-                      <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-1.5 flex items-center gap-1">
+                      <div className="font-mono text-[12px] tracking-widest text-slate-500 mb-1.5 flex items-center gap-1">
                         <Layers className="w-3 h-3" /> SETS
                       </div>
                       {Object.keys(setCounts).length === 0 ? (
-                        <div className="font-mono text-[10px] text-slate-600">No artifacts equipped.</div>
+                        <div className="font-mono text-[12px] text-slate-600">No artifacts equipped.</div>
                       ) : (
                         <div className="space-y-1">
                           {Object.entries(setCounts).sort((a, b) => b[1] - a[1]).map(([set, n]) => (
-                            <div key={set} className="flex items-center justify-between font-mono text-[11px]">
+                            <div key={set} className="flex items-center justify-between font-mono text-[13px]">
                               <span className={n >= 2 ? 'text-amber-300' : 'text-slate-400'}>{set}</span>
                               <span className="flex gap-0.5">
                                 {Array.from({ length: Math.max(2, n) }).map((_, i) => (
@@ -454,7 +454,7 @@ export default function ArmoryView({
                         </div>
                       )}
                     </div>
-                      <p className="font-mono text-[9px] text-slate-600 mt-auto">Click a slot to open your inventory, compare and equip.</p>
+                      <p className="font-mono text-[11px] text-slate-600 mt-auto">Click a slot to open your inventory, compare and equip.</p>
                     </>
                   ) : (
                     <div className="space-y-2">
@@ -469,17 +469,17 @@ export default function ArmoryView({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-mono text-[10px] text-slate-500">{i + 1}</span>
+                                  <span className="font-mono text-[12px] text-slate-500">{i + 1}</span>
                                   <span className="font-orbitron font-bold text-sm text-slate-100">{card.name}</span>
-                                  <span className="font-mono text-[10px] px-1 rounded border border-cyan-500/50 text-cyan-300 bg-cyan-950/40">
+                                  <span className="font-mono text-[12px] px-1 rounded border border-cyan-500/50 text-cyan-300 bg-cyan-950/40">
                                     {SCOPE_LABEL[card.lane_scope] || 'LANE'}
                                   </span>
                                   {card.cooldown_turns > 0 && (
-                                    <span className="font-mono text-[10px] px-1 rounded border border-slate-600 text-slate-400">CD {card.cooldown_turns}</span>
+                                    <span className="font-mono text-[12px] px-1 rounded border border-slate-600 text-slate-400">CD {card.cooldown_turns}</span>
                                   )}
                                 </div>
                                 <p className="text-xs text-slate-300 leading-snug mt-1">{card.description}</p>
-                                <div className="mt-1 space-y-0.5 font-mono text-[11px]">
+                                <div className="mt-1 space-y-0.5 font-mono text-[13px]">
                                   {card.power_multiplier > 0 && (
                                     <div className="text-amber-300/90">• {Math.round(card.power_multiplier * 100)}% ATK to {TARGET_LABEL[card.target_type] || card.target_type}</div>
                                   )}
@@ -507,7 +507,7 @@ export default function ArmoryView({
               <div className="flex-1 min-h-0 hud-panel rounded-2xl p-4 border border-cyan-500/20 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="font-orbitron font-bold text-sm text-slate-100">ARTIFACT VAULT</h4>
-                  <div className="flex flex-wrap gap-1 font-mono text-[10px]">
+                  <div className="flex flex-wrap gap-1 font-mono text-[12px]">
                     {['ALL', ...SLOTS].map((sl) => (
                       <button
                         key={sl}
@@ -519,7 +519,7 @@ export default function ArmoryView({
                     ))}
                   </div>
                 </div>
-                <p className="font-mono text-[10px] text-slate-500">
+                <p className="font-mono text-[12px] text-slate-500">
                   Upgrades cost credits even when they fail; success chance drops as the level rises. Every +4 adds a substat (up to 4), then boosts one.
                 </p>
                 <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 overflow-y-auto pr-1 content-start">
@@ -615,7 +615,7 @@ export default function ArmoryView({
                   <div className="flex items-center gap-2 mt-1">
                     <Stars value={selectedChamp.rank} /> <ChevronRight className="w-4 h-4 text-slate-500" /> <Stars value={selectedChamp.rank + 1} />
                   </div>
-                  <p className="font-mono text-[11px] text-slate-400 mt-2">
+                  <p className="font-mono text-[13px] text-slate-400 mt-2">
                     Consumes {needed} champion{needed > 1 ? 's' : ''} of rank {selectedChamp.rank}+ (not in a squad) and{' '}
                     {selectedChamp.rank_up_cost?.toLocaleString()} credits. Level resets to 1, cap rises to {(selectedChamp.rank + 1) * 10}.
                     Fodder gear returns to the vault.
@@ -643,7 +643,7 @@ export default function ArmoryView({
                         <HeroPortrait name={c.name} className={`w-9 h-10 rounded-md border shrink-0 ${rarityStyle(c.rarity).border}`} />
                         <div>
                           <div className="font-bold text-xs text-slate-100">{c.name}</div>
-                          <div className="font-mono text-[10px] text-slate-400">{c.rarity} · LVL {c.level}</div>
+                          <div className="font-mono text-[12px] text-slate-400">{c.rarity} · LVL {c.level}</div>
                         </div>
                       </div>
                       <Stars value={c.rank} size="w-2.5 h-2.5" />

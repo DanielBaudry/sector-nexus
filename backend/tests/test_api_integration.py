@@ -68,20 +68,3 @@ def test_expeditions_flow(client):
     assert choice_res.status_code == 200
     updated_exp = choice_res.json()
     assert len(updated_exp["combat_log"]) > len(expedition["combat_log"])
-
-
-def test_background_expedition_flow(client):
-    dispatch_res = client.post("/api/expeditions/background/dispatch", json={
-        "biome_id": "biome_aiur",
-        "squad_id": "squad_alpha",
-        "duration_seconds": 0  # 0 seconds to immediately test claim!
-    })
-    assert dispatch_res.status_code == 200
-    bg = dispatch_res.json()
-    assert bg["id"].startswith("bg_")
-
-    claim_res = client.post(f"/api/expeditions/background/{bg['id']}/claim")
-    assert claim_res.status_code == 200
-    claim_data = claim_res.json()
-    assert "claimed_rewards" in claim_data
-    assert claim_data["claimed_rewards"]["credits"] > 0
