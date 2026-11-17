@@ -17,5 +17,9 @@ class IChampionRepository(ABC):
         pass
 
     @abstractmethod
+    def delete(self, champion_id: str) -> bool:
+        pass
+
+    @abstractmethod
     def get_templates(self) -> List[Champion]:
         pass

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 
@@ -17,6 +17,14 @@ class EquipArtifactDTO(BaseModel):
 
 class UnequipArtifactDTO(BaseModel):
     slot: str
+
+
+class FeedXPDTO(BaseModel):
+    amount: Optional[int] = None  # None = as much as possible
+
+
+class RankUpDTO(BaseModel):
+    fodder_ids: List[str]
 
 
 class UpdateSquadDTO(BaseModel):
@@ -45,6 +53,7 @@ class StartRunDTO(BaseModel):
     squad_id: str = "squad_alpha"
     # hero (champion) id -> list of troop template ids; omitted heroes get default faction troops
     troop_assignments: Optional[Dict[str, List[str]]] = None
+    difficulty: int = Field(1, ge=1, le=10)
 
 
 class ChooseNodeDTO(BaseModel):

@@ -81,6 +81,11 @@ export default function ExpeditionMapView({
                       <span className="text-[10px] font-mono text-cyan-300 block">
                         REC POWER: {biome.recommended_power}
                       </span>
+                      {biome.max_difficulty > 1 && (
+                        <span className="mt-0.5 inline-block px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 text-[9px] font-mono">
+                          DIFFICULTY 1–{biome.max_difficulty}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

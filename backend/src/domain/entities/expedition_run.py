@@ -46,8 +46,11 @@ class ExpeditionRun:
     troops: List[LaneUnit] = field(default_factory=list)
     battle: Optional[Battle] = None
     log: List[str] = field(default_factory=list)
-    rewards: Dict[str, int] = field(default_factory=lambda: {"credits": 0, "crystals": 0, "experience": 0})
+    # Loot accumulated node by node: credits, crystals, champion XP capsules and artifact dicts.
+    rewards: Dict[str, Any] = field(default_factory=lambda: {"credits": 0, "crystals": 0, "champion_xp": 0, "artifacts": []})
+    payout: Optional[Dict[str, Any]] = None  # what the player actually banks (set when the run ends)
     rewards_paid: bool = False
+    difficulty: int = 1  # 1-10, see value_objects.difficulty
 
     def get_node(self, node_id: Optional[str]) -> Optional[MapNode]:
         return next((n for n in self.nodes if n.id == node_id), None)
@@ -76,6 +79,7 @@ class ExpeditionRun:
             "biome_id": self.biome_id,
             "biome_name": self.biome_name,
             "squad_id": self.squad_id,
+            "difficulty": self.difficulty,
             "status": self.status.value,
             "nodes": [n.to_dict() for n in self.nodes],
             "current_node_id": self.current_node_id,
@@ -85,5 +89,6 @@ class ExpeditionRun:
             "battle": self.battle.to_dict() if self.battle else None,
             "log": self.log[-30:],
             "rewards": self.rewards,
+            "payout": self.payout,
             "rewards_paid": self.rewards_paid,
         }

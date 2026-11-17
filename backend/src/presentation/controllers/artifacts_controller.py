@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/artifacts", tags=["Artifacts"])
 @router.get("")
 def get_artifacts(session: Session = Depends(get_session)):
     repo = ArtifactRepositorySQL(session)
-    return [a.to_dict() for a in repo.get_all()]
+    return [a.to_view() for a in repo.get_all()]
 
 
 @router.post("/{artifact_id}/upgrade")

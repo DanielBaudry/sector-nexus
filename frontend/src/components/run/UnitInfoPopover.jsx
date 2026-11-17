@@ -1,8 +1,9 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Heart, Shield, Swords, ShieldHalf, Gauge, Crosshair, Users, Crown, Sparkles, Timer } from 'lucide-react';
+import { X, Heart, Shield, Swords, ShieldHalf, Gauge, Crosshair, Users, Crown, Sparkles, Timer, Target, ShieldCheck } from 'lucide-react';
 import { SKILL_IMAGES } from '../CardChoice';
 import { LANE_NAMES, SCOPE_LABEL, factionTone, getPortrait, getTroopArt, pct } from '../../utils/battleVisuals';
+import { EffectList, EffectSpecChips, PassiveBlock } from './StatusEffects';
 
 const PANEL_W = 340;
 const GAP = 12;
@@ -29,12 +30,23 @@ function effectLines(card) {
   return lines;
 }
 
-function Stat({ icon: Icon, label, value, accent = 'text-slate-100' }) {
+function Stat({ icon: Icon, label, value, accent = 'text-slate-100', mod }) {
+  // `mod` = { value, pct } when buffs / debuffs / passives change the stat.
+  const up = mod && mod.pct > 0;
   return (
     <div className="flex items-center gap-2 rounded-md bg-slate-900/80 border border-slate-800 px-2 py-1.5">
       <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
       <span className="font-mono text-[10px] text-slate-400 uppercase">{label}</span>
-      <span className={`ml-auto font-orbitron font-bold text-xs ${accent}`}>{value}</span>
+      <span className="ml-auto text-right">
+        <span className={`font-orbitron font-bold text-xs ${mod ? (up ? 'text-emerald-300' : 'text-red-300') : accent}`}>
+          {mod ? mod.value : value}
+        </span>
+        {mod && (
+          <span className={`block font-mono text-[9px] leading-none ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+            {up ? '+' : ''}{Math.round(mod.pct * 100)}% · base {value}
+          </span>
+        )}
+      </span>
     </div>
   );
 }
@@ -64,6 +76,10 @@ function AbilityRow({ card }) {
           {effectLines(card).map((l) => (
             <div key={l} className="font-mono text-[10px] text-emerald-300/90">• {l}</div>
           ))}
+          {card.effects?.map((e, i) => (
+            <div key={i} className={`font-mono text-[10px] ${e.is_buff ? 'text-cyan-300/90' : 'text-red-300/90'}`}>• {e.description}</div>
+          ))}
+          <div className="mt-1"><EffectSpecChips effects={card.effects} /></div>
           {card.flavor_quote && <div className="text-[10px] italic text-slate-500 mt-0.5">“{card.flavor_quote}”</div>}
         </div>
       </div>
@@ -171,23 +187,35 @@ export default function UnitInfoPopover({ unit, anchorEl, ownerName, onClose }) 
         <div className="px-3 pb-3 grid grid-cols-2 gap-1.5">
           {isHero ? (
             <>
-              <Stat icon={Swords} label="Attack" value={unit.attack} accent="text-red-300" />
-              <Stat icon={ShieldHalf} label="Defense" value={unit.defense} />
-              <Stat icon={Gauge} label="Speed" value={unit.speed} accent="text-amber-300" />
+              <Stat icon={Swords} label="Attack" value={unit.attack} accent="text-red-300" mod={unit.modified?.attack} />
+              <Stat icon={ShieldHalf} label="Defense" value={unit.defense} mod={unit.modified?.defense} />
+              <Stat icon={Gauge} label="Speed" value={unit.speed} accent="text-amber-300" mod={unit.modified?.speed} />
               <Stat icon={Timer} label="Initiative" value={unit.is_alive ? `${Math.round(Math.min(100, unit.turn_meter))}%` : '—'} />
               {unit.crit_rate !== undefined && <Stat icon={Crosshair} label="Crit rate" value={`${Math.round(unit.crit_rate * 100)}%`} />}
               {unit.crit_damage !== undefined && <Stat icon={Crosshair} label="Crit dmg" value={`×${unit.crit_damage}`} />}
+              <Stat icon={Target} label="Accuracy" value={unit.accuracy ?? 0} accent="text-sky-300" />
+              <Stat icon={ShieldCheck} label="Resist" value={unit.resistance ?? 0} accent="text-violet-300" />
             </>
           ) : (
             <>
               <Stat icon={Users} label="Soldiers" value={`${unit.count} / ${unit.max_count}`} accent="text-cyan-200" />
-              <Stat icon={Swords} label="Volley" value={unit.volley_power} accent="text-red-300" />
+              <Stat icon={Swords} label="Volley" value={unit.volley_power} accent="text-red-300" mod={unit.modified?.attack} />
               <Stat icon={Heart} label="HP / soldier" value={unit.unit_hp} />
               <Stat icon={Swords} label="ATK / soldier" value={unit.unit_attack} />
-              <Stat icon={ShieldHalf} label="Defense" value={unit.defense} />
+              <Stat icon={ShieldHalf} label="Defense" value={unit.defense} mod={unit.modified?.defense} />
+              <Stat icon={ShieldCheck} label="Resist" value={unit.resistance ?? 0} accent="text-violet-300" />
               {unit.shields > 0 && <Stat icon={Shield} label="Shields" value={unit.shields} accent="text-cyan-300" />}
             </>
           )}
+        </div>
+
+        {/* Passive & status effects */}
+        <div className="px-3 pb-3 space-y-2">
+          {unit.passive && <PassiveBlock passive={unit.passive} stacks={unit.passive_stacks} compact />}
+          <div>
+            <div className="font-mono text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Buffs & debuffs</div>
+            <EffectList effects={unit.effects} />
+          </div>
         </div>
 
         {/* Abilities / behaviour */}

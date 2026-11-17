@@ -43,6 +43,19 @@ export const api = {
       body: JSON.stringify({ slot }),
     }).then(handleResponse),
 
+  feedChampionXP: (championId, amount = null) =>
+    fetch(`${BASE_URL}/champions/${championId}/feed-xp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    }).then(handleResponse),
+  rankUpChampion: (championId, fodder_ids) =>
+    fetch(`${BASE_URL}/champions/${championId}/rank-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fodder_ids }),
+    }).then(handleResponse),
+
   // Artifacts
   getArtifacts: () => fetch(`${BASE_URL}/artifacts`).then(handleResponse),
   upgradeArtifact: (artifactId) =>
@@ -78,11 +91,11 @@ export const api = {
   // Expedition Runs (node map + 3-lane battles)
   getTroopCatalog: () => fetch(`${BASE_URL}/runs/troops`).then(handleResponse),
   getActiveRun: () => fetch(`${BASE_URL}/runs/active`).then(handleResponse),
-  startRun: (biome_id, squad_id = 'squad_alpha', troop_assignments = null) =>
+  startRun: (biome_id, squad_id = 'squad_alpha', troop_assignments = null, difficulty = 1) =>
     fetch(`${BASE_URL}/runs/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ biome_id, squad_id, troop_assignments }),
+      body: JSON.stringify({ biome_id, squad_id, troop_assignments, difficulty }),
     }).then(handleResponse),
   chooseRunNode: (node_id) =>
     fetch(`${BASE_URL}/runs/active/node`, {

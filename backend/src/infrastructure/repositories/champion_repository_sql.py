@@ -37,5 +37,13 @@ class ChampionRepositorySQL(IChampionRepository):
         self.session.refresh(row)
         return Champion.from_dict(row.model_dump())
 
+    def delete(self, champion_id: str) -> bool:
+        row = self.session.get(ChampionSQL, champion_id)
+        if not row:
+            return False
+        self.session.delete(row)
+        self.session.commit()
+        return True
+
     def get_templates(self) -> List[Champion]:
         return list(self._templates.values())

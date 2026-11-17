@@ -11,6 +11,7 @@ from src.domain.value_objects.enums import (
     UnitKind,
 )
 from src.domain.value_objects.gambit import GambitRule
+from src.domain.value_objects.status_effect import STAT_MODIFIERS, EffectType, Passive, PassiveKind, StatusEffect
 from src.domain.value_objects.troop import TroopTemplate
 
 LANE_COUNT = 3
@@ -39,6 +40,11 @@ class LaneUnit:
     crit_damage: float = 1.50
     turn_meter: float = 0.0
     is_alive: bool = True
+    accuracy: int = 0
+    resistance: int = 0
+    effects: List[StatusEffect] = field(default_factory=list)
+    passive: Optional[Passive] = None
+    passive_stacks: int = 0
     # Hero fields
     title: str = ""
     faction: str = ""
@@ -84,6 +90,21 @@ class LaneUnit:
     def available_cards(self) -> List[CombatCard]:
         return [c for c in self.cards if self.cooldowns.get(c.id, 0) <= 0]
 
+    # ── Status effects ─────────────────────────────────────────────────────
+    def has_effect(self, effect_type: EffectType) -> bool:
+        return any(e.type == effect_type for e in self.effects)
+
+    @property
+    def buffs(self) -> List[StatusEffect]:
+        return [e for e in self.effects if e.is_buff]
+
+    @property
+    def debuffs(self) -> List[StatusEffect]:
+        return [e for e in self.effects if not e.is_buff]
+
+    def effect_total(self, effect_type: EffectType) -> float:
+        return sum(e.value for e in self.effects if e.type == effect_type)
+
     @classmethod
     def troop_from_template(
         cls, unit_id: str, template: TroopTemplate, side: Side, owner_id: Optional[str] = None,
@@ -106,6 +127,7 @@ class LaneUnit:
             unit_hp=unit_hp,
             unit_attack=max(1, int(template.unit_attack * power_mult)),
             owner_id=owner_id,
+            resistance=20,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -127,6 +149,11 @@ class LaneUnit:
             "faction": self.faction,
             "is_elite": self.is_elite,
             "is_boss": self.is_boss,
+            "accuracy": self.accuracy,
+            "resistance": self.resistance,
+            "effects": [e.to_dict() for e in self.effects],
+            "passive": self.passive.to_dict() if self.passive else None,
+            "passive_stacks": self.passive_stacks,
         }
         if self.is_hero:
             data.update({
@@ -240,6 +267,49 @@ class Battle:
             return troops[0]
         return defenders[0] if defenders else None
 
+    # ── Stat rules (buffs / debuffs / passives) ─────────────────────────────
+    def modifier_pct(self, unit: LaneUnit, stat: str) -> float:
+        """Sum of percentage modifiers on `stat` from effects, the unit's passive and lane auras."""
+        pct = 0.0
+        for e in unit.effects:
+            mod = STAT_MODIFIERS.get(e.type)
+            if mod and mod[0] == stat:
+                pct += mod[1] * e.value
+        p = unit.passive
+        if p and p.stat == stat:
+            if p.kind == PassiveKind.STACK_ON_TURN_END:
+                pct += p.value * unit.passive_stacks
+            elif p.kind == PassiveKind.PER_ALLY_TROOP:
+                pct += p.value * sum(1 for u in self.living(unit.side) if u.is_troop)
+            elif p.kind == PassiveKind.LOW_HP and unit.hp < unit.max_hp * p.threshold:
+                pct += p.value
+        if unit.lane is not None:
+            for ally in self.living(unit.side, unit.lane):
+                ap = ally.passive
+                if ap and ap.kind == PassiveKind.LANE_AURA and ap.stat == stat:
+                    pct += ap.value
+        return pct
+
+    def effective(self, unit: LaneUnit, stat: str) -> float:
+        """Stat after modifiers. Troops use their volley power as attack."""
+        pct = self.modifier_pct(unit, stat)
+        if stat == "crit_rate":
+            return max(0.0, min(1.0, unit.crit_rate + pct))
+        base = {
+            "attack": unit.volley_power if unit.is_troop else unit.attack,
+            "defense": unit.defense,
+            "speed": unit.speed,
+        }[stat]
+        return max(0.0, base * max(0.1, 1.0 + pct))
+
+    def modified_stats(self, unit: LaneUnit) -> Dict[str, Any]:
+        out = {}
+        for stat in ("attack", "defense", "speed"):
+            pct = self.modifier_pct(unit, stat)
+            if abs(pct) > 1e-6:
+                out[stat] = {"value": int(round(self.effective(unit, stat))), "pct": round(pct, 3)}
+        return out
+
     def pending_waves(self, lane: Optional[int] = None) -> List[Wave]:
         return [w for w in self.waves if not w.spawned and (lane is None or w.lane == lane)]
 
@@ -277,7 +347,7 @@ class Battle:
             "status": self.status.value,
             "turn": self.turn,
             "lanes": lanes,
-            "units": [u.to_dict() for u in self.units if u.lane is not None],
+            "units": [{**u.to_dict(), "modified": self.modified_stats(u)} for u in self.units if u.lane is not None],
             "objectives": [o.to_dict() for o in self.objectives],
             "current_actor_id": self.current_actor_id,
             "turn_started_at": self.turn_started_at,

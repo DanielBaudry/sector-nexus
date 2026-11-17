@@ -69,64 +69,15 @@ class GachaService:
     @staticmethod
     def generate_random_artifact(
         min_rarity: Rarity = Rarity.COMMON,
-        preferred_set: str = None
+        preferred_set: str = None,
+        rank: int = None,
     ) -> Artifact:
-        slot = random.choice(list(ArtifactSlot))
         rarities = list(Rarity)
-        min_idx = rarities.index(min_rarity)
-        rarity = random.choice(rarities[min_idx:])
-
+        rarity = random.choice(rarities[rarities.index(min_rarity):])
         set_type = ArtifactSetType(preferred_set) if preferred_set else random.choice(list(ArtifactSetType))
-
-        # Main stat depends on slot
-        if slot == ArtifactSlot.WEAPON:
-            main_stat = "attack"
-            base_val = random.randint(18, 35)
-        elif slot in (ArtifactSlot.ARMOR, ArtifactSlot.HELMET):
-            main_stat = random.choice(["defense", "hp"])
-            base_val = random.randint(15, 30) if main_stat == "defense" else random.randint(50, 120)
-        elif slot == ArtifactSlot.BOOTS:
-            main_stat = "speed"
-            base_val = random.randint(6, 16)
-        elif slot == ArtifactSlot.CORE:
-            main_stat = "shields"
-            base_val = random.randint(40, 100)
-        else:  # IMPLANT
-            main_stat = random.choice(["attack", "defense", "hp"])
-            base_val = random.randint(12, 28)
-
-        # Rarity multiplier
-        mult = {Rarity.COMMON: 1.0, Rarity.RARE: 1.3, Rarity.EPIC: 1.7, Rarity.LEGENDARY: 2.2}[rarity]
-        final_main_val = int(base_val * mult)
-
-        # Secondary substats
-        possible_subs = ["crit_rate", "crit_damage", "speed", "attack", "defense"]
-        num_subs = {Rarity.COMMON: 0, Rarity.RARE: 1, Rarity.EPIC: 2, Rarity.LEGENDARY: 3}[rarity]
-        selected_subs = []
-        for _ in range(num_subs):
-            sub_name = random.choice(possible_subs)
-            val = round(random.uniform(0.03, 0.08), 2) if "crit" in sub_name else random.randint(3, 10)
-            selected_subs.append({"stat": sub_name, "value": val})
-
-        names_by_slot = {
-            ArtifactSlot.WEAPON: "C-14 Gauss Rifle",
-            ArtifactSlot.ARMOR: "Neosteel Carapace",
-            ArtifactSlot.HELMET: "Tactical HUD Visor",
-            ArtifactSlot.BOOTS: "Afterburner Greaves",
-            ArtifactSlot.IMPLANT: "Adrenal Stim Implant",
-            ArtifactSlot.CORE: "Khaydarin Power Core",
-        }
-
-        return Artifact(
-            id=f"art_{uuid.uuid4().hex[:8]}",
-            template_id=f"tmpl_{slot.name.lower()}",
-            name=f"{rarity.value} {names_by_slot.get(slot, 'Tech Module')}",
-            slot=slot,
+        return Artifact.generate(
+            artifact_id=f"art_{uuid.uuid4().hex[:8]}",
             rarity=rarity,
+            rank=rank or random.randint(3, 5),
             set_type=set_type,
-            level=1,
-            main_stat_name=main_stat,
-            main_stat_value=final_main_val,
-            sub_stats=selected_subs,
-            equipped_to=None,
         )

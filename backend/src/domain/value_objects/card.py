@@ -1,6 +1,7 @@
-from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from dataclasses import dataclass, field
+from typing import Dict, Any, List, Optional
 from src.domain.value_objects.enums import TargetType, LaneScope
+from src.domain.value_objects.status_effect import EffectSpec
 
 
 @dataclass
@@ -20,6 +21,8 @@ class CombatCard:
     lane_scope: LaneScope = LaneScope.SAME_LANE
     # Lane battle: optional troop template summoned into the target lane.
     summon_troop_id: Optional[str] = None
+    # Lane battle: buffs / debuffs / cleanse / strip / steal applied by the ability.
+    effects: List[EffectSpec] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -36,6 +39,7 @@ class CombatCard:
             "flavor_quote": self.flavor_quote,
             "lane_scope": self.lane_scope.value if hasattr(self.lane_scope, "value") else str(self.lane_scope),
             "summon_troop_id": self.summon_troop_id,
+            "effects": [e.to_dict() for e in self.effects],
         }
 
     @classmethod
@@ -54,4 +58,5 @@ class CombatCard:
             flavor_quote=data.get("flavor_quote"),
             lane_scope=LaneScope(data.get("lane_scope", LaneScope.SAME_LANE)),
             summon_troop_id=data.get("summon_troop_id"),
+            effects=[EffectSpec.from_dict(e) for e in data.get("effects", [])],
         )

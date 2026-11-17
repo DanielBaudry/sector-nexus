@@ -16,6 +16,8 @@ Rules
   their LaneScope (same / adjacent / any / all).
 * Every resolved action increments `battle.turn`; scripted waves and
   SURVIVE objectives key off that counter.
+* Buffs / debuffs (see value_objects.status_effect) tick on the holder's own turns
+  (troop packs: their volleys). Passives hook into turn start / end, kills, hits and stats.
 """
 import random
 import time
@@ -31,6 +33,17 @@ from src.domain.value_objects.enums import (
     ObjectiveType,
     Side,
     TargetType,
+)
+from src.domain.value_objects.status_effect import (
+    DOT_TYPES,
+    EFFECT_LABELS,
+    MAX_DOT_STACKS,
+    EffectOp,
+    EffectSpec,
+    EffectType,
+    PassiveKind,
+    StatusEffect,
+    debuff_land_chance,
 )
 
 METER_FULL = 100.0
@@ -51,6 +64,7 @@ BASIC_ATTACK = CombatCard(
 class LaneBattleEngine:
     def __init__(self, rng: Optional[random.Random] = None):
         self.rng = rng or random.Random()
+        self._acting_id: Optional[str] = None  # unit whose turn is resolving (fresh self-effects)
 
     # ── Lifecycle ───────────────────────────────────────────────────────────
     def begin(self, battle: Battle, now: Optional[float] = None, max_actions: Optional[int] = None) -> None:
@@ -61,6 +75,11 @@ class LaneBattleEngine:
         for side in Side:
             for lane in range(LANE_COUNT):
                 battle.drill_meters[f"{side.value}:{lane}"] = float(self.rng.randint(0, 20))
+        for u in list(battle.units):
+            p = u.passive
+            if u.is_alive and u.lane is not None and p and p.kind == PassiveKind.BATTLE_START_EFFECT and p.effect:
+                for ally in battle.living(u.side, u.lane):
+                    self._apply_effect(battle, u, ally, p.effect)
         self._evaluate(battle)
         self.advance(battle, now, max_actions)
 
@@ -82,7 +101,11 @@ class LaneBattleEngine:
                 continue
 
             unit = None if actor_key.startswith("DRILL:") else battle.get_unit(actor_key)
-            if unit is not None and unit.side == Side.ALLY:
+            if unit is not None and unit.side == Side.ALLY and not unit.has_effect(EffectType.STUN):
+                state = self._start_turn(battle, unit)
+                if state == "dead":
+                    self._end_action(battle)
+                    continue
                 battle.current_actor_id = unit.id
                 battle.turn_started_at = time.time() if now is None else now
                 battle.log.append(f"⚡ {unit.name} ready in {LANE_NAMES[unit.lane]} — choose an ability.")
@@ -91,6 +114,13 @@ class LaneBattleEngine:
             if max_actions is not None and actions >= max_actions:
                 return
             actions += 1
+
+            if unit is not None and unit.side == Side.ALLY:
+                # Stunned ally hero: the turn resolves on its own.
+                battle.emit("turn", actor_id=unit.id, side=unit.side.value, lane=unit.lane, drill=False)
+                self._skip_turn(battle, unit)
+                self._end_action(battle)
+                continue
 
             if actor_key.startswith("DRILL:"):
                 _, side_value, lane_str = actor_key.split(":")
@@ -150,12 +180,14 @@ class LaneBattleEngine:
 
         battle.emit("turn", actor_id=actor.id, side=actor.side.value, lane=actor.lane, drill=False)
         self._tick_cooldowns(actor)
+        self._acting_id = actor.id
         self._resolve_ability(battle, actor, card, target_lane, target_unit)
         if card.cooldown_turns > 0:
             actor.cooldowns[card.id] = card.cooldown_turns
         actor.turn_meter = 0.0
         actor.actions_taken += 1
         battle.current_actor_id = None
+        self._end_turn(battle, actor)
 
         if actor.is_alive and actor.lane is not None:
             self._volley(battle, Side.ALLY, actor.lane)
@@ -187,7 +219,7 @@ class LaneBattleEngine:
     def _tick_meters(self, battle: Battle) -> None:
         for u in battle.units:
             if u.is_hero and u.is_alive and u.lane is not None:
-                u.turn_meter += max(5.0, u.speed * METER_RATE)
+                u.turn_meter += max(5.0, battle.effective(u, "speed") * METER_RATE)
         for side in Side:
             for lane in range(LANE_COUNT):
                 key = f"{side.value}:{lane}"
@@ -271,19 +303,25 @@ class LaneBattleEngine:
         battle.log.append(f"🎯 {actor.name} uses {card.name} → {lane_label}.")
         battle.emit("ability", actor_id=actor.id, name=card.name, lanes=lanes, summon=bool(card.summon_troop_id))
 
+        attack = battle.effective(actor, "attack")
+        hit_targets: List[LaneUnit] = []
+        foes = [u for l in lanes for u in battle.living(foe, l)]
+
         # Damage
         if card.power_multiplier > 0:
-            foes = [u for l in lanes for u in battle.living(foe, l)]
             if card.target_type == TargetType.ALL_ENEMIES:
                 for target in foes:
-                    self._strike(battle, actor, target, actor.attack * card.power_multiplier, can_crit=True)
+                    self._strike(battle, actor, target, attack * card.power_multiplier, can_crit=True)
+                    hit_targets.append(target)
             elif card.target_type == TargetType.SINGLE_ENEMY and foes:
-                # Heroes can pick off any target in reach (no screening): the chosen one, else the priority one.
-                if target_unit is not None and target_unit in foes:
-                    target = target_unit
-                else:
-                    target = min(foes, key=lambda u: (not (u.is_boss or u.is_elite), u.hp + u.shields))
-                self._strike(battle, actor, target, actor.attack * card.power_multiplier, can_crit=True)
+                target = self._pick_enemy(foes, target_unit)
+                self._strike(battle, actor, target, attack * card.power_multiplier, can_crit=True)
+                hit_targets.append(target)
+        elif card.target_type == TargetType.SINGLE_ENEMY and foes:
+            # Pure debuff / strip abilities still pick a target.
+            hit_targets.append(self._pick_enemy(foes, target_unit))
+        elif card.target_type == TargetType.ALL_ENEMIES:
+            hit_targets.extend(foes)
 
         # Shields
         if card.shield_grant > 0:
@@ -300,18 +338,27 @@ class LaneBattleEngine:
                 battle.log.append(f"🛡️ {actor.name} gains +{card.shield_grant} shields.")
 
         # Healing (troop packs regain soldiers when healed)
+        friends = [u for l in lanes for u in battle.living(friend, l)]
+        chosen_ally: Optional[LaneUnit] = None
+        if friends and card.target_type in (TargetType.LOWEST_HP_ALLY, TargetType.SELF, TargetType.ALL_ALLIES):
+            if target_unit is not None and target_unit in friends:
+                chosen_ally = target_unit
+            elif card.target_type == TargetType.SELF and actor in friends:
+                chosen_ally = actor
+            else:
+                chosen_ally = min(friends, key=lambda u: u.hp / max(1, u.max_hp))
         if card.heal_multiplier > 0:
-            amount = int(actor.attack * card.heal_multiplier)
-            friends = [u for l in lanes for u in battle.living(friend, l)]
+            amount = int(attack * card.heal_multiplier)
             if card.target_type == TargetType.ALL_ALLIES:
                 for ally in friends:
                     self._heal(battle, actor, ally, amount)
                 battle.log.append(f"💚 Allies in {lane_label} restored +{amount} HP.")
             elif friends:
-                if target_unit is not None and target_unit in friends:
-                    target = target_unit
-                else:
+                if chosen_ally is not None and card.target_type != TargetType.SELF:
+                    target = chosen_ally
+                else:  # self-heal cards and lifesteal (enemy-target) cards mend the most wounded ally
                     target = min(friends, key=lambda u: u.hp / max(1, u.max_hp))
+                chosen_ally = target
                 self._heal(battle, actor, target, amount)
                 battle.log.append(f"💚 {target.name} restored +{amount} HP.")
 
@@ -331,11 +378,46 @@ class LaneBattleEngine:
                 battle.emit("summon", source_id=actor.id, unit_id=pack.id, lane=summon_lane, name=pack.name)
                 battle.log.append(f"📦 {pack.name} ×{pack.count} deployed to {LANE_NAMES[summon_lane]}.")
 
+        # Status effects: buffs, debuffs, cleanse / strip / steal
+        for spec in card.effects:
+            targets = {
+                "self": [actor],
+                "ally": [chosen_ally or actor],
+                "allies": friends,
+                "hit": hit_targets,
+                "enemies": foes,
+            }.get(spec.target, [])
+            for target in targets:
+                if target.is_alive:
+                    self._apply_spec(battle, actor, target, spec)
+
+        # Passive: abilities may apply an extra effect to every target hit.
+        p = actor.passive
+        if p and p.kind == PassiveKind.ON_HIT_EFFECT and p.effect:
+            for target in hit_targets:
+                if target.is_alive:
+                    self._apply_spec(battle, actor, target, p.effect)
+
+    @staticmethod
+    def _pick_enemy(foes: List[LaneUnit], target_unit: Optional[LaneUnit]) -> LaneUnit:
+        # Heroes can pick off any target in reach (no screening): the chosen one, else the priority one.
+        if target_unit is not None and target_unit in foes:
+            return target_unit
+        return min(foes, key=lambda u: (not (u.is_boss or u.is_elite), u.hp + u.shields))
+
     def _enemy_hero_turn(self, battle: Battle, hero: LaneUnit) -> None:
+        if hero.has_effect(EffectType.STUN):
+            self._skip_turn(battle, hero)
+            return
+        if self._start_turn(battle, hero) == "dead":
+            return
+        self._acting_id = hero.id
         self._tick_cooldowns(hero)
         card = None
-        ready = hero.available_cards()
-        if ready and hero.actions_taken % 3 == 2:
+        ready = [c for c in hero.available_cards() if self._enemy_card_useful(battle, hero, c)]
+        # Single-ability enemies cast every 3rd action; multi-ability threats every other action.
+        cadence = 2 if len(hero.cards) > 1 else 3
+        if ready and hero.actions_taken % cadence == cadence - 1:
             card = ready[0]
         if card:
             self._resolve_ability(battle, hero, card, None)
@@ -350,32 +432,184 @@ class LaneBattleEngine:
                 target = self.rng.choice(neighbours) if neighbours else None
             if target:
                 mult = 1.2 if hero.is_elite or hero.is_boss else 1.0
-                self._strike(battle, hero, target, hero.attack * mult, can_crit=True)
+                self._strike(battle, hero, target, battle.effective(hero, "attack") * mult, can_crit=True)
+                p = hero.passive
+                if p and p.kind == PassiveKind.ON_HIT_EFFECT and p.effect and target.is_alive:
+                    self._apply_spec(battle, hero, target, p.effect)
         hero.turn_meter = 0.0
         hero.actions_taken += 1
+        self._end_turn(battle, hero)
         if hero.is_alive:
             self._volley(battle, Side.ENEMY, hero.lane)
+
+    def _enemy_card_useful(self, battle: Battle, hero: LaneUnit, card: CombatCard) -> bool:
+        """Skip pure-heal abilities when no nearby hostile is hurt, and summons when the summon is unknown."""
+        if card.summon_troop_id and card.summon_troop_id not in battle.summon_templates:
+            return card.power_multiplier > 0 or card.shield_grant > 0 or card.heal_multiplier > 0
+        if card.heal_multiplier > 0 and card.power_multiplier <= 0 and card.shield_grant <= 0 and not card.summon_troop_id:
+            lanes = self._scope_lanes(card.lane_scope, hero.lane, None)
+            return any(u.hp < u.max_hp * 0.7 for l in lanes for u in battle.living(hero.side, l))
+        return True
 
     def _tick_cooldowns(self, unit: LaneUnit) -> None:
         for cid in list(unit.cooldowns):
             unit.cooldowns[cid] = max(0, unit.cooldowns[cid] - 1)
 
+    # ── Turn lifecycle & status effects ─────────────────────────────────────
+    def _start_turn(self, battle: Battle, unit: LaneUnit) -> str:
+        """Turn-start upkeep: damage over time, regeneration, passive regen. Returns 'act' or 'dead'."""
+        self._acting_id = unit.id
+        for e in [e for e in unit.effects if e.type in DOT_TYPES]:
+            dmg = max(1, int(unit.max_hp * e.value))
+            unit.hp = max(0, unit.hp - dmg)
+            battle.emit("dot", target_id=unit.id, effect=e.type.value, label=EFFECT_LABELS[e.type], damage=dmg,
+                        hp=unit.hp, shields=unit.shields, count=unit.count, alive=unit.hp > 0)
+            if unit.hp <= 0:
+                battle.log.append(f"🔥 {unit.name} succumbs to {EFFECT_LABELS[e.type].lower()}.")
+                self._kill(battle, unit)
+                return "dead"
+        regen = unit.effect_total(EffectType.REGEN)
+        if regen > 0:
+            self._heal(battle, unit, unit, int(unit.max_hp * regen))
+        p = unit.passive
+        if p and p.kind == PassiveKind.REGEN:
+            targets = battle.living(unit.side, unit.lane) if p.lane_wide else [unit]
+            for t in targets:
+                if t.hp < t.max_hp:
+                    self._heal(battle, unit, t, int(t.max_hp * p.value))
+        elif p and p.kind == PassiveKind.SHIELD_REGEN and unit.max_shields > 0 and unit.shields < unit.max_shields:
+            amount = int(unit.max_shields * p.value)
+            unit.shields = min(unit.max_shields, unit.shields + amount)
+            battle.emit("shield", source_id=unit.id, target_id=unit.id, amount=amount,
+                        shields=unit.shields, max_shields=unit.max_shields)
+        return "act"
+
+    def _end_turn(self, battle: Battle, unit: LaneUnit) -> None:
+        """Turn-end upkeep: passive stacks, then effect durations tick (fresh effects skip this tick)."""
+        p = unit.passive
+        if unit.is_alive and p and p.kind == PassiveKind.STACK_ON_TURN_END and unit.passive_stacks < p.max_stacks:
+            unit.passive_stacks += 1
+            battle.emit("passive", unit_id=unit.id, name=p.name,
+                        text=f"{p.name} ×{unit.passive_stacks}")
+        kept: List[StatusEffect] = []
+        for e in unit.effects:
+            if e.fresh:
+                e.fresh = False
+                kept.append(e)
+                continue
+            e.turns -= 1
+            if e.turns > 0:
+                kept.append(e)
+        unit.effects = kept
+        self._acting_id = None
+
+    def _consume_stun(self, battle: Battle, unit: LaneUnit) -> None:
+        unit.effects = [e for e in unit.effects if e.type != EffectType.STUN]
+        battle.emit("effect", source_id=None, target_id=unit.id, effect="STUN", label="STUNNED",
+                    is_buff=False, action="skip", turns=0)
+        battle.log.append(f"💫 {unit.name} is stunned and loses the turn.")
+
+    def _skip_turn(self, battle: Battle, hero: LaneUnit) -> None:
+        """A stunned hero's turn: upkeep, no action, its lane troops still fire."""
+        self._consume_stun(battle, hero)
+        state = self._start_turn(battle, hero)
+        hero.turn_meter = 0.0
+        hero.actions_taken += 1
+        self._end_turn(battle, hero)
+        if state != "dead" and hero.is_alive:
+            self._volley(battle, hero.side, hero.lane)
+
+    def _apply_spec(self, battle: Battle, source: LaneUnit, target: LaneUnit, spec: EffectSpec) -> None:
+        op = spec.op
+        if op == EffectOp.CLEANSE:
+            removed = target.debuffs[-spec.count:] if spec.count > 0 else []
+            for e in removed:
+                target.effects.remove(e)
+                battle.emit("effect", source_id=source.id, target_id=target.id, effect=e.type.value,
+                            label=EFFECT_LABELS[e.type], is_buff=False, action="removed", turns=0)
+            if removed:
+                battle.log.append(f"✨ {target.name} cleansed of {', '.join(EFFECT_LABELS[e.type] for e in removed)}.")
+            return
+        if op in (EffectOp.STRIP, EffectOp.STEAL):
+            candidates = target.buffs[-spec.count:] if spec.count > 0 else []
+            if not candidates:
+                return
+            if self.rng.random() > debuff_land_chance(spec.chance, source.accuracy, target.resistance):
+                battle.emit("effect", source_id=source.id, target_id=target.id, effect=op.value,
+                            label="RESISTED", is_buff=False, action="resisted", turns=0)
+                return
+            for e in candidates:
+                target.effects.remove(e)
+                action = "stolen" if op == EffectOp.STEAL else "removed"
+                battle.emit("effect", source_id=source.id, target_id=target.id, effect=e.type.value,
+                            label=EFFECT_LABELS[e.type], is_buff=True, action=action, turns=0)
+                if op == EffectOp.STEAL and source.is_alive:
+                    self._add_effect(battle, source, StatusEffect(e.type, e.value, e.turns, source.id))
+            verb = "steals" if op == EffectOp.STEAL else "strips"
+            battle.log.append(f"🧲 {source.name} {verb} {', '.join(EFFECT_LABELS[e.type] for e in candidates)} from {target.name}.")
+            return
+
+        et = spec.effect_type
+        if et is None:
+            return
+        effect = StatusEffect(et, spec.value, spec.turns, source.id)
+        if not effect.is_buff:
+            if target.has_effect(EffectType.IMMUNITY):
+                battle.emit("effect", source_id=source.id, target_id=target.id, effect=et.value,
+                            label="IMMUNE", is_buff=False, action="blocked", turns=0)
+                return
+            if self.rng.random() > debuff_land_chance(spec.chance, source.accuracy, target.resistance):
+                battle.emit("effect", source_id=source.id, target_id=target.id, effect=et.value,
+                            label="RESISTED", is_buff=False, action="resisted", turns=0)
+                battle.log.append(f"🛡️ {target.name} resists {EFFECT_LABELS[et]}.")
+                return
+        self._add_effect(battle, target, effect)
+        battle.log.append(f"{'⬆️' if effect.is_buff else '⬇️'} {target.name}: {EFFECT_LABELS[et]} for {effect.turns} turn(s).")
+
+    def _add_effect(self, battle: Battle, target: LaneUnit, effect: StatusEffect) -> None:
+        """Same effect: refresh duration and keep the stronger value. DoTs stack up to a cap."""
+        effect.fresh = target.id == self._acting_id
+        same = [e for e in target.effects if e.type == effect.type]
+        if effect.type in DOT_TYPES and len(same) < MAX_DOT_STACKS:
+            target.effects.append(effect)
+        elif same:
+            current = same[0]
+            current.turns = max(current.turns, effect.turns)
+            current.value = max(current.value, effect.value)
+            current.fresh = current.fresh or effect.fresh
+            current.source_id = effect.source_id
+        else:
+            target.effects.append(effect)
+        battle.emit("effect", source_id=effect.source_id, target_id=target.id, effect=effect.type.value,
+                    label=EFFECT_LABELS[effect.type], is_buff=effect.is_buff, action="applied", turns=effect.turns)
+
     # ── Troops ──────────────────────────────────────────────────────────────
     def _volley(self, battle: Battle, side: Side, lane: int) -> None:
         for pack in [u for u in battle.living(side, lane) if u.is_troop]:
-            target = battle.front_target(side, lane)
-            if target is None:
-                return
             if not pack.is_alive:
                 continue
-            self._strike(battle, pack, target, pack.volley_power, can_crit=False)
+            if pack.has_effect(EffectType.STUN):
+                self._consume_stun(battle, pack)
+                self._end_turn(battle, pack)
+                continue
+            if self._start_turn(battle, pack) == "dead":
+                continue
+            target = battle.front_target(side, lane)
+            if target is not None:
+                self._acting_id = pack.id
+                self._strike(battle, pack, target, battle.effective(pack, "attack"), can_crit=False)
+            self._end_turn(battle, pack)
 
     # ── Damage ──────────────────────────────────────────────────────────────
     def _strike(self, battle: Battle, attacker: LaneUnit, target: LaneUnit, raw: float, can_crit: bool) -> None:
-        is_crit = can_crit and self.rng.random() < attacker.crit_rate
+        is_crit = can_crit and self.rng.random() < battle.effective(attacker, "crit_rate")
         if is_crit:
             raw *= attacker.crit_damage
-        mitigation = 100.0 / (100.0 + max(0, target.defense))
+        raw *= 1.0 + target.effect_total(EffectType.MARKED)
+        p = attacker.passive
+        if p and p.kind == PassiveKind.DAMAGE_VS_DEBUFFED and target.debuffs:
+            raw *= 1.0 + p.value
+        mitigation = 100.0 / (100.0 + max(0.0, battle.effective(target, "defense")))
         damage = max(1, int(raw * mitigation))
 
         absorbed = min(target.shields, damage)
@@ -401,12 +635,26 @@ class LaneBattleEngine:
             battle.log.append(f"💥 {who}{crit_tag} hits {target.name} for {damage}.")
 
         if target.hp <= 0:
-            target.is_alive = False
-            target.turn_meter = 0.0
-            battle.log.append(f"💀 {target.name} destroyed in {LANE_NAMES[target.lane]}!")
+            self._kill(battle, target)
+            if p and p.kind == PassiveKind.ON_KILL_METER and attacker.is_hero and attacker.is_alive:
+                attacker.turn_meter = min(METER_FULL * 1.5, attacker.turn_meter + p.value)
+                battle.emit("passive", unit_id=attacker.id, name=p.name, text=f"+{int(p.value)}% TURN METER")
+                battle.log.append(f"✨ {attacker.name}'s {p.name}: +{int(p.value)}% turn meter.")
+
+    @staticmethod
+    def _kill(battle: Battle, target: LaneUnit) -> None:
+        target.is_alive = False
+        target.turn_meter = 0.0
+        target.effects = []
+        battle.log.append(f"💀 {target.name} destroyed in {LANE_NAMES[target.lane]}!")
 
     @staticmethod
     def _heal(battle: Battle, source: LaneUnit, target: LaneUnit, amount: int) -> None:
+        if target.has_effect(EffectType.HEAL_BLOCK):
+            battle.emit("effect", source_id=source.id, target_id=target.id, effect="HEAL_BLOCK",
+                        label="HEAL BLOCKED", is_buff=False, action="blocked", turns=0)
+            battle.log.append(f"🚫 {target.name} cannot be healed (Heal Block).")
+            return
         before = target.hp
         target.hp = min(target.max_hp, target.hp + amount)
         battle.emit("heal", source_id=source.id, target_id=target.id, amount=target.hp - before,

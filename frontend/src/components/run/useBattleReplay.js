@@ -10,6 +10,9 @@ const T = {
   shield: 280,
   summon: 420,
   wave: 650,
+  effect: 240,
+  dot: 380,
+  passive: 320,
   endGap: 260,
   floater: 1150,
   tracer: 420,
@@ -150,6 +153,35 @@ export default function useBattleReplay(battle) {
           floatAt(ev.source_id, `+ ${ev.name}`, 'heal');
           mark(ev.unit_id, 'heal');
           await sleep(T.summon);
+          break;
+        case 'effect': {
+          const label = ev.action === 'applied' ? `${ev.is_buff ? '▲' : '▼'} ${ev.label}`
+            : ev.action === 'removed' ? `✕ ${ev.label}`
+            : ev.action === 'stolen' ? `STOLEN ${ev.label}`
+            : ev.action === 'skip' ? 'STUNNED'
+            : ev.label;
+          const tone = ev.action === 'resisted' || ev.action === 'blocked' ? 'resist'
+            : ev.action === 'removed' || ev.action === 'stolen' ? 'passive'
+            : ev.is_buff ? 'buff' : 'debuff';
+          mark(ev.target_id, ev.is_buff && ev.action === 'applied' ? 'heal' : ev.action === 'applied' || ev.action === 'skip' ? 'hit' : 'shield');
+          floatAt(ev.target_id, label, tone);
+          await sleep(T.effect);
+          break;
+        }
+        case 'dot':
+          mark(ev.target_id, 'hit');
+          applyVitals(ev.target_id, { hp: ev.hp, shields: ev.shields, count: ev.count });
+          floatAt(ev.target_id, `-${ev.damage} ${ev.label}`, 'damage');
+          if (!ev.alive) {
+            await sleep(160);
+            floatAt(ev.target_id, 'DESTROYED', 'death');
+            applyVitals(ev.target_id, { is_alive: false });
+          }
+          await sleep(T.dot);
+          break;
+        case 'passive':
+          floatAt(ev.unit_id, `★ ${ev.text}`, 'passive');
+          await sleep(T.passive);
           break;
         case 'wave':
           setLaneFx((l) => ({ ...l, [ev.lane]: nextKey() }));

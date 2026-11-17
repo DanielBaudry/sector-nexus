@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Rocket, Users, Swords, Heart, Shield } from 'lucide-react';
 import { api } from '../../services/api';
 import { factionTone, getPortrait } from '../../utils/battleVisuals';
+import DifficultySelector from './DifficultySelector';
 
 /**
  * Pre-expedition loadout: attribute troop packs to each hero of the squad.
@@ -12,6 +13,7 @@ export default function RunSetupModal({ biome, squad, champions, onClose, onLaun
   const [loadout, setLoadout] = useState({});
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState(null);
+  const [difficulty, setDifficulty] = useState(1);
 
   const heroes = useMemo(
     () => (squad?.champion_ids || []).map((id) => champions.find((c) => c.id === id)).filter(Boolean),
@@ -59,7 +61,7 @@ export default function RunSetupModal({ biome, squad, champions, onClose, onLaun
     setLaunching(true);
     setError(null);
     try {
-      const run = await api.startRun(biome.id, squad.id, loadout);
+      const run = await api.startRun(biome.id, squad.id, loadout, difficulty);
       onLaunched(run);
     } catch (e) {
       setError(e.message);
@@ -84,6 +86,8 @@ export default function RunSetupModal({ biome, squad, champions, onClose, onLaun
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        <DifficultySelector biome={biome} value={difficulty} onChange={setDifficulty} />
 
         {!catalog && !error && <div className="py-10 text-center font-mono text-xs text-slate-500">Loading troop manifest…</div>}
 

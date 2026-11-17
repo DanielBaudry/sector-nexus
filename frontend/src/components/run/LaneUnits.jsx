@@ -1,6 +1,7 @@
 import React from 'react';
 import { Crown, Swords, Skull, Crosshair } from 'lucide-react';
 import { factionTone, getPortrait, getTroopArt, pct } from '../../utils/battleVisuals';
+import { EffectBadges, PassiveMark } from './StatusEffects';
 
 function Bar({ value, max, className, height = 'h-1.5' }) {
   return (
@@ -113,6 +114,12 @@ function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed
                 {unit.is_boss ? 'BOSS' : 'ELITE'}
               </span>
             )}
+            {alive && <PassiveMark passive={unit.passive} stacks={unit.passive_stacks} />}
+            {alive && unit.effects?.length > 0 && (
+              <div className="absolute bottom-0.5 inset-x-0.5">
+                <EffectBadges effects={unit.effects} />
+              </div>
+            )}
           </div>
 
           {/* Attached info strip */}
@@ -156,6 +163,11 @@ function TroopCard({ unit, onInspect, targetable = null, dimmed = false }) {
         <img src={getTroopArt(unit)} alt={unit.name} className="w-full h-full object-cover" />
         {enemy && <div className="absolute inset-0 bg-red-600/30 mix-blend-color pointer-events-none" />}
         <AimMarker targetable={targetable} />
+        {unit.is_alive && unit.effects?.length > 0 && (
+          <div className="absolute top-0.5 inset-x-0.5">
+            <EffectBadges effects={unit.effects} size="sm" max={4} />
+          </div>
+        )}
         <span className="absolute bottom-1 left-1/2 -translate-x-1/2 min-w-[2rem] text-center px-2 py-px rounded-full bg-slate-700/90 border border-slate-400/60 font-orbitron font-black text-sm text-white shadow-md">
           {unit.count}
         </span>

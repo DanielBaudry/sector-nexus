@@ -11,6 +11,7 @@ class PlayerProfile:
     warp_shards: int
     level: int = 1
     experience: int = 0
+    champion_xp: int = 0  # XP capsules earned on expeditions, distributed freely to champions
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -21,6 +22,7 @@ class PlayerProfile:
             "warp_shards": self.warp_shards,
             "level": self.level,
             "experience": self.experience,
+            "champion_xp": self.champion_xp,
         }
 
     @classmethod
@@ -33,4 +35,5 @@ class PlayerProfile:
             warp_shards=int(data.get("warp_shards", 10)),
             level=int(data.get("level", 1)),
             experience=int(data.get("experience", 0)),
+            champion_xp=int(data.get("champion_xp") or 0),
         )

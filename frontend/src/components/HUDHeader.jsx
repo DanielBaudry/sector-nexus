@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Sparkles, Coins, Zap, RefreshCw, Radio } from 'lucide-react';
+import { Shield, Sparkles, Coins, Zap, RefreshCw, Radio, FlaskConical } from 'lucide-react';
 
 export default function HUDHeader({ player, onResupply, activeExpedition, backgroundCount }) {
   if (!player) return null;
@@ -47,6 +47,15 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
             </div>
           </div>
 
+          {/* Champion XP capsules (earned on expeditions, spent in the Armory) */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-950/40 border border-fuchsia-500/30" title="Champion XP capsules — distribute in the Armory">
+            <FlaskConical className="w-4 h-4 text-fuchsia-400" />
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-400 font-mono uppercase">XP Pool</span>
+              <span className="font-orbitron text-sm font-bold text-fuchsia-300">{(player.champion_xp || 0).toLocaleString()}</span>
+            </div>
+          </div>
+
           {/* Warp Shards */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/40 border border-purple-500/30">
             <Zap className="w-4 h-4 text-purple-400" />
@@ -74,7 +83,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition, backgr
           {/* Emergency Resupply */}
           <button
             onClick={onResupply}
-            title="Refill test crystals and credits"
+            title="Testing: refill crystals, credits, warp shards and 25,000 champion XP"
             className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-600 transition"
           >
             <RefreshCw className="w-3 h-3" />

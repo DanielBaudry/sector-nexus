@@ -15,6 +15,10 @@ const FLOATER = {
   heal: 'text-emerald-300 text-lg',
   ability: 'text-cyan-100 text-sm font-orbitron tracking-wider bg-black/70 px-2 rounded border border-cyan-400/60',
   death: 'text-red-500 text-sm font-orbitron tracking-widest',
+  buff: 'text-emerald-200 text-xs font-orbitron tracking-wider bg-emerald-950/80 px-1.5 rounded border border-emerald-400/60',
+  debuff: 'text-red-200 text-xs font-orbitron tracking-wider bg-red-950/80 px-1.5 rounded border border-red-400/60',
+  resist: 'text-slate-200 text-xs font-orbitron tracking-wider bg-slate-800/90 px-1.5 rounded border border-slate-400/60',
+  passive: 'text-violet-100 text-xs font-orbitron tracking-wider bg-violet-950/85 px-1.5 rounded border border-violet-400/70',
 };
 
 /** Screen-space combat effects: tracer lines (attacker → target) and floating numbers. */

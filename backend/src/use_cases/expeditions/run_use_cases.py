@@ -3,11 +3,13 @@ import copy
 import uuid
 from typing import Any, Dict, List, Optional
 
+from src.domain.entities.artifact import Artifact
 from src.domain.entities.battle import LaneUnit
 from src.domain.entities.expedition_run import ExpeditionRun
 from src.domain.repositories.artifact_repository import IArtifactRepository
 from src.domain.repositories.champion_repository import IChampionRepository
 from src.domain.repositories.expedition_repository import IExpeditionRepository
+from src.domain.repositories.hero_kit_repository import IHeroKitRepository
 from src.domain.repositories.player_repository import IPlayerRepository
 from src.domain.repositories.squad_repository import ISquadRepository
 from src.domain.services.expedition_run_service import ExpeditionRunService
@@ -23,9 +25,15 @@ def _enum_value(v: Any) -> str:
 
 
 class _RunUseCase:
-    def __init__(self, expedition_repo: IExpeditionRepository, player_repo: Optional[IPlayerRepository] = None):
+    def __init__(
+        self,
+        expedition_repo: IExpeditionRepository,
+        player_repo: Optional[IPlayerRepository] = None,
+        artifact_repo: Optional[IArtifactRepository] = None,
+    ):
         self.expedition_repo = expedition_repo
         self.player_repo = player_repo
+        self.artifact_repo = artifact_repo
         self.service = ExpeditionRunService()
 
     def _require_run(self) -> ExpeditionRun:
@@ -39,16 +47,21 @@ class _RunUseCase:
 
     def _save(self, run: ExpeditionRun) -> Dict[str, Any]:
         if run.is_finished and not run.rewards_paid and self.player_repo:
-            payout = ExpeditionRunService.payout(run)
+            payout = self.service.finalize_payout(run)
             player = self.player_repo.get_profile()
             player.credits += payout.get("credits", 0)
             player.crystals += payout.get("crystals", 0)
-            player.experience += payout.get("experience", 0)
+            player.champion_xp += payout.get("champion_xp", 0)
             self.player_repo.save_profile(player)
+            if self.artifact_repo:
+                for data in payout.get("artifacts", []):
+                    self.artifact_repo.save(Artifact.from_dict(data))
             run.rewards_paid = True
+            lost = payout.get("artifacts_lost", 0)
             run.log.append(
                 f"💰 Banked {payout.get('credits', 0)} CR, {payout.get('crystals', 0)} crystals, "
-                f"{payout.get('experience', 0)} XP."
+                f"{payout.get('champion_xp', 0)} champion XP, {len(payout.get('artifacts', []))} artifact(s)"
+                + (f" ({lost} lost in extraction)." if lost else ".")
             )
         self.expedition_repo.save_active_run(run)
         return run.to_dict()
@@ -73,13 +86,18 @@ class StartExpeditionRunUseCase(_RunUseCase):
         squad_repo: ISquadRepository,
         champion_repo: IChampionRepository,
         artifact_repo: IArtifactRepository,
+        hero_kit_repo: Optional[IHeroKitRepository] = None,
     ):
         super().__init__(expedition_repo)
         self.squad_repo = squad_repo
         self.champion_repo = champion_repo
         self.artifact_repo = artifact_repo
+        self.hero_kit_repo = hero_kit_repo
 
-    def execute(self, biome_id: str, squad_id: str, troop_assignments: Optional[Dict[str, List[str]]] = None) -> Dict[str, Any]:
+    def execute(
+        self, biome_id: str, squad_id: str, troop_assignments: Optional[Dict[str, List[str]]] = None,
+        difficulty: int = 1,
+    ) -> Dict[str, Any]:
         current = self.expedition_repo.get_active_run()
         if current and not current.is_finished:
             raise ValueError("An expedition run is already in progress. Finish or abandon it first.")
@@ -87,6 +105,8 @@ class StartExpeditionRunUseCase(_RunUseCase):
         biome = self.expedition_repo.get_biome_by_id(biome_id)
         if not biome:
             raise ValueError(f"Biome {biome_id} not found.")
+        if not 1 <= difficulty <= biome.max_difficulty:
+            raise ValueError(f"{biome.name} supports difficulty 1 to {biome.max_difficulty}.")
         squad = self.squad_repo.get_by_id(squad_id)
         if not squad or not squad.champion_ids:
             raise ValueError("Invalid squad or empty squad.")
@@ -103,7 +123,7 @@ class StartExpeditionRunUseCase(_RunUseCase):
             if not champ:
                 continue
             eff = champ.get_effective_stats(artifacts)
-            cards = copy.deepcopy(champ.cards)
+            cards = self.hero_kit_repo.apply_to_cards(champ.cards) if self.hero_kit_repo else copy.deepcopy(champ.cards)
             for card in cards:
                 if card.id in lane_scopes:
                     card.lane_scope = lane_scopes[card.id]
@@ -127,6 +147,9 @@ class StartExpeditionRunUseCase(_RunUseCase):
                 speed=eff.speed,
                 crit_rate=eff.crit_rate,
                 crit_damage=eff.crit_damage,
+                accuracy=eff.accuracy,
+                resistance=eff.resistance,
+                passive=self.hero_kit_repo.get_passive(champ.template_id) if self.hero_kit_repo else None,
                 cards=cards,
                 gambits=copy.deepcopy(champ.gambits),
                 avatar_color=champ.avatar_color,
@@ -163,8 +186,9 @@ class StartExpeditionRunUseCase(_RunUseCase):
             current_node_id=nodes[0].id,
             heroes=heroes,
             troops=troops,
+            difficulty=difficulty,
             log=[
-                f"🚀 Strike team landed on {biome.name}.",
+                f"🚀 Strike team landed on {biome.name}" + (f" — difficulty {difficulty}." if biome.max_difficulty > 1 else "."),
                 f"⚠️ Hazard: {biome.hazard_name} — {biome.hazard_description}",
                 "🗺️ Choose your path. The apex threat waits at the end.",
             ],

@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, Crosshair, Rocket, Radio, Users, Hourglass
 import { api } from '../../services/api';
 import TimerBar from '../TimerBar';
 import { SKILL_IMAGES } from '../CardChoice';
+import { EFFECT_META, EffectBadges, EffectSpecChips } from './StatusEffects';
 import { HeroTile, TroopTile } from './LaneUnits';
 import ObjectiveTracker from './ObjectiveTracker';
 import UnitInfoPopover from './UnitInfoPopover';
@@ -48,7 +49,7 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(card)}
       onBlur={() => onHover(null)}
-      title={card.description}
+      title={[card.description, ...(card.effects || []).map((e) => `• ${e.description}`)].join('\n')}
       className={`relative shrink-0 h-full max-h-[128px] w-[clamp(84px,7.2vw,120px)] rounded-xl border-2 text-left overflow-hidden flex flex-col transition-all ${
         onCooldown
           ? 'border-slate-800 bg-slate-950 opacity-50 cursor-not-allowed'
@@ -62,6 +63,20 @@ function AbilityCard({ card, index, disabled, selected, onPlay, onHover }) {
       <div className="relative flex-1 min-h-0 bg-black/60 flex items-center justify-center overflow-hidden">
         {img ? <img src={img} alt="" className="h-full w-full object-contain p-1" /> : isSummon ? <Users className="w-1/3 h-1/3 text-emerald-300" /> : <Crosshair className="w-1/3 h-1/3 text-cyan-300" />}
         <span className="absolute top-0.5 left-0.5 font-mono text-[9px] px-1 rounded bg-black/80 border border-slate-600 text-slate-300">{index + 1}</span>
+        {card.effects?.length > 0 && (
+          <span className="absolute top-0.5 right-0.5 flex flex-col gap-0.5">
+            {card.effects.slice(0, 3).map((e, i) => {
+              const meta = EFFECT_META[e.type];
+              if (!meta) return null;
+              const Icon = meta.icon;
+              return (
+                <span key={i} className="w-4 h-4 rounded flex items-center justify-center bg-black/85 border" style={{ borderColor: meta.color }}>
+                  <Icon className="w-2.5 h-2.5" style={{ color: meta.color }} />
+                </span>
+              );
+            })}
+          </span>
+        )}
       </div>
       <div className="shrink-0 px-1.5 py-1 border-t border-white/10">
         <div className="font-orbitron font-bold text-[10px] leading-tight text-slate-100 truncate">{card.name}</div>
@@ -433,6 +448,12 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                   <div>
                     <div className="font-orbitron font-black text-base text-cyan-200 leading-tight truncate">{actor.name}</div>
                     <div className="font-mono text-[11px] text-slate-400">{LANE_NAMES[actor.lane]} · HP {actor.hp}/{actor.max_hp}</div>
+                    {actor.passive && (
+                      <div className="font-mono text-[10px] text-violet-300 truncate" title={actor.passive.description}>
+                        ★ {actor.passive.name}{actor.passive_stacks ? ` ×${actor.passive_stacks}` : ''}
+                      </div>
+                    )}
+                    {actor.effects?.length > 0 && <div className="mt-1 flex"><EffectBadges effects={actor.effects} /></div>}
                   </div>
                   <TimerBar
                     startedAt={battle.turn_started_at}
@@ -462,6 +483,12 @@ export default function LaneBattleBoard({ run, onRunUpdated, onAnimatingChange }
                         <button onClick={() => setTargeting(null)} className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700">CANCEL [ESC]</button>
                       </span>
                     </>
+                  ) : hoverCard ? (
+                    <span className="flex items-center gap-2 min-w-0 text-slate-300">
+                      <b className="font-orbitron text-slate-100 shrink-0">{hoverCard.name}</b>
+                      <span className="truncate">{hoverCard.description}</span>
+                      <span className="shrink-0"><EffectSpecChips effects={hoverCard.effects} /></span>
+                    </span>
                   ) : (
                     <span>Choose an ability · targeted abilities: pick a unit, or click the ability again to auto-target</span>
                   )}

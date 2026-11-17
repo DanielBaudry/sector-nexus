@@ -1,11 +1,13 @@
 import random
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from src.domain.entities.battle import LANE_COUNT, LANE_NAMES
 from src.domain.entities.biome import Biome
 from src.domain.entities.expedition_run import ExpeditionRun
 from src.domain.services.encounter_factory import EncounterFactory
 from src.domain.services.lane_battle_engine import LaneBattleEngine
+from src.domain.services.loot_service import LootService
+from src.domain.value_objects.difficulty import Difficulty
 from src.domain.value_objects.enums import BattleStatus, NodeType, RunStatus, Side
 from src.domain.value_objects.troop import TroopTemplate
 
@@ -47,8 +49,8 @@ class ExpeditionRunService:
         run.current_node_id = node.id
 
         if node.type in BATTLE_NODES:
-            battle = self.encounters.build(biome, node)
-            battle.summon_templates = dict(summon_templates)
+            battle = self.encounters.build(biome, node, run.difficulty)
+            battle.summon_templates.update(summon_templates)
             run.battle = battle
             run.status = RunStatus.DEPLOYMENT
             run.log.append(f"⚔️ Contact! {node.type.value} at {node.id}. Deploy your heroes to the lanes.")
@@ -62,13 +64,17 @@ class ExpeditionRunService:
                     pack.hp += int(missing * REST_TROOP_REGROUP)
             run.log.append("⛺ Field camp: heroes patched up, troops regrouped.")
         elif node.type == NodeType.CACHE:
+            mult = Difficulty(run.difficulty).reward_mult
             loot = {
-                "credits": self.rng.randint(200, 450),
-                "crystals": self.rng.randint(10, 30),
-                "experience": self.rng.randint(30, 60),
+                "credits": int(self.rng.randint(200, 450) * mult),
+                "crystals": int(self.rng.randint(10, 30) * mult),
+                **LootService(self.rng).node_loot(biome, node.type, node.threat, run.difficulty),
             }
             self._add_rewards(run, loot)
-            run.log.append(f"📦 Supply cache: +{loot['credits']} CR, +{loot['crystals']} crystals.")
+            found = f", {len(loot['artifacts'])} artifact(s)" if loot["artifacts"] else ""
+            run.log.append(
+                f"📦 Supply cache: +{loot['credits']} CR, +{loot['crystals']} crystals, +{loot['champion_xp']} XP{found}."
+            )
 
     # ── Battle ──────────────────────────────────────────────────────────────
     def deploy(self, run: ExpeditionRun, assignments: Dict[str, int], now: Optional[float] = None) -> None:
@@ -94,6 +100,8 @@ class ExpeditionRunService:
             hero.turn_meter = 0.0
             hero.cooldowns = {}
             hero.actions_taken = 0
+            hero.effects = []
+            hero.passive_stacks = 0
             hero.shields = hero.max_shields  # shields recharge between battles; hull damage persists
             for pack in run.troops_of(hero.id):
                 pack.lane = lane
@@ -137,13 +145,30 @@ class ExpeditionRunService:
             run.battle.current_actor_id = None
         run.log.append("🛰️ Emergency extraction called. Expedition abandoned.")
         self._cleanup_after_battle(run)
+        self.finalize_payout(run)
 
     # ── Rewards ─────────────────────────────────────────────────────────────
-    @staticmethod
-    def payout(run: ExpeditionRun) -> Dict[str, int]:
-        """Loot banked to the player when the run ends."""
-        share = 1.0 if run.status == RunStatus.VICTORY else DEFEAT_REWARD_SHARE
-        return {k: int(v * share) for k, v in run.rewards.items()}
+    def finalize_payout(self, run: ExpeditionRun) -> Dict[str, Any]:
+        """
+        Loot banked when the run ends: everything on victory, half otherwise
+        (currencies halved, a random half of the artifacts kept, rounded up).
+        Computed once so the client and the bank always agree.
+        """
+        if run.payout is not None:
+            return run.payout
+        full = run.status == RunStatus.VICTORY
+        share = 1.0 if full else DEFEAT_REWARD_SHARE
+        payout: Dict[str, Any] = {
+            k: int(v * share) for k, v in run.rewards.items() if isinstance(v, (int, float))
+        }
+        artifacts = list(run.rewards.get("artifacts", []))
+        if not full and artifacts:
+            keep = -(-len(artifacts) // 2)  # ceil
+            artifacts = self.rng.sample(artifacts, keep)
+        payout["artifacts"] = artifacts
+        payout["artifacts_lost"] = len(run.rewards.get("artifacts", [])) - len(artifacts)
+        run.payout = payout
+        return payout
 
     # ── Internals ───────────────────────────────────────────────────────────
     def _settle(self, run: ExpeditionRun) -> None:
@@ -155,6 +180,11 @@ class ExpeditionRunService:
         node = run.current_node
         if battle.status == BattleStatus.WON:
             self._add_rewards(run, battle.rewards)
+            drops = len(battle.rewards.get("artifacts", []))
+            run.log.append(
+                f"🎁 Loot: +{battle.rewards.get('credits', 0)} CR, +{battle.rewards.get('champion_xp', 0)} XP"
+                + (f", {drops} artifact(s)" if drops else "") + "."
+            )
             if node and node.type == NodeType.BOSS:
                 run.status = RunStatus.VICTORY
                 run.log.append(f"🏆 {run.biome_name} conquered!")
@@ -168,6 +198,8 @@ class ExpeditionRunService:
             run.status = RunStatus.DEFEAT
             run.log.append(f"❌ Defeated at node {battle.node_id}. Expedition lost.")
         self._cleanup_after_battle(run)
+        if run.is_finished:
+            self.finalize_payout(run)
 
     def _cleanup_after_battle(self, run: ExpeditionRun) -> None:
         # Summoned packs dissolve; destroyed packs are gone for the rest of the run.
@@ -176,12 +208,17 @@ class ExpeditionRunService:
         for unit in run.heroes + run.troops:
             unit.lane = None
             unit.turn_meter = 0.0
+            unit.effects = []      # buffs / debuffs never carry over between nodes
+            unit.passive_stacks = 0
         if run.battle:
             for unit in run.battle.units:
                 if unit.side == Side.ALLY and unit.is_troop and unit.id not in roster_ids:
                     unit.is_alive = False
 
     @staticmethod
-    def _add_rewards(run: ExpeditionRun, loot: Dict[str, int]) -> None:
+    def _add_rewards(run: ExpeditionRun, loot: Dict[str, Any]) -> None:
         for key, value in loot.items():
-            run.rewards[key] = run.rewards.get(key, 0) + value
+            if isinstance(value, list):
+                run.rewards.setdefault(key, []).extend(value)
+            else:
+                run.rewards[key] = run.rewards.get(key, 0) + value

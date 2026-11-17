@@ -20,6 +20,7 @@ class ChampionSQL(SQLModel, table=True):
     equipped_artifact_ids: dict = Field(default_factory=dict, sa_column=Column(JSON))
     avatar_color: str = "#3b82f6"
     avatar_icon: str = "Shield"
+    rank: int = 0
 
 
 class ArtifactSQL(SQLModel, table=True):
@@ -33,9 +34,10 @@ class ArtifactSQL(SQLModel, table=True):
     set_type: str
     level: int = 1
     main_stat_name: str
-    main_stat_value: int
+    main_stat_value: float
     sub_stats: list = Field(default_factory=list, sa_column=Column(JSON))
     equipped_to: Optional[str] = None
+    rank: int = 5
 
 
 class SquadSQL(SQLModel, table=True):
@@ -56,6 +58,7 @@ class PlayerProfileSQL(SQLModel, table=True):
     warp_shards: int = 15
     level: int = 1
     experience: int = 0
+    champion_xp: int = 0
 
 
 class BackgroundExpeditionSQL(SQLModel, table=True):

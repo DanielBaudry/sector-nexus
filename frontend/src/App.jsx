@@ -122,6 +122,11 @@ export default function App() {
     } catch (err) {}
   };
 
+  // Lock the player inside the expedition view while a run exists.
+  useEffect(() => {
+    if (activeRun && activeTab !== 'combat') setActiveTab('combat');
+  }, [activeRun, activeTab]);
+
   const handleStartCombat = (run) => {
     setActiveRun(run);
     setActiveTab('combat');
@@ -162,6 +167,9 @@ export default function App() {
   }
 
   const runInProgress = !!activeRun && !['VICTORY', 'DEFEAT', 'ABANDONED'].includes(activeRun.status);
+  // Expedition mode: while a run exists (even finished, until its report is closed) the
+  // rest of the base is locked — extract or win to leave. No HUD / nav: full immersion.
+  const inExpedition = !!activeRun;
   const hasActiveCombat = runInProgress;
   // Summary consumed by the HUD header and Command Deck widgets.
   const expeditionSummary = activeRun
@@ -178,20 +186,24 @@ export default function App() {
       {/* Background Holographic Scanlines */}
       <div className="fixed inset-0 scanlines pointer-events-none z-50 opacity-40" />
 
-      {/* Persistent HUD Header */}
-      <HUDHeader
-        player={player}
-        onResupply={handleResupply}
-        activeExpedition={expeditionSummary}
-        backgroundCount={backgroundExpeditions.filter((e) => !e.claimed).length}
-      />
+      {!inExpedition && (
+        <>
+          {/* Persistent HUD Header */}
+          <HUDHeader
+            player={player}
+            onResupply={handleResupply}
+            activeExpedition={expeditionSummary}
+            backgroundCount={backgroundExpeditions.filter((e) => !e.claimed).length}
+          />
 
-      {/* Navigation Bar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        hasActiveCombat={hasActiveCombat}
-      />
+          {/* Navigation Bar */}
+          <Navbar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            hasActiveCombat={hasActiveCombat}
+          />
+        </>
+      )}
 
       {/* Main Tactical Viewport */}
       <main className={`flex-1 w-full mx-auto relative z-10 ${
@@ -226,6 +238,7 @@ export default function App() {
             champions={champions}
             artifacts={artifacts}
             player={player}
+            squads={squads}
             onRefreshChampions={refreshChampions}
             onRefreshArtifacts={refreshArtifacts}
             onRefreshPlayer={(p) => setPlayer(p)}
@@ -256,13 +269,16 @@ export default function App() {
             run={activeRun}
             onRunUpdated={(updated) => setActiveRun(updated)}
             onRunCleared={async () => {
-              const [pData, chData] = await Promise.all([
+              setActiveRun(null);
+              setActiveTab('deck');
+              const [pData, chData, artData] = await Promise.all([
                 api.getPlayerProfile(),
                 api.getChampions(),
+                api.getArtifacts(),
               ]);
               setPlayer(pData);
               setChampions(chData);
-              setActiveRun(null);
+              setArtifacts(artData);
             }}
             setActiveTab={setActiveTab}
           />

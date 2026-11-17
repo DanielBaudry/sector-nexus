@@ -13,6 +13,8 @@ class Stats:
     speed: int
     crit_rate: float  # e.g. 0.15 for 15%
     crit_damage: float  # e.g. 1.50 for 150%
+    accuracy: int = 10   # lands debuffs against Resistance
+    resistance: int = 30  # resists incoming debuffs
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -25,6 +27,8 @@ class Stats:
             "speed": self.speed,
             "crit_rate": round(self.crit_rate, 2),
             "crit_damage": round(self.crit_damage, 2),
+            "accuracy": self.accuracy,
+            "resistance": self.resistance,
         }
 
     @classmethod
@@ -39,4 +43,6 @@ class Stats:
             speed=int(data.get("speed", 100)),
             crit_rate=float(data.get("crit_rate", 0.15)),
             crit_damage=float(data.get("crit_damage", 1.5)),
+            accuracy=int(data.get("accuracy", 10)),
+            resistance=int(data.get("resistance", 30)),
         )
