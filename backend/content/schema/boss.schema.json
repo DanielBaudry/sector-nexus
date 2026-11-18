@@ -56,14 +56,14 @@
         "power_multiplier": {
           "default": 1.0,
           "description": "Damage = attack \u00d7 this.",
-          "minimum": 0,
+          "minimum": 0.0,
           "title": "Power Multiplier",
           "type": "number"
         },
         "heal_multiplier": {
           "default": 0.0,
           "description": "Heal = attack \u00d7 this.",
-          "minimum": 0,
+          "minimum": 0.0,
           "title": "Heal Multiplier",
           "type": "number"
         },
@@ -215,8 +215,8 @@
         "chance": {
           "default": 1.0,
           "description": "Base land chance for debuffs (Accuracy vs Resistance applies).",
-          "maximum": 1,
-          "minimum": 0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Chance",
           "type": "number"
         },
@@ -471,8 +471,8 @@
         },
         "threshold": {
           "description": "HP ratio that triggers the phase (first phase: 1.0).",
-          "maximum": 1,
-          "minimum": 0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Threshold",
           "type": "number"
         },
@@ -519,7 +519,7 @@
         "shield_pct": {
           "default": 0.0,
           "description": "Shield gained on entering, as a share of max HP.",
-          "minimum": 0,
+          "minimum": 0.0,
           "title": "Shield Pct",
           "type": "number"
         }
@@ -610,14 +610,14 @@
         },
         "crit_rate": {
           "default": 0.1,
-          "maximum": 1,
-          "minimum": 0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Crit Rate",
           "type": "number"
         },
         "crit_damage": {
           "default": 1.5,
-          "minimum": 1,
+          "minimum": 1.0,
           "title": "Crit Damage",
           "type": "number"
         },

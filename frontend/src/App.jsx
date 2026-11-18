@@ -143,7 +143,7 @@ export default function App() {
     : null;
 
   return (
-    <div className={`${activeTab === 'combat' ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-[#050811] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-black`}>
+    <div className={`${activeTab === 'combat' ? 'h-screen overflow-hidden' : activeTab === 'expeditions' ? 'min-h-screen lg:h-screen lg:overflow-hidden' : 'min-h-screen'} bg-[#050811] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-black`}>
       {/* Background Holographic Scanlines */}
       <div className="fixed inset-0 scanlines pointer-events-none z-50 opacity-40" />
 
@@ -169,6 +169,8 @@ export default function App() {
       <main className={`flex-1 w-full mx-auto relative z-10 ${
         activeTab === 'combat'
           ? 'min-h-0 overflow-hidden px-3 py-2 max-w-[1920px]'
+          : activeTab === 'expeditions'
+          ? 'min-h-0 lg:overflow-hidden px-4 py-4 max-w-[1920px]'
           : 'max-w-7xl p-4 sm:p-6 pb-20'
       }`}>
         {activeTab === 'deck' && (
@@ -237,7 +239,7 @@ export default function App() {
       </main>
 
       {/* Bottom Footer Info */}
-      {activeTab !== 'combat' && (
+      {activeTab !== 'combat' && activeTab !== 'expeditions' && (
         <footer className="border-t border-slate-900 bg-[#04060d] py-3 px-4 text-center font-mono text-[13px] text-slate-500">
           SECTOR NEXUS // FASTAPI CLEAN ARCHITECTURE & REACT HUD // V1.0.0
         </footer>

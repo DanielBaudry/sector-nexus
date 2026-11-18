@@ -191,6 +191,8 @@ class ContentLibrary:
                 enemy_pool=[_plain(e) for e in p.enemy_pool],
                 max_difficulty=p.max_difficulty,
                 difficulty_enemies=[_plain(e) for e in p.difficulty_enemies],
+                image=p.image,
+                image_hue=p.image_hue,
             ))
         return out
 

@@ -1,107 +1,165 @@
-import React, { useEffect, useState } from 'react';
-import { Compass, AlertTriangle, ArrowRight, Crosshair, Crown, Network } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Crosshair, Swords } from 'lucide-react';
 import { api } from '../services/api';
-import PlanetView, { PLANET_ICONS } from './PlanetView';
+import Starfield from '../components/space/Starfield';
+import PlanetGlobe from '../components/space/PlanetGlobe';
+import PlanetView from './PlanetView';
 
-/** Sector Map: pick a planet. Each planet opens its own page (expeditions + enemy hierarchy). */
-export default function ExpeditionMapView({ biomes, squads, champions = [], activeRun, onStartCombat }) {
-  const [planetId, setPlanetId] = useState(null);
+const TRAVEL_MS = 750;
+
+/** Small tinted planet for the system strip. */
+function PlanetThumb({ planet, size = 44 }) {
+  return (
+    <img
+      src={planet.image}
+      alt=""
+      draggable={false}
+      style={{ width: size, height: size, filter: planet.image_hue ? `hue-rotate(${planet.image_hue}deg)` : undefined }}
+      className="object-contain shrink-0"
+    />
+  );
+}
+
+/**
+ * Sector Map: a starfield with the selected planet on the left and its info (expeditions +
+ * hierarchy) on the right. Switch planets with the system strip, the arrows or ← / →:
+ * the camera "jumps" — stars streak, the old planet flies off and the new one arrives from depth.
+ */
+export default function ExpeditionMapView({ biomes = [], squads, champions = [], activeRun, onStartCombat }) {
+  const [index, setIndex] = useState(() => {
+    const i = biomes.findIndex((b) => b.id === activeRun?.biome_id);
+    return i >= 0 ? i : 0;
+  });
+  const [leaving, setLeaving] = useState(null);    // { planet, dir } — the planet flying away
+  const [dir, setDir] = useState(1);
+  const [warpKey, setWarpKey] = useState(0);
   const [hierarchies, setHierarchies] = useState({});
+  const timer = useRef(null);
   const currentSquad = squads?.[0] || { id: 'squad_alpha' };
   const runInProgress = activeRun && !['VICTORY', 'DEFEAT', 'ABANDONED'].includes(activeRun.status);
+  const planet = biomes[index];
 
   useEffect(() => {
-    if (planetId) return;
-    (biomes || []).forEach((b) => {
+    biomes.forEach((b) => {
       api.getHierarchy(b.id).then((h) => setHierarchies((prev) => ({ ...prev, [b.id]: h }))).catch(() => {});
     });
-  }, [biomes, planetId]);
+  }, [biomes]);
 
-  const planet = biomes?.find((b) => b.id === planetId);
-  if (planet) {
-    return (
-      <PlanetView
-        biome={planet}
-        squad={currentSquad}
-        champions={champions}
-        activeRun={activeRun}
-        onBack={() => setPlanetId(null)}
-        onStartCombat={onStartCombat}
-      />
-    );
-  }
+  const goTo = useCallback((next, direction) => {
+    if (!biomes.length || next === index) return;
+    const wrapped = (next + biomes.length) % biomes.length;
+    const d = direction ?? (wrapped > index ? 1 : -1);
+    setLeaving({ planet: biomes[index], dir: d });
+    setDir(d);
+    setIndex(wrapped);
+    setWarpKey((k) => k + 1);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setLeaving(null), TRAVEL_MS);
+  }, [biomes, index]);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  // Keyboard: ← / → travel between planets (ignored while typing or inside dialogs).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.closest?.('input, textarea, select') || document.querySelector('[role="dialog"]')) return;
+      if (e.key === 'ArrowRight') goTo(index + 1, 1);
+      if (e.key === 'ArrowLeft') goTo(index - 1, -1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goTo, index]);
+
+  if (!planet) return null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-orbitron font-black text-2xl text-slate-100 flex items-center gap-2">
-          <Compass className="w-6 h-6 text-cyan-400" />
-          PLANETARY EXPEDITION SECTORS
-        </h2>
-        <p className="text-xs font-mono text-slate-400 mt-0.5">
-          CHOOSE A PLANET · RUN EXPEDITIONS · HUNT ITS COMMAND HIERARCHY
-        </p>
-      </div>
+    <div className="relative h-full min-h-0">
+      <Starfield tint={planet.color} warpKey={warpKey} warpDir={dir} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {biomes?.map((biome) => {
-          const Icon = PLANET_ICONS[biome.icon_name] || Compass;
-          const h = hierarchies[biome.id];
-          const champs = h?.champions || [];
-          const fallen = champs.filter((c) => c.status === 'DEFEATED').length;
-          const target = champs.find((c) => c.id === h?.target_id);
-          const here = runInProgress && activeRun.biome_id === biome.id;
-          return (
-            <button
-              key={biome.id}
-              onClick={() => setPlanetId(biome.id)}
-              className={`group text-left relative overflow-hidden rounded-2xl border border-cyan-500/30 hover:border-cyan-300 bg-gradient-to-br ${biome.bg_gradient} p-6 shadow-xl flex flex-col gap-4 transition hover:-translate-y-0.5`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-white/20" style={{ backgroundColor: biome.color }}>
-                  <Icon className="w-6 h-6 text-black" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-orbitron font-black text-xl text-slate-100">{biome.name}</h3>
-                  <div className="flex flex-wrap gap-1.5 mt-0.5 font-mono text-[12px]">
-                    <span className="text-cyan-300">REC POWER {biome.recommended_power}</span>
-                    {biome.max_difficulty > 1 && (
-                      <span className="px-1.5 rounded bg-red-950/60 text-red-300 border border-red-500/40">DIFFICULTY 1–{biome.max_difficulty}</span>
-                    )}
-                    {here && <span className="px-1.5 rounded bg-red-600 text-white animate-pulse">RUN IN PROGRESS</span>}
-                  </div>
-                </div>
-                <ArrowRight className="ml-auto w-5 h-5 text-slate-500 group-hover:text-cyan-300 group-hover:translate-x-1 transition" />
+      <div className="relative z-10 h-full min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(460px,44%)] gap-4">
+        {/* ── Stage: planet + system strip ── */}
+        <div className="relative flex flex-col min-h-[420px] lg:min-h-0">
+          <div className="relative flex-1 min-h-0 flex items-center justify-center">
+            {leaving && (
+              <div key={`out-${leaving.planet.id}-${warpKey}`} className={`absolute w-[min(78%,62vh)] planet-exit-${leaving.dir > 0 ? 'left' : 'right'}`}>
+                <PlanetGlobe planet={leaving.planet} />
               </div>
+            )}
+            <div key={`in-${planet.id}`} className={`relative w-[min(78%,62vh)] ${leaving ? `planet-enter-${dir > 0 ? 'right' : 'left'}` : ''}`}>
+              <PlanetGlobe planet={planet} />
+            </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed">{biome.description}</p>
+            {/* Prev / next */}
+            {biomes.length > 1 && (
+              <>
+                <button onClick={() => goTo(index - 1, -1)} title="Previous planet (←)"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 border border-white/10 text-slate-300 hover:text-white hover:border-cyan-400/70 hover:bg-cyan-950/40 backdrop-blur-sm transition">
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button onClick={() => goTo(index + 1, 1)} title="Next planet (→)"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/40 border border-white/10 text-slate-300 hover:text-white hover:border-cyan-400/70 hover:bg-cyan-950/40 backdrop-blur-sm transition">
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
 
-              <div className="p-2.5 rounded-lg bg-black/40 border border-slate-700/80 text-[13px] font-mono flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span><span className="text-amber-300 font-bold uppercase">{biome.hazard_name}</span> <span className="text-slate-400">— {biome.hazard_description}</span></span>
+            {/* Planet label over the stage */}
+            <div key={`label-${planet.id}`} className="planet-label absolute bottom-2 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+              <div className="font-mono text-[11px] tracking-[0.4em] text-slate-400">PLANET {index + 1} / {biomes.length}</div>
+              <div className="font-orbitron font-black text-2xl tracking-widest text-white" style={{ textShadow: `0 0 18px ${planet.color}` }}>
+                {planet.name.split(':')[0].toUpperCase()}
               </div>
+            </div>
+          </div>
 
-              <div className="mt-auto pt-3 border-t border-slate-700/60 flex flex-wrap items-center gap-2 font-mono text-[12px]">
-                {champs.length ? (
-                  <>
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-black/50 border border-amber-500/40 text-amber-200">
-                      <Crown className="w-3.5 h-3.5" /> HIERARCHY {fallen}/{champs.length} FALLEN
+          {/* System strip */}
+          <div className="shrink-0 flex justify-center gap-2 pt-2 overflow-x-auto">
+            {biomes.map((b, i) => {
+              const active = i === index;
+              const h = hierarchies[b.id];
+              const target = h?.champions?.find((c) => c.id === h.target_id);
+              const here = runInProgress && activeRun.biome_id === b.id;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => goTo(i)}
+                  className={`group flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl border backdrop-blur-sm transition ${
+                    active ? 'bg-white/10 border-white/40' : 'bg-black/40 border-white/10 hover:border-white/30 hover:bg-white/5'
+                  }`}
+                  style={active ? { boxShadow: `0 0 18px ${b.color}55`, borderColor: `${b.color}aa` } : undefined}
+                >
+                  <PlanetThumb planet={b} size={active ? 40 : 34} />
+                  <span className="text-left">
+                    <span className={`block font-orbitron font-bold text-[12px] leading-tight ${active ? 'text-white' : 'text-slate-300'}`}>
+                      {b.name.split(':')[0]}
                     </span>
-                    {target ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/50 text-cyan-200">
-                        <Crosshair className="w-3.5 h-3.5" /> HUNTING {target.name.toUpperCase()} · {target.standing.influence}/{target.influence_required}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">No target chosen</span>
-                    )}
-                  </>
-                ) : (
-                  <span className="flex items-center gap-1 text-slate-500"><Network className="w-3.5 h-3.5" /> Hierarchy uncharted</span>
-                )}
-              </div>
-            </button>
-          );
-        })}
+                    <span className="flex items-center gap-1 font-mono text-[10px] text-slate-400">
+                      {here ? (
+                        <><Swords className="w-3 h-3 text-red-400" /> RUN ACTIVE</>
+                      ) : target ? (
+                        <><Crosshair className="w-3 h-3 text-cyan-300" /> {target.name}</>
+                      ) : (
+                        <>PWR {b.recommended_power}</>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Info panel ── */}
+        <div key={`panel-${planet.id}`} className="panel-enter min-h-0 lg:overflow-y-auto rounded-2xl border border-white/10 bg-[#050811]/70 backdrop-blur-md p-5 shadow-2xl"
+          style={{ boxShadow: `0 0 40px ${planet.color}1f, inset 0 1px 0 #ffffff12` }}>
+          <PlanetView
+            biome={planet}
+            squad={currentSquad}
+            champions={champions}
+            activeRun={activeRun}
+            onStartCombat={onStartCombat}
+          />
+        </div>
       </div>
     </div>
   );

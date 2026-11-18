@@ -56,14 +56,14 @@
         "power_multiplier": {
           "default": 1.0,
           "description": "Damage = attack \u00d7 this.",
-          "minimum": 0,
+          "minimum": 0.0,
           "title": "Power Multiplier",
           "type": "number"
         },
         "heal_multiplier": {
           "default": 0.0,
           "description": "Heal = attack \u00d7 this.",
-          "minimum": 0,
+          "minimum": 0.0,
           "title": "Heal Multiplier",
           "type": "number"
         },
@@ -215,8 +215,8 @@
         "chance": {
           "default": 1.0,
           "description": "Base land chance for debuffs (Accuracy vs Resistance applies).",
-          "maximum": 1,
-          "minimum": 0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Chance",
           "type": "number"
         },
@@ -582,6 +582,18 @@
       "default": 100,
       "description": "Position on the Sector Map (lower first).",
       "title": "Order",
+      "type": "integer"
+    },
+    "image": {
+      "default": "/assets/planets/char.png",
+      "description": "Planet art (transparent PNG) shown on the Sector Map.",
+      "title": "Image",
+      "type": "string"
+    },
+    "image_hue": {
+      "default": 0,
+      "description": "Hue rotation (deg) applied to the art \u2014 placeholder tinting until unique art exists.",
+      "title": "Image Hue",
       "type": "integer"
     },
     "enemy_pool": {

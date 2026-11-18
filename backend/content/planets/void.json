@@ -2,6 +2,8 @@
   "$schema": "../schema/planet.schema.json",
   "id": "biome_void",
   "order": 4,
+  "image": "/assets/planets/char.png",
+  "image_hue": 245,
   "name": "Derelict Station: Void Sector",
   "description": "Deep space laboratory contaminated by void anomalies and cyber-mutants.",
   "hazard_name": "Null-Atmosphere",

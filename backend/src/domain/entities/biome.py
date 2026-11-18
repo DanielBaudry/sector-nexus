@@ -21,6 +21,8 @@ class Biome:
     max_difficulty: int = 1
     # Extra enemies unlocked by difficulty: dicts with "min_tier", "role" (troop/elite/boss) and optional "cards".
     difficulty_enemies: List[Dict[str, Any]] = field(default_factory=list)
+    image: str = ""
+    image_hue: int = 0
 
     def tier_enemies(self, tier: int, role: str) -> List[Dict[str, Any]]:
         return [e for e in self.difficulty_enemies if e.get("role") == role and e.get("min_tier", 1) <= tier]
@@ -39,6 +41,8 @@ class Biome:
             "icon_name": self.icon_name,
             "enemy_pool": self.enemy_pool,
             "max_difficulty": self.max_difficulty,
+            "image": self.image,
+            "image_hue": self.image_hue,
             "difficulty_tiers": [Difficulty(t).to_dict() for t in range(1, self.max_difficulty + 1)],
             "difficulty_threats": [
                 {

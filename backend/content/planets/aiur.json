@@ -2,6 +2,8 @@
   "$schema": "../schema/planet.schema.json",
   "id": "biome_aiur",
   "order": 2,
+  "image": "/assets/planets/char.png",
+  "image_hue": 175,
   "name": "Aiur: Khaydarin Ruins",
   "description": "Ancient Protoss homeworld overgrown with crystal jungles and autonomous guardian pylons.",
   "hazard_name": "Psionic Resonance",

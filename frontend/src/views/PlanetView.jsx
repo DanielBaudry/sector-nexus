@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, AlertTriangle, Compass, Crosshair, Crown, Network, Swords, Flame, Sparkles, Radio } from 'lucide-react';
+import { AlertTriangle, Compass, Crosshair, Crown, Network, Swords, Flame, Sparkles, Radio, Skull } from 'lucide-react';
 import { api } from '../services/api';
 import RunSetupModal from '../components/run/RunSetupModal';
 import HierarchyTree from '../components/planet/HierarchyTree';
@@ -37,9 +37,10 @@ function TargetStrip({ target, onOpen }) {
 }
 
 function ExpeditionsTab({ biome, target, runInProgress, activeRun, onLaunch, onResume }) {
+  const threats = biome.difficulty_threats || [];
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br ${biome.bg_gradient} p-6 shadow-xl`}>
-      <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+    <div className="space-y-4">
+      <div className="space-y-4">
         <div className="space-y-4">
           <p className="text-sm text-slate-200 leading-relaxed">{biome.description}</p>
           <div className="p-3 rounded-lg bg-black/40 border border-slate-700/80 text-[13px] font-mono flex items-start gap-2">
@@ -55,8 +56,20 @@ function ExpeditionsTab({ biome, target, runInProgress, activeRun, onLaunch, onR
               <span key={set} className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">{set}</span>
             ))}
           </div>
+          {threats.length > 0 && (
+            <div>
+              <div className="font-mono text-[11px] tracking-widest text-slate-500 mb-1">THREATS AT HIGHER DIFFICULTY</div>
+              <div className="flex flex-wrap gap-1.5">
+                {threats.map((t) => (
+                  <span key={t.name} title={t.abilities.join(', ')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-red-500/40 bg-red-950/40 font-mono text-[12px] text-red-200">
+                    <Skull className="w-3 h-3" /> {t.name} <span className="text-red-400/80">T{t.min_tier}+</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="rounded-xl bg-black/50 border border-slate-700/70 p-4 flex flex-col gap-3">
+        <div className="rounded-xl bg-black/50 border border-slate-700/70 p-4 flex flex-col gap-3 backdrop-blur-sm">
           <div className="font-mono text-[11px] tracking-widest text-slate-400">LIVE DESCENT</div>
           <div className="font-mono text-[13px] text-slate-300 space-y-1">
             <div>Recommended power <b className="text-cyan-300">{biome.recommended_power}</b></div>
@@ -83,7 +96,7 @@ function ExpeditionsTab({ biome, target, runInProgress, activeRun, onLaunch, onR
  * A planet: launch expeditions, or study its enemy hierarchy and pick who to hunt.
  * Expeditions on the planet feed Influence to the targeted champion; enough Influence opens its boss fight.
  */
-export default function PlanetView({ biome, squad, champions, activeRun, onBack, onStartCombat }) {
+export default function PlanetView({ biome, squad, champions, activeRun, onStartCombat }) {
   const [tab, setTab] = useState('expeditions');
   const [hierarchy, setHierarchy] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -131,35 +144,36 @@ export default function PlanetView({ biome, squad, champions, activeRun, onBack,
   return (
     <div className="space-y-4">
       {/* Planet header */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-300" title="Back to Sector Map">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/20" style={{ backgroundColor: biome.color }}>
-          <Icon className="w-6 h-6 text-black" />
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-[11px] tracking-[0.3em] text-slate-500 flex items-center gap-1.5">
+            <Icon className="w-3.5 h-3.5" style={{ color: biome.color }} /> SECTOR MAP · PLANET
+          </div>
+          <h2 className="font-orbitron font-black text-3xl text-slate-100 leading-tight" style={{ textShadow: `0 0 24px ${biome.color}66` }}>{biome.name}</h2>
+          <div className="mt-1 flex flex-wrap gap-1.5 font-mono text-[12px]">
+            <span className="px-1.5 rounded bg-black/50 border border-slate-700 text-cyan-300">REC POWER {biome.recommended_power}</span>
+            {biome.max_difficulty > 1 && <span className="px-1.5 rounded bg-red-950/60 border border-red-500/40 text-red-300">DIFFICULTY 1–{biome.max_difficulty}</span>}
+            {hasHierarchy && <span className="px-1.5 rounded bg-black/50 border border-amber-500/40 text-amber-200">HIERARCHY {defeated}/{champions_.length} FALLEN</span>}
+          </div>
         </div>
-        <div className="min-w-0">
-          <div className="font-mono text-[11px] tracking-widest text-slate-500">SECTOR MAP / PLANET</div>
-          <h2 className="font-orbitron font-black text-2xl text-slate-100 leading-tight">{biome.name}</h2>
-        </div>
-        <div className="ml-auto flex gap-1 p-1 rounded-xl bg-black/50 border border-slate-800">
-          {tabs.map((t) => {
-            const TIcon = t.icon;
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-orbitron font-bold text-xs uppercase tracking-wider transition ${
-                  active ? 'bg-cyan-500 text-black' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
-                }`}
-              >
-                <TIcon className="w-4 h-4" /> {t.label}
-                {t.badge && <span className={`font-mono text-[11px] px-1 rounded ${active ? 'bg-black/20' : 'bg-slate-800 text-slate-300'}`}>{t.badge}</span>}
-              </button>
-            );
-          })}
-        </div>
+      </div>
+      <div className="flex gap-1 p-1 rounded-xl bg-black/50 border border-slate-800 w-fit">
+        {tabs.map((t) => {
+          const TIcon = t.icon;
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-orbitron font-bold text-xs uppercase tracking-wider transition ${
+                active ? 'bg-cyan-500 text-black' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+              }`}
+            >
+              <TIcon className="w-4 h-4" /> {t.label}
+              {t.badge && <span className={`font-mono text-[11px] px-1 rounded ${active ? 'bg-black/20' : 'bg-slate-800 text-slate-300'}`}>{t.badge}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {hasHierarchy && <TargetStrip target={target} onOpen={() => { setTab('hierarchy'); if (target) setSelectedId(target.id); }} />}
@@ -178,8 +192,8 @@ export default function PlanetView({ biome, squad, champions, activeRun, onBack,
 
       {tab === 'hierarchy' && (
         hasHierarchy ? (
-          <div className="grid xl:grid-cols-[1fr_440px] gap-4 items-start">
-            <div className="hud-panel rounded-2xl border border-slate-800 p-4">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-800 bg-black/40 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-mono text-[11px] tracking-widest text-slate-400 flex items-center gap-1.5">
                   <Crown className="w-3.5 h-3.5 text-amber-400" /> CHAIN OF COMMAND
@@ -202,7 +216,7 @@ export default function PlanetView({ biome, squad, champions, activeRun, onBack,
             )}
           </div>
         ) : (
-          <div className="hud-panel rounded-2xl border border-slate-800 p-10 text-center">
+          <div className="rounded-2xl border border-slate-800 bg-black/40 p-10 text-center">
             <Network className="w-10 h-10 text-slate-600 mx-auto mb-2" />
             <div className="font-orbitron font-bold text-slate-300">No hierarchy charted on {biome.name} yet</div>
             <p className="font-mono text-[13px] text-slate-500 mt-1">Enemy command structures are only mapped on Char for now.</p>

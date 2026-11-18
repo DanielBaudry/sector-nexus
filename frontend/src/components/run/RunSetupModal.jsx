@@ -87,7 +87,7 @@ export default function RunSetupModal({ biome, boss = null, target = null, squad
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto hud-panel rounded-2xl border border-cyan-500/40 p-5">
         <div className="flex items-start justify-between mb-4">
           <div>

@@ -174,6 +174,8 @@ class Planet(_Strict):
     icon_name: str
     max_difficulty: int = Field(1, ge=1, le=10)
     order: int = Field(100, description="Position on the Sector Map (lower first).")
+    image: str = Field("/assets/planets/char.png", description="Planet art (transparent PNG) shown on the Sector Map.")
+    image_hue: int = Field(0, description="Hue rotation (deg) applied to the art — placeholder tinting until unique art exists.")
     enemy_pool: List[Enemy] = Field(..., min_length=1)
     difficulty_enemies: List[Enemy] = Field(default_factory=list)
 
