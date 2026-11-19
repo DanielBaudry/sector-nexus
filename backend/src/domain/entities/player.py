@@ -8,7 +8,6 @@ class PlayerProfile:
     username: str
     crystals: int
     credits: int
-    warp_shards: int
     level: int = 1
     experience: int = 0
     champion_xp: int = 0  # XP capsules earned on expeditions, distributed freely to champions
@@ -19,7 +18,6 @@ class PlayerProfile:
             "username": self.username,
             "crystals": self.crystals,
             "credits": self.credits,
-            "warp_shards": self.warp_shards,
             "level": self.level,
             "experience": self.experience,
             "champion_xp": self.champion_xp,
@@ -32,7 +30,6 @@ class PlayerProfile:
             username=data.get("username", "Commander"),
             crystals=int(data.get("crystals", 1200)),
             credits=int(data.get("credits", 25000)),
-            warp_shards=int(data.get("warp_shards", 10)),
             level=int(data.get("level", 1)),
             experience=int(data.get("experience", 0)),
             champion_xp=int(data.get("champion_xp") or 0),

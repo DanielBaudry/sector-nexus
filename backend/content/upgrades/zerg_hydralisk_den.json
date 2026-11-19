@@ -1,0 +1,16 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "zerg_hydralisk_den",
+  "name": "Hydralisk Den",
+  "faction": "Bio-Swarm",
+  "kind": "structure",
+  "description": "Mutates Hydralisk Broods from the swarm's larvae.",
+  "cost": {
+    "credits": 8500,
+    "crystals": 80
+  },
+  "requires": [
+    "zerg_spawning_pool"
+  ],
+  "order": 20
+}

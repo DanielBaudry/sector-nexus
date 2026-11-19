@@ -1,0 +1,19 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "protoss_ground_weapons_1",
+  "name": "Ground Weapons I",
+  "faction": "Astral Templars",
+  "kind": "research",
+  "description": "Psi-blade focusing: +10% attack for Protoss troops.",
+  "cost": {
+    "credits": 8500,
+    "crystals": 55
+  },
+  "requires": [
+    "protoss_gateway"
+  ],
+  "bonus": {
+    "attack": 0.1
+  },
+  "order": 30
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "terran_infantry_weapons_1",
+  "name": "Infantry Weapons I",
+  "faction": "Terran Vanguard",
+  "kind": "research",
+  "description": "Upgraded gauss rifles: +10% attack for Terran troops.",
+  "cost": {
+    "credits": 8000,
+    "crystals": 50
+  },
+  "requires": [
+    "terran_barracks"
+  ],
+  "bonus": {
+    "attack": 0.1
+  },
+  "order": 30
+}

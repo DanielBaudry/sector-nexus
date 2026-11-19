@@ -76,6 +76,7 @@ class Ability(_Strict):
     shield_grant: int = Field(0, ge=0)
     cooldown_turns: int = Field(0, ge=0, description="Own turns before it can be used again.")
     summon_troop_id: Optional[str] = Field(None, description="Troop template summoned into the target lane.")
+    mana_gain: int = Field(0, ge=0, description="Heroes: mana granted to the player when used.")
     effects: List[Effect] = Field(default_factory=list)
     telegraph_turns: int = Field(0, ge=0, description="Bosses: own turns spent winding up before it lands.")
     phase: int = Field(0, ge=0, description="Bosses: 0-based phase from which it is unlocked.")
@@ -119,8 +120,13 @@ class Hero(_Strict):
     order: int = Field(100, description="Display / listing order (lower first).")
 
 
+class Cost(_Strict):
+    credits: int = Field(0, ge=0)
+    crystals: int = Field(0, ge=0)
+
+
 class Troop(_Strict):
-    """A troop pack heroes lead (or summon). Pack HP = count × unit_hp."""
+    """A troop pack deployed from the reserve with mana (or summoned). Pack HP = count × unit_hp."""
     id: str
     name: str
     faction: FactionV
@@ -130,6 +136,9 @@ class Troop(_Strict):
     defense: int = Field(..., ge=0)
     description: str = ""
     icon_name: str = "Users"
+    mana_cost: int = Field(3, ge=0, description="Mana spent to deploy this pack from the reserve during battle.")
+    cost: Cost = Field(default_factory=Cost, description="Barracks: price to train one pack.")
+    requires: List[str] = Field(default_factory=list, description="Barracks: upgrade ids (structures) needed to train it.")
 
 
 class Summon(_Strict):
@@ -176,6 +185,7 @@ class Planet(_Strict):
     order: int = Field(100, description="Position on the Sector Map (lower first).")
     image: str = Field("/assets/planets/char.png", description="Planet art (transparent PNG) shown on the Sector Map.")
     image_hue: int = Field(0, description="Hue rotation (deg) applied to the art — placeholder tinting until unique art exists.")
+    battle_image: str = Field("", description="Battlefield background shown during battles on this planet (empty = plain dark field).")
     enemy_pool: List[Enemy] = Field(..., min_length=1)
     difficulty_enemies: List[Enemy] = Field(default_factory=list)
 
@@ -224,4 +234,23 @@ class Boss(_Strict):
 
 
 # Content kinds: folder name -> model.
-CONTENT_KINDS = {"heroes": Hero, "troops": Troop, "planets": Planet, "bosses": Boss}
+class UpgradeBonus(_Strict):
+    attack: float = Field(0.0, ge=0, description="+% troop attack (0.10 = +10%).")
+    hp: float = Field(0.0, ge=0, description="+% troop soldier HP.")
+    defense: float = Field(0.0, ge=0, description="+% troop defense.")
+
+
+class Upgrade(_Strict):
+    """A barracks tech: a structure (unlocks troops) or a research (stat bonus for its faction's troops)."""
+    id: str
+    name: str
+    faction: FactionV
+    kind: Literal["structure", "research"] = "structure"
+    description: str = ""
+    cost: Cost = Field(default_factory=Cost)
+    requires: List[str] = Field(default_factory=list, description="Upgrade ids that must be complete first.")
+    bonus: UpgradeBonus = Field(default_factory=UpgradeBonus, description="Research: bonus to every troop pack of this faction.")
+    order: int = Field(100, description="Display order within the faction (lower first).")
+
+
+CONTENT_KINDS = {"heroes": Hero, "troops": Troop, "planets": Planet, "bosses": Boss, "upgrades": Upgrade}

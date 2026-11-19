@@ -9,7 +9,7 @@ from pathlib import Path
 
 from src.infrastructure.content.schema import CONTENT_KINDS
 
-SINGULAR = {"heroes": "hero", "troops": "troop", "planets": "planet", "bosses": "boss"}
+SINGULAR = {"heroes": "hero", "troops": "troop", "planets": "planet", "bosses": "boss", "upgrades": "upgrade"}
 
 
 def main() -> None:

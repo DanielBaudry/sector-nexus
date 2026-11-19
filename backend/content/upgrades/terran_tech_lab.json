@@ -1,0 +1,16 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "terran_tech_lab",
+  "name": "Tech Lab",
+  "faction": "Terran Vanguard",
+  "kind": "structure",
+  "description": "Barracks add-on: unlocks Marauder Teams.",
+  "cost": {
+    "credits": 9000,
+    "crystals": 80
+  },
+  "requires": [
+    "terran_barracks"
+  ],
+  "order": 20
+}

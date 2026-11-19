@@ -77,7 +77,8 @@
         }
       ],
       "energy_cost": 1,
-      "icon_name": "Flame"
+      "icon_name": "Flame",
+      "mana_gain": 1
     },
     {
       "id": "kerrigan_spawn_brood",

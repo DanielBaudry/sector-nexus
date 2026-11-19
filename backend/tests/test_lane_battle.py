@@ -190,7 +190,7 @@ def test_losses_persist_between_nodes():
     biome = get_seed_biomes()[2]
     h = hero("h1", lane=None, attack=400, speed=300)
     my_pack = pack("tp", MARINES, Side.ALLY, None)
-    my_pack.owner_id = "h1"
+    my_pack.deployed_lane = 1  # deployed in an earlier battle: starts on the field
     node = MapNode("n1_1", 1, 1, NodeType.COMBAT, threat=1)
     run = ExpeditionRun(
         id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
@@ -221,7 +221,6 @@ def test_rest_node_heals_and_regroups():
     h = hero("h1", lane=None)
     h.hp = 100
     tp = pack("tp", MARINES, Side.ALLY, None)
-    tp.owner_id = "h1"
     tp.hp = 10
     run = ExpeditionRun(
         id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
@@ -246,13 +245,27 @@ def test_run_api_flow(client):
     client.delete("/api/runs/active")
 
     catalog = client.get("/api/runs/troops").json()
-    assert catalog["troops_per_hero"] == 2 and len(catalog["templates"]) == 6
+    assert catalog["reserve_size"] == 6 and len(catalog["templates"]) == 6
+    assert all(t["mana_cost"] > 0 for t in catalog["templates"])
+    too_many = client.post("/api/runs/start", json={"biome_id": "biome_mar_sara", "troop_ids": ["troop_marine"] * 7})
+    assert too_many.status_code == 400
 
-    res = client.post("/api/runs/start", json={"biome_id": "biome_mar_sara", "squad_id": "squad_alpha"})
+    barracks = client.get("/api/barracks").json()
+    if not next(t for t in barracks["troops"] if t["id"] == "troop_marine")["owned"] >= 2:
+        client.post("/api/player/resupply")
+        client.post("/api/barracks/research", json={"upgrade_id": "terran_barracks"})  # fresh account: build it first
+        assert client.post("/api/barracks/train", json={"template_id": "troop_marine", "quantity": 2}).status_code == 200
+    owned_before = next(t for t in client.get("/api/barracks").json()["troops"] if t["id"] == "troop_marine")["owned"]
+    res = client.post("/api/runs/start", json={
+        "biome_id": "biome_mar_sara", "squad_id": "squad_alpha", "troop_ids": ["troop_marine", "troop_marine"],
+    })
     assert res.status_code == 200, res.text
     run = res.json()
     assert run["status"] == "MAP"
-    assert run["troops"], "heroes get default troops"
+    assert len(run["troops"]) == 2, "packs come from the garrison"
+    owned_now = next(t for t in client.get("/api/barracks").json()["troops"] if t["id"] == "troop_marine")["owned"]
+    assert owned_now == owned_before - 2
+    assert all(t["deployed_lane"] is None for t in run["troops"])
     assert client.post("/api/runs/start", json={"biome_id": "biome_char"}).status_code == 400
 
     # walk until a battle node
@@ -273,6 +286,15 @@ def test_run_api_flow(client):
     run = client.post("/api/runs/active/deploy", json={"assignments": {h["id"]: i for i, h in enumerate(living)}}).json()
     assert run["status"] in ("BATTLE", "MAP", "DEFEAT")
     if run["status"] == "BATTLE" and run["battle"]["current_actor_id"]:
+        assert run["mana"] >= 3
+        cheapest = min(run["troops"], key=lambda t: t["mana_cost"])
+        deployed = client.post("/api/runs/active/troops/deploy", json={"troop_id": cheapest["id"], "lane": 2})
+        assert deployed.status_code == 200, deployed.text
+        run = deployed.json()
+        assert run["mana"] == run["battle"]["mana"]
+        assert any(u["id"] == cheapest["id"] and u["lane"] == 2 for u in run["battle"]["units"])
+        again = client.post("/api/runs/active/troops/deploy", json={"troop_id": cheapest["id"], "lane": 0})
+        assert again.status_code == 400  # deployed packs cannot be redeployed
         actor = next(u for u in run["battle"]["units"] if u["id"] == run["battle"]["current_actor_id"])
         card = next(c for c in actor["cards"] if c["cooldown_remaining"] == 0)
         after = client.post("/api/runs/active/ability", json={"card_id": card["id"], "target_lane": 0}).json()
@@ -281,6 +303,10 @@ def test_run_api_flow(client):
     final = client.post("/api/runs/active/abandon").json()
     assert final["status"] in ("ABANDONED", "DEFEAT", "VICTORY")
     assert final["rewards_paid"] is True
+    if final["status"] == "ABANDONED":  # survivors return to the barracks
+        survivors = sum(1 for t in final["troops"] if t["is_alive"])
+        back = next(t for t in client.get("/api/barracks").json()["troops"] if t["id"] == "troop_marine")["owned"]
+        assert back == owned_now + survivors
     assert client.delete("/api/runs/active").status_code == 200
 
 
@@ -357,3 +383,160 @@ def test_events_describe_hits_and_tick_resolves_one_action():
     assert {"source_id", "target_id", "damage", "hp", "alive", "crit"} <= set(e)
     seqs = [ev["seq"] for ev in battle.events]
     assert seqs == sorted(seqs)
+
+
+# ── Mana & troop reserve ────────────────────────────────────────────────────
+def _battle_run(service, troops, mana=0):
+    biome = get_seed_biomes()[2]
+    h = hero("h1", lane=None, attack=60, hp=5000, speed=300)
+    node = MapNode("n1_1", 1, 1, NodeType.COMBAT, threat=1)
+    run = ExpeditionRun(
+        id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
+        nodes=[MapNode("n0_1", 0, 1, NodeType.START, next_ids=["n1_1"], visited=True), node],
+        current_node_id="n0_1", heroes=[h], troops=troops, mana=mana,
+    )
+    service.choose_node(run, biome, "n1_1", {})
+    service.deploy(run, {"h1": 1}, now=0)
+    return run
+
+
+def _wait_for_turn(service, run):
+    for _ in range(500):
+        if run.status != RunStatus.BATTLE or run.battle.current_actor_id:
+            return
+        service.tick(run, now=0)
+
+
+def test_battle_opens_with_mana_floor_and_keeps_reserve_off_field():
+    service = ExpeditionRunService(rng=random.Random(20))
+    reserve = pack("tp", MARINES, Side.ALLY, None)
+    run = _battle_run(service, [reserve], mana=1)
+    assert run.battle.mana == 3  # floor
+    assert reserve not in run.battle.units and reserve.lane is None
+    rich = _battle_run(ExpeditionRunService(rng=random.Random(20)), [], mana=8)
+    assert rich.battle.mana == 8
+
+
+def test_deploy_troop_spends_mana_and_holds_lane():
+    service = ExpeditionRunService(rng=random.Random(21))
+    reserve = pack("tp", MARINES, Side.ALLY, None)
+    reserve.mana_cost = 3
+    run = _battle_run(service, [reserve], mana=5)
+    _wait_for_turn(service, run)
+    assert run.battle.current_actor_id
+    mana = run.battle.mana
+    service.deploy_troop(run, "tp", 0)
+    assert run.battle.mana == mana - 3
+    assert reserve.lane == 0 and reserve.deployed_lane == 0 and reserve in run.battle.units
+    assert any(e["type"] == "summon" and e.get("deploy") for e in run.battle.events)
+    with pytest.raises(ValueError, match="reserve"):
+        service.deploy_troop(run, "tp", 1)
+
+
+def test_deploy_troop_needs_mana_and_player_turn():
+    service = ExpeditionRunService(rng=random.Random(22))
+    costly = pack("big", MARINES, Side.ALLY, None)
+    costly.mana_cost = 9
+    run = _battle_run(service, [costly], mana=0)
+    _wait_for_turn(service, run)
+    with pytest.raises(ValueError, match="mana"):
+        service.deploy_troop(run, "big", 1)
+    run.battle.current_actor_id = None
+    with pytest.raises(ValueError, match="your turn"):
+        service.deploy_troop(run, "big", 1)
+
+
+def test_kills_lanes_and_objectives_grant_mana_capped():
+    engine = LaneBattleEngine(random.Random(23))
+    blast = CombatCard("blast", "Blast", "", 1, TargetType.ALL_ENEMIES, 50.0, lane_scope=LaneScope.ALL_LANES)
+    ally = hero("h1", lane=1, cards=[blast], speed=300, attack=500)
+    foes = [pack("e0", GRUNTS, Side.ENEMY, 0), pack("e1", GRUNTS, Side.ENEMY, 1), hero("eh", lane=2, side=Side.ENEMY, hp=50, speed=1)]
+    battle = make_battle([ally, *foes], objectives=[Objective(ObjectiveType.CLEAR_LANES, True, "Clear 3", {"count": 3})])
+    engine.begin(battle, now=0)
+    assert battle.mana == 0
+    engine.play_ally_turn(battle, card_id="blast", now=0)
+    # 2 troop kills (+1 each), 1 hero kill (+2), 3 lanes cleared (+1 each), objective (+2) = 9
+    assert battle.mana == 9
+    assert battle.status == BattleStatus.WON
+    battle.gain_mana(5, "test")
+    assert battle.mana == battle.mana_cap
+
+
+def test_ability_mana_gain_and_carry_over_between_battles():
+    engine = LaneBattleEngine(random.Random(24))
+    focus = CombatCard("focus", "Focus", "", 1, TargetType.SELF, 0.0, mana_gain=2)
+    ally = hero("h1", lane=1, cards=[focus], speed=300)
+    battle = make_battle([ally, hero("eh", lane=1, side=Side.ENEMY, hp=5000, speed=1)], objectives=CLEAR_ALL)
+    engine.begin(battle, now=0)
+    engine.play_ally_turn(battle, card_id="focus", now=0)
+    assert battle.mana == 2
+
+    service = ExpeditionRunService(rng=random.Random(25))
+    reserve = pack("tp", MARINES, Side.ALLY, None)
+    reserve.mana_cost = 2
+    run = _battle_run(service, [reserve], mana=4)
+    _wait_for_turn(service, run)
+    service.deploy_troop(run, "tp", 1)
+    service.abandon(run)
+    assert run.mana == run.battle.mana
+    assert reserve.lane is None and reserve.deployed_lane == 1
+
+
+# ── Warp Beacon loot ────────────────────────────────────────────────────────
+def test_archive_node_loot_and_defeat_payout_share():
+    service = ExpeditionRunService(rng=random.Random(30))
+    biome = get_seed_biomes()[0]
+    run = ExpeditionRun(
+        id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
+        nodes=[MapNode("n0_1", 0, 1, NodeType.START, next_ids=["n1_1"]), MapNode("n1_1", 1, 1, NodeType.ARCHIVE)],
+        current_node_id="n0_1", heroes=[hero("h1", lane=None)],
+        hero_pool={"tmpl_a": "Alpha", "tmpl_b": "Beta"}, known_blueprints=["tmpl_a"],
+    )
+    service.choose_node(run, biome, "n1_1", {})
+    mats = run.rewards["hero_materials"]
+    assert mats and all(t in run.hero_pool for t in mats)
+    assert set(run.rewards.get("blueprints", [])) <= {"tmpl_b"}
+    assert "warp archive" in run.log[-1]
+
+    run.rewards["hero_materials"] = {"tmpl_a": 41}
+    run.rewards["blueprints"] = ["tmpl_b", "tmpl_c"]
+    run.status = RunStatus.DEFEAT
+    payout = service.finalize_payout(run)
+    assert payout["hero_materials"] == {"tmpl_a": 20}
+    assert len(payout["blueprints"]) == 1
+
+
+def test_non_combat_nodes_report_an_event():
+    service = ExpeditionRunService(rng=random.Random(31))
+    biome = get_seed_biomes()[0]
+    h = hero("h1", lane=None)
+    h.hp = 100
+    run = ExpeditionRun(
+        id="r", biome_id=biome.id, biome_name=biome.name, squad_id="s", status=RunStatus.MAP,
+        nodes=[MapNode("n0_1", 0, 1, NodeType.START, next_ids=["n1_1"]), MapNode("n1_1", 1, 1, NodeType.REST, next_ids=["n2_1"]),
+               MapNode("n2_1", 2, 1, NodeType.CACHE)],
+        current_node_id="n0_1", heroes=[h],
+    )
+    service.choose_node(run, biome, "n1_1", {})
+    ev = run.node_event
+    assert ev["type"] == "REST" and ev["seq"] == 1
+    assert ev["healed"][0]["before"] == 100 and ev["healed"][0]["after"] == h.hp
+    service.choose_node(run, biome, "n2_1", {})
+    assert run.to_dict()["node_event"]["type"] == "CACHE" and run.node_event["seq"] == 2
+    assert run.node_event["loot"]["credits"] > 0 and run.node_event["mana"] == 2
+
+
+def test_turn_meters_start_empty_every_battle():
+    engine = LaneBattleEngine(random.Random(40))
+    ally = hero("h1", lane=1, speed=100)
+    ally.turn_meter = 140.0  # left over from a previous fight
+    foe = hero("eh", lane=1, side=Side.ENEMY, hp=5000, speed=100)
+    foe.turn_meter = 90.0
+    battle = make_battle([ally, foe, pack("e0", MARINES, Side.ENEMY, 0)], objectives=CLEAR_ALL)
+    battle.drill_meters = {"ENEMY:0": 77.0}
+    engine.begin(battle, now=0, max_actions=0)
+    # Same speed, empty meters: both fill together and the ally (tie-break) gets the first turn.
+    assert battle.current_actor_id == "h1"
+    assert foe.turn_meter == ally.turn_meter
+    # A stale 77 would have filled first and fired before the ally: it was cleared.
+    assert battle.drill_meters["ENEMY:0"] < 100.0 and battle.turn == 0

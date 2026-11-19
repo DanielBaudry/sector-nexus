@@ -11,15 +11,29 @@ async function handleResponse(res) {
 export const api = {
   // Player
   getPlayerProfile: () => fetch(`${BASE_URL}/player`).then(handleResponse),
-  resupplyPlayer: () => fetch(`${BASE_URL}/player/resupply`, { method: 'POST' }).then(handleResponse),
-
-  // Gacha
-  getBanners: () => fetch(`${BASE_URL}/gacha/banners`).then(handleResponse),
-  summon: (banner_faction = 'ALL', count = 1) =>
-    fetch(`${BASE_URL}/gacha/summon`, {
+  // Barracks: tech tree + troop production
+  getBarracks: () => fetch(`${BASE_URL}/barracks`).then(handleResponse),
+  researchUpgrade: (upgrade_id) =>
+    fetch(`${BASE_URL}/barracks/research`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ banner_faction, count }),
+      body: JSON.stringify({ upgrade_id }),
+    }).then(handleResponse),
+  trainTroops: (template_id, quantity = 1) =>
+    fetch(`${BASE_URL}/barracks/train`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template_id, quantity }),
+    }).then(handleResponse),
+  resupplyPlayer: () => fetch(`${BASE_URL}/player/resupply`, { method: 'POST' }).then(handleResponse),
+
+  // Warp Beacon: hero blueprints + print materials → warpcopy
+  getWarpBeacon: () => fetch(`${BASE_URL}/warp-beacon`).then(handleResponse),
+  warpcopy: (template_id) =>
+    fetch(`${BASE_URL}/warp-beacon/warpcopy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template_id }),
     }).then(handleResponse),
 
   // Champions
@@ -99,23 +113,29 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ boss_id }),
     }).then(handleResponse),
-  startBossRun: (boss_id, champion_ids, troop_assignments = null, difficulty = 1) =>
+  startBossRun: (boss_id, champion_ids, troop_ids = null, difficulty = 1) =>
     fetch(`${BASE_URL}/runs/boss/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ boss_id, champion_ids, troop_assignments, difficulty }),
+      body: JSON.stringify({ boss_id, champion_ids, troop_ids, difficulty }),
     }).then(handleResponse),
-  startRun: (biome_id, squad_id = 'squad_alpha', troop_assignments = null, difficulty = 1) =>
+  startRun: (biome_id, squad_id = 'squad_alpha', troop_ids = null, difficulty = 1, champion_ids = null) =>
     fetch(`${BASE_URL}/runs/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ biome_id, squad_id, troop_assignments, difficulty }),
+      body: JSON.stringify({ biome_id, squad_id, troop_ids, difficulty, champion_ids }),
     }).then(handleResponse),
   chooseRunNode: (node_id) =>
     fetch(`${BASE_URL}/runs/active/node`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ node_id }),
+    }).then(handleResponse),
+  deployTroop: (troop_id, lane) =>
+    fetch(`${BASE_URL}/runs/active/troops/deploy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ troop_id, lane }),
     }).then(handleResponse),
   deployHeroes: (assignments) =>
     fetch(`${BASE_URL}/runs/active/deploy`, {

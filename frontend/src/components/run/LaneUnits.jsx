@@ -116,8 +116,8 @@ function HeroCard({ unit, isActive = false, onInspect, targetable = null, dimmed
             )}
             {alive && <PassiveMark passive={unit.passive} stacks={unit.passive_stacks} />}
             {alive && unit.effects?.length > 0 && (
-              <div className="absolute bottom-0.5 inset-x-0.5">
-                <EffectBadges effects={unit.effects} />
+              <div className="absolute bottom-1 inset-x-1">
+                <EffectBadges effects={unit.effects} max={4} />
               </div>
             )}
           </div>
@@ -164,11 +164,14 @@ function TroopCard({ unit, onInspect, targetable = null, dimmed = false }) {
         {enemy && <div className="absolute inset-0 bg-red-600/30 mix-blend-color pointer-events-none" />}
         <AimMarker targetable={targetable} />
         {unit.is_alive && unit.effects?.length > 0 && (
-          <div className="absolute top-0.5 inset-x-0.5">
-            <EffectBadges effects={unit.effects} size="sm" max={4} />
+          <div className="absolute bottom-0.5 inset-x-0.5">
+            <EffectBadges effects={unit.effects} size="sm" max={3} />
           </div>
         )}
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 min-w-[2rem] text-center px-2 py-px rounded-full bg-slate-700/90 border border-slate-400/60 font-orbitron font-black text-sm text-white shadow-md">
+        {/* Soldiers left: top-right corner badge */}
+        <span className={`absolute top-0.5 right-0.5 min-w-[1.6rem] h-6 px-1.5 flex items-center justify-center rounded-md border font-orbitron font-black text-[13px] leading-none text-white shadow-[0_2px_6px_rgba(0,0,0,0.8)] ${
+          enemy ? 'bg-red-950/90 border-red-400/70' : 'bg-slate-900/90 border-slate-300/60'
+        }`}>
           {unit.count}
         </span>
       </div>
@@ -197,6 +200,7 @@ const FLASH = {
 export function FxWrap({ unit, fx, className = '', children }) {
   const motion = !fx ? ''
     : fx.kind === 'attack' ? (unit.side === 'ALLY' ? 'fx-attack-up' : 'fx-attack-down')
+    : fx.kind === 'windup' ? 'fx-windup'
     : fx.kind === 'crit' ? 'fx-crit'
     : fx.kind === 'hit' ? 'fx-hit'
     : '';

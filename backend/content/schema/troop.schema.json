@@ -1,6 +1,40 @@
 {
+  "$defs": {
+    "Cost": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "credits": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Credits",
+          "type": "integer"
+        },
+        "crystals": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Crystals",
+          "type": "integer"
+        }
+      },
+      "title": "Cost",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
-  "description": "A troop pack heroes lead (or summon). Pack HP = count \u00d7 unit_hp.",
+  "description": "A troop pack deployed from the reserve with mana (or summoned). Pack HP = count \u00d7 unit_hp.",
   "properties": {
     "$schema": {
       "anyOf": [
@@ -61,6 +95,25 @@
       "default": "Users",
       "title": "Icon Name",
       "type": "string"
+    },
+    "mana_cost": {
+      "default": 3,
+      "description": "Mana spent to deploy this pack from the reserve during battle.",
+      "minimum": 0,
+      "title": "Mana Cost",
+      "type": "integer"
+    },
+    "cost": {
+      "$ref": "#/$defs/Cost",
+      "description": "Barracks: price to train one pack."
+    },
+    "requires": {
+      "description": "Barracks: upgrade ids (structures) needed to train it.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Requires",
+      "type": "array"
     }
   },
   "required": [

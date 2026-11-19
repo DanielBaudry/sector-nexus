@@ -26,6 +26,7 @@ from src.domain.value_objects.gambit import GambitRule
 from src.domain.value_objects.stats import Stats
 from src.domain.value_objects.status_effect import Passive
 from src.domain.value_objects.troop import TroopTemplate
+from src.domain.value_objects.upgrade import Upgrade
 from src.infrastructure.content import schema as cs
 
 DEFAULT_CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
@@ -45,6 +46,7 @@ class ContentLibrary:
     troops: Dict[str, cs.Troop]
     planets: Dict[str, cs.Planet]
     bosses: Dict[str, cs.Boss]
+    upgrades: Dict[str, cs.Upgrade]
 
     # ── Loading ─────────────────────────────────────────────────────────────
     @classmethod
@@ -119,6 +121,29 @@ class ContentLibrary:
             if boss.guard:
                 self._check_enemy(where, boss.guard)
         self._check_hierarchy_cycles()
+        self._check_tech_tree()
+
+    def _check_tech_tree(self) -> None:
+        for troop in self.troops.values():
+            for req in troop.requires:
+                up = self.upgrades.get(req)
+                if not up:
+                    raise ContentError(f"troops/{troop.id}: requires unknown upgrade '{req}'.")
+                if up.faction != troop.faction:
+                    raise ContentError(f"troops/{troop.id}: requires '{req}' from another faction.")
+        for up in self.upgrades.values():
+            for req in up.requires:
+                if req not in self.upgrades:
+                    raise ContentError(f"upgrades/{up.id}: requires unknown upgrade '{req}'.")
+        for up in self.upgrades.values():  # no loops in the tech tree
+            stack, seen = list(up.requires), set()
+            while stack:
+                cur = stack.pop()
+                if cur == up.id:
+                    raise ContentError(f"upgrades/{up.id}: tech tree loop.")
+                if cur not in seen:
+                    seen.add(cur)
+                    stack.extend(self.upgrades[cur].requires)
 
     @staticmethod
     def _check_enemy(where: str, enemy: cs.Enemy) -> None:
@@ -172,7 +197,23 @@ class ContentLibrary:
         return Passive.from_dict(_plain(hero.passive)) if hero and hero.passive else None
 
     def troop_templates(self) -> List[TroopTemplate]:
-        return [TroopTemplate(**_plain(t)) for t in self.troops.values()]
+        out = []
+        for t in self.troops.values():
+            data = _plain(t)
+            cost = data.pop("cost", {})
+            data["requires"] = tuple(data.get("requires", []))
+            out.append(TroopTemplate(**data, cost_credits=cost.get("credits", 0), cost_crystals=cost.get("crystals", 0)))
+        return out
+
+    def upgrades_list(self) -> List[Upgrade]:
+        return [
+            Upgrade(
+                id=u.id, name=u.name, faction=u.faction, kind=u.kind, description=u.description,
+                cost_credits=u.cost.credits, cost_crystals=u.cost.crystals, requires=tuple(u.requires),
+                bonus={k: v for k, v in u.bonus.model_dump().items() if v}, order=u.order,
+            )
+            for u in self.upgrades.values()
+        ]
 
     def biomes(self) -> List[Biome]:
         out = []
@@ -193,6 +234,7 @@ class ContentLibrary:
                 difficulty_enemies=[_plain(e) for e in p.difficulty_enemies],
                 image=p.image,
                 image_hue=p.image_hue,
+                battle_image=p.battle_image,
             ))
         return out
 

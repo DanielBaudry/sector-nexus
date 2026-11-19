@@ -4,23 +4,27 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.domain.entities.artifact import Artifact
-from src.domain.entities.battle import LaneUnit
+from src.domain.entities.battle import MANA_CAP, MANA_FLOOR, LaneUnit
 from src.domain.entities.expedition_run import ExpeditionRun, MapNode
 from src.domain.repositories.artifact_repository import IArtifactRepository
 from src.domain.repositories.champion_repository import IChampionRepository
 from src.domain.repositories.expedition_repository import IExpeditionRepository
+from src.domain.repositories.forces_repository import IForcesRepository
+from src.domain.repositories.archive_repository import IArchiveRepository
 from src.domain.repositories.hero_kit_repository import IHeroKitRepository
 from src.domain.repositories.hierarchy_repository import IHierarchyRepository
 from src.domain.repositories.player_repository import IPlayerRepository
 from src.domain.repositories.squad_repository import ISquadRepository
+from src.domain.services.barracks_service import BarracksService
 from src.domain.services.expedition_run_service import ExpeditionRunService
 from src.domain.services.hierarchy_service import HierarchyService
 from src.domain.entities.hierarchy_standing import ChampionStatus
 from src.domain.services.map_generator import MapGenerator
 from src.domain.value_objects.enums import NodeType, RunStatus, Side, UnitKind
 
-TROOPS_PER_HERO = 2
-MAX_HEROES = 3
+RESERVE_SIZE = 6            # troop packs brought on an expedition (taken from the garrison)
+MAX_HEROES = 3              # boss encounters: one hero per lane
+MAX_EXPEDITION_HEROES = 4   # expeditions: three lanes + one hero on the bench
 
 
 def _enum_value(v: Any) -> str:
@@ -34,11 +38,15 @@ class _RunUseCase:
         player_repo: Optional[IPlayerRepository] = None,
         artifact_repo: Optional[IArtifactRepository] = None,
         hierarchy_repo: Optional[IHierarchyRepository] = None,
+        forces_repo: Optional[IForcesRepository] = None,
+        archive_repo: Optional[IArchiveRepository] = None,
     ):
         self.expedition_repo = expedition_repo
+        self.archive_repo = archive_repo
         self.player_repo = player_repo
         self.artifact_repo = artifact_repo
         self.hierarchy_repo = hierarchy_repo
+        self.forces_repo = forces_repo
         self.service = ExpeditionRunService()
 
     def _require_run(self) -> ExpeditionRun:
@@ -51,6 +59,10 @@ class _RunUseCase:
         return {t.id: t for t in self.expedition_repo.get_troop_templates()}
 
     def _save(self, run: ExpeditionRun) -> Dict[str, Any]:
+        taken = getattr(self, "_taken_forces", None)
+        if taken is not None and self.forces_repo:
+            self.forces_repo.save(taken)
+            self._taken_forces = None
         if run.is_finished and not run.rewards_paid and self.player_repo:
             payout = self.service.finalize_payout(run)
             player = self.player_repo.get_profile()
@@ -62,6 +74,8 @@ class _RunUseCase:
                 for data in payout.get("artifacts", []):
                     self.artifact_repo.save(Artifact.from_dict(data))
             run.rewards_paid = True
+            self._return_troops(run)
+            self._bank_hero_loot(run, payout)
             self._settle_hierarchy(run)
             lost = payout.get("artifacts_lost", 0)
             run.log.append(
@@ -71,6 +85,38 @@ class _RunUseCase:
             )
         self.expedition_repo.save_active_run(run)
         return run.to_dict()
+
+    def _bank_hero_loot(self, run: ExpeditionRun, payout: Dict[str, Any]) -> None:
+        """Blueprints and print materials go to the Warp Beacon archive."""
+        if not self.archive_repo or not (payout.get("blueprints") or payout.get("hero_materials")):
+            return
+        archive = self.archive_repo.get()
+        archive.add(payout)
+        self.archive_repo.save(archive)
+        mats = sum(payout.get("hero_materials", {}).values())
+        run.log.append(f"🛰️ Warp Beacon: {len(payout.get('blueprints', []))} blueprint(s), {mats} print materials archived.")
+
+    def _hero_pool(self, run: ExpeditionRun) -> None:
+        """Every hero that can drop as blueprint / materials, and the blueprints already owned."""
+        if not self.archive_repo or not getattr(self, "champion_repo", None):
+            return
+        run.hero_pool = {t.template_id: t.name for t in self.champion_repo.get_templates()}
+        run.known_blueprints = sorted(self.archive_repo.get().blueprints)
+
+    def _return_troops(self, run: ExpeditionRun) -> None:
+        """Run over: surviving packs go back to the garrison (all of them are lost on defeat)."""
+        if not self.forces_repo:
+            return
+        if run.status == RunStatus.DEFEAT:
+            lost = sum(1 for t in run.troops if t.is_alive)
+            if lost:
+                run.log.append(f"☠️ {lost} troop pack(s) lost with the expedition.")
+            return
+        forces = self.forces_repo.get()
+        back = BarracksService.give_back(forces, run.troops)
+        self.forces_repo.save(forces)
+        if back:
+            run.log.append(f"🪖 {back} troop pack(s) return to the barracks.")
 
     def _settle_hierarchy(self, run: ExpeditionRun) -> None:
         """Run over: bank the expedition's Influence, or record a hierarchy boss fight's outcome."""
@@ -103,8 +149,11 @@ class GetTroopCatalogUseCase:
 
     def execute(self) -> Dict[str, Any]:
         return {
-            "troops_per_hero": TROOPS_PER_HERO,
+            "reserve_size": RESERVE_SIZE,
             "max_heroes": MAX_HEROES,
+            "max_expedition_heroes": MAX_EXPEDITION_HEROES,
+            "mana_cap": MANA_CAP,
+            "mana_floor": MANA_FLOOR,
             "templates": [t.to_dict() for t in self.expedition_repo.get_troop_templates()],
         }
 
@@ -118,8 +167,10 @@ class StartExpeditionRunUseCase(_RunUseCase):
         artifact_repo: IArtifactRepository,
         hero_kit_repo: Optional[IHeroKitRepository] = None,
         hierarchy_repo: Optional[IHierarchyRepository] = None,
+        forces_repo: Optional[IForcesRepository] = None,
+        archive_repo: Optional[IArchiveRepository] = None,
     ):
-        super().__init__(expedition_repo, hierarchy_repo=hierarchy_repo)
+        super().__init__(expedition_repo, hierarchy_repo=hierarchy_repo, forces_repo=forces_repo, archive_repo=archive_repo)
         self.squad_repo = squad_repo
         self.champion_repo = champion_repo
         self.artifact_repo = artifact_repo
@@ -135,8 +186,8 @@ class StartExpeditionRunUseCase(_RunUseCase):
         return bosses, standings
 
     def execute(
-        self, biome_id: str, squad_id: str, troop_assignments: Optional[Dict[str, List[str]]] = None,
-        difficulty: int = 1,
+        self, biome_id: str, squad_id: str, troop_ids: Optional[List[str]] = None,
+        difficulty: int = 1, champion_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         current = self.expedition_repo.get_active_run()
         if current and not current.is_finished:
@@ -148,10 +199,16 @@ class StartExpeditionRunUseCase(_RunUseCase):
         if not 1 <= difficulty <= biome.max_difficulty:
             raise ValueError(f"{biome.name} supports difficulty 1 to {biome.max_difficulty}.")
         squad = self.squad_repo.get_by_id(squad_id)
-        if not squad or not squad.champion_ids:
+        if champion_ids is not None:  # heroes picked in the launch screen
+            ids = list(dict.fromkeys(champion_ids))
+            if not 1 <= len(ids) <= MAX_EXPEDITION_HEROES:
+                raise ValueError(f"Bring between 1 and {MAX_EXPEDITION_HEROES} heroes.")
+        elif squad and squad.champion_ids:
+            ids = squad.champion_ids
+        else:
             raise ValueError("Invalid squad or empty squad.")
 
-        heroes, troops = self._build_roster(squad.champion_ids, troop_assignments)
+        heroes, troops = self._build_roster(ids, troop_ids)
         if not heroes:
             raise ValueError("Squad has no valid heroes.")
 
@@ -160,7 +217,7 @@ class StartExpeditionRunUseCase(_RunUseCase):
             id=f"run_{uuid.uuid4().hex[:8]}",
             biome_id=biome.id,
             biome_name=biome.name,
-            squad_id=squad.id,
+            squad_id=squad.id if squad else squad_id,
             status=RunStatus.MAP,
             nodes=nodes,
             current_node_id=nodes[0].id,
@@ -184,15 +241,15 @@ class StartExpeditionRunUseCase(_RunUseCase):
                 f"🎯 Hunting {boss.name}, {boss.title}: every battle won builds Influence. "
                 f"Their {boss.guard.get('name', 'guards')} will be waiting."
             )
+        self._hero_pool(run)
         return self._save(run)
 
     def _build_roster(
-        self, champion_ids: List[str], troop_assignments: Optional[Dict[str, List[str]]],
+        self, champion_ids: List[str], troop_ids: Optional[List[str]],
     ) -> Tuple[List[LaneUnit], List[LaneUnit]]:
-        """Champions -> battle heroes (gear, kit, summons) plus the troop packs they lead."""
+        """Champions -> battle heroes (gear, kit, summons) plus the troop reserve (any faction)."""
         templates = {t.id: t for t in self.expedition_repo.get_troop_templates()}
         artifacts = {a.id: a for a in self.artifact_repo.get_all()}
-        troop_assignments = troop_assignments or {}
 
         heroes: List[LaneUnit] = []
         troops: List[LaneUnit] = []
@@ -230,22 +287,24 @@ class StartExpeditionRunUseCase(_RunUseCase):
                 avatar_color=champ.avatar_color,
             ))
 
-            faction_templates = [t for t in templates.values() if t.faction == faction]
-            if champ.id in troop_assignments:
-                chosen = troop_assignments[champ.id]
-            else:
-                chosen = [t.id for t in faction_templates[:TROOPS_PER_HERO]]
-            if len(chosen) > TROOPS_PER_HERO:
-                raise ValueError(f"{champ.name} can lead at most {TROOPS_PER_HERO} troop packs.")
-            for template_id in chosen:
-                template = templates.get(template_id)
-                if not template:
-                    raise ValueError(f"Unknown troop type {template_id}.")
-                if template.faction != faction:
-                    raise ValueError(f"{champ.name} cannot command {template.name} ({template.faction}).")
-                troops.append(LaneUnit.troop_from_template(
-                    unit_id=f"tr_{uuid.uuid4().hex[:6]}", template=template, side=Side.ALLY, owner_id=champ.id,
-                ))
+        troop_ids = list(troop_ids or [])
+        if len(troop_ids) > RESERVE_SIZE:
+            raise ValueError(f"Bring at most {RESERVE_SIZE} troop packs.")
+        for template_id in troop_ids:
+            if template_id not in templates:
+                raise ValueError(f"Unknown troop type {template_id}.")
+        barracks = BarracksService()
+        upgrades = self.expedition_repo.get_upgrades()
+        forces = self.forces_repo.get() if self.forces_repo else None
+        if forces is not None:  # packs leave the garrison (saved once the run is created)
+            barracks.take(forces, troop_ids, {t.id: t.name for t in templates.values()})
+            self._taken_forces = forces
+        for template_id in troop_ids:
+            template = templates[template_id]
+            pack = LaneUnit.troop_from_template(unit_id=f"tr_{uuid.uuid4().hex[:6]}", template=template, side=Side.ALLY)
+            if forces is not None:
+                barracks.apply_bonus(pack, barracks.faction_bonus(template.faction, forces, upgrades))
+            troops.append(pack)
 
         return heroes, troops
 
@@ -254,7 +313,7 @@ class StartBossEncounterUseCase(StartExpeditionRunUseCase):
     """A single boss fight: up to three heroes (and their troops) against a colossal boss."""
 
     def execute(
-        self, boss_id: str, champion_ids: List[str], troop_assignments: Optional[Dict[str, List[str]]] = None,
+        self, boss_id: str, champion_ids: List[str], troop_ids: Optional[List[str]] = None,
         difficulty: int = 1,
     ) -> Dict[str, Any]:
         current = self.expedition_repo.get_active_run()
@@ -286,7 +345,7 @@ class StartBossEncounterUseCase(StartExpeditionRunUseCase):
             adaptations = HierarchyService.adaptations(standing.losses)
             boss = HierarchyService.adapted(boss, standing.losses)
 
-        heroes, troops = self._build_roster(ids, troop_assignments or {})
+        heroes, troops = self._build_roster(ids, troop_ids)
         if not heroes:
             raise ValueError("No valid heroes selected.")
 
@@ -314,6 +373,7 @@ class StartBossEncounterUseCase(StartExpeditionRunUseCase):
                 *[f"🧬 Adapted from past victories: {a['name']} — {a['description']}" for a in adaptations],
             ],
         )
+        self._hero_pool(run)
         return self._save(run)
 
 
@@ -369,6 +429,13 @@ class PlayHeroAbilityUseCase(_RunUseCase):
     ) -> Dict[str, Any]:
         run = self._require_run()
         self.service.play(run, card_id, target_lane, target_unit_id=target_unit_id)
+        return self._save(run)
+
+
+class DeployTroopUseCase(_RunUseCase):
+    def execute(self, troop_id: str, lane: int) -> Dict[str, Any]:
+        run = self._require_run()
+        self.service.deploy_troop(run, troop_id, lane)
         return self._save(run)
 
 

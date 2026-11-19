@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Sparkles, Coins, Zap, RefreshCw, Radio, FlaskConical } from 'lucide-react';
+import { Shield, Sparkles, Coins, RefreshCw, Radio, FlaskConical } from 'lucide-react';
 
 export default function HUDHeader({ player, onResupply, activeExpedition }) {
   if (!player) return null;
@@ -56,15 +56,6 @@ export default function HUDHeader({ player, onResupply, activeExpedition }) {
             </div>
           </div>
 
-          {/* Warp Shards */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/40 border border-purple-500/30">
-            <Zap className="w-4 h-4 text-purple-400" />
-            <div className="flex flex-col">
-              <span className="text-[12px] text-slate-400 font-mono uppercase">Warp Shards</span>
-              <span className="font-orbitron text-sm font-bold text-purple-300">{player.warp_shards}</span>
-            </div>
-          </div>
-
           {/* Mission Indicators */}
           {activeExpedition && activeExpedition.status === 'IN_PROGRESS' && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-950/60 border border-red-500/50 text-red-400 text-xs font-mono animate-pulse">
@@ -76,7 +67,7 @@ export default function HUDHeader({ player, onResupply, activeExpedition }) {
           {/* Emergency Resupply */}
           <button
             onClick={onResupply}
-            title="Testing: refill crystals, credits, warp shards and 25,000 champion XP"
+            title="Testing: refill crystals, credits and 25,000 champion XP"
             className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-600 transition"
           >
             <RefreshCw className="w-3 h-3" />

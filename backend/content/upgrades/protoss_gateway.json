@@ -1,0 +1,14 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "protoss_gateway",
+  "name": "Gateway",
+  "faction": "Astral Templars",
+  "kind": "structure",
+  "description": "Warps in Zealot Cohorts from the Khala.",
+  "cost": {
+    "credits": 3500,
+    "crystals": 20
+  },
+  "requires": [],
+  "order": 10
+}

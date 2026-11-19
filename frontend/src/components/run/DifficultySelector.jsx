@@ -28,7 +28,7 @@ function Stat({ icon: Icon, label, value, sub, color }) {
  * Difficulty picker for biomes that support tiers (1–10).
  * Shows what the chosen tier changes: enemy power, rewards, artifact odds and new threats.
  */
-export default function DifficultySelector({ biome, value, onChange }) {
+export default function DifficultySelector({ biome, value, onChange, compact = false }) {
   const tiers = biome?.difficulty_tiers || [];
   if (tiers.length <= 1) return null;
   const tier = tiers.find((t) => t.tier === value) || tiers[0];
@@ -37,14 +37,14 @@ export default function DifficultySelector({ biome, value, onChange }) {
   const threatTiers = [...new Set(threats.map((t) => t.min_tier))];
 
   return (
-    <div className="rounded-xl border bg-black/40 p-3 mb-4" style={{ borderColor: `${color}66` }}>
+    <div className={`rounded-xl border bg-black/40 p-3 ${compact ? '' : 'mb-4'}`} style={{ borderColor: `${color}66` }}>
       <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[12px] tracking-widest text-slate-400">THREAT LEVEL</span>
+        <span className="font-mono text-[12px] tracking-widest text-slate-400">{compact ? '' : 'THREAT LEVEL'}</span>
         <span className="font-orbitron font-black text-sm" style={{ color }}>DIFFICULTY {tier.tier}</span>
       </div>
 
       {/* Tier buttons */}
-      <div className="grid grid-cols-10 gap-1">
+      <div className={`grid ${compact ? 'grid-cols-5 gap-1.5' : 'grid-cols-10 gap-1'}`}>
         {tiers.map((t) => {
           const active = t.tier === tier.tier;
           const c = tierColor(t.tier);
@@ -72,7 +72,7 @@ export default function DifficultySelector({ biome, value, onChange }) {
       </div>
 
       {/* What this tier changes */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-3">
+      <div className={`grid grid-cols-2 ${compact ? '' : 'sm:grid-cols-4'} gap-1.5 mt-3`}>
         <Stat
           icon={Swords} label="Enemy power" color={color}
           value={`×${tier.enemy_mult.toFixed(2)}`}

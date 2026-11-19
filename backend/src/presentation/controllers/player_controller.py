@@ -18,7 +18,6 @@ def resupply_currencies(session: Session = Depends(get_session)):
     profile = repo.get_profile()
     profile.crystals += 1000
     profile.credits += 50000
-    profile.warp_shards += 10
     profile.champion_xp += 25000  # testing aid: XP capsules for the Armory
     saved = repo.save_profile(profile)
     return saved.to_dict()

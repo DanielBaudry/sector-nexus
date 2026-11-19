@@ -8,5 +8,13 @@
   "unit_attack": 3,
   "defense": 6,
   "description": "Many fragile bodies. Absorbs hits for the hero behind.",
-  "icon_name": "Bug"
+  "icon_name": "Bug",
+  "mana_cost": 2,
+  "cost": {
+    "credits": 300,
+    "crystals": 0
+  },
+  "requires": [
+    "zerg_spawning_pool"
+  ]
 }

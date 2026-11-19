@@ -54,7 +54,8 @@
         }
       ],
       "energy_cost": 1,
-      "icon_name": "Heart"
+      "icon_name": "Heart",
+      "mana_gain": 1
     },
     {
       "id": "medic_optical_flare",

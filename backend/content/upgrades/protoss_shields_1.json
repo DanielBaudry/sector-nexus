@@ -1,0 +1,20 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "protoss_shields_1",
+  "name": "Plasma Shields I",
+  "faction": "Astral Templars",
+  "kind": "research",
+  "description": "Stronger shield matrices: +15% soldier HP and +10% defense for Protoss troops.",
+  "cost": {
+    "credits": 9000,
+    "crystals": 60
+  },
+  "requires": [
+    "protoss_gateway"
+  ],
+  "bonus": {
+    "hp": 0.15,
+    "defense": 0.1
+  },
+  "order": 40
+}

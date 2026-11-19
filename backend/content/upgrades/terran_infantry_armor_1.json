@@ -1,0 +1,19 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "terran_infantry_armor_1",
+  "name": "Infantry Armor I",
+  "faction": "Terran Vanguard",
+  "kind": "research",
+  "description": "Reinforced combat suits: +15% soldier HP for Terran troops.",
+  "cost": {
+    "credits": 8000,
+    "crystals": 50
+  },
+  "requires": [
+    "terran_barracks"
+  ],
+  "bonus": {
+    "hp": 0.15
+  },
+  "order": 40
+}

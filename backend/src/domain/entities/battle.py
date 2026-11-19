@@ -17,6 +17,14 @@ from src.domain.value_objects.troop import TroopTemplate
 LANE_COUNT = 3
 LANE_NAMES = ["LEFT FLANK", "CENTER", "RIGHT FLANK"]
 
+# Mana: the player's shared expedition resource, spent to deploy reserve troops.
+MANA_CAP = 10
+MANA_FLOOR = 3            # every battle opens with at least this much
+MANA_PER_TROOP_KILL = 1
+MANA_PER_HERO_KILL = 2    # elites and bosses included
+MANA_PER_LANE_CLEARED = 1
+MANA_PER_OBJECTIVE = 2
+
 
 @dataclass
 class LaneUnit:
@@ -68,7 +76,10 @@ class LaneUnit:
     template_id: str = ""
     unit_hp: int = 0
     unit_attack: int = 0
-    owner_id: Optional[str] = None  # hero this pack was attributed to
+    owner_id: Optional[str] = None  # hero that summoned this pack (summons only)
+    mana_cost: int = 0  # reserve packs: mana to deploy
+    # Reserve packs: lane the pack was deployed to (it stays there for the rest of the run).
+    deployed_lane: Optional[int] = None
 
     @property
     def is_hero(self) -> bool:
@@ -136,6 +147,7 @@ class LaneUnit:
             unit_attack=max(1, int(template.unit_attack * power_mult)),
             owner_id=owner_id,
             resistance=20,
+            mana_cost=template.mana_cost,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -196,6 +208,8 @@ class LaneUnit:
                 "unit_attack": self.unit_attack,
                 "volley_power": self.volley_power,
                 "owner_id": self.owner_id,
+                "mana_cost": self.mana_cost,
+                "deployed_lane": self.deployed_lane,
             })
         return data
 
@@ -256,6 +270,10 @@ class Battle:
     # Structured combat events (hits, heals, summons...) the client replays as animations.
     events: List[Dict[str, Any]] = field(default_factory=list)
     event_seq: int = 0
+    mana: int = 0
+    mana_cap: int = MANA_CAP
+    # Lanes cleared at the last evaluation (mana is granted when a lane flips to cleared).
+    cleared_lanes: List[bool] = field(default_factory=list)
 
     MAX_EVENTS = 300
 
@@ -264,6 +282,19 @@ class Battle:
         self.events.append({"seq": self.event_seq, "type": type_, **data})
         if len(self.events) > self.MAX_EVENTS:
             del self.events[: len(self.events) - self.MAX_EVENTS]
+
+    def gain_mana(self, amount: int, reason: str, unit_id: Optional[str] = None) -> None:
+        gained = max(0, min(amount, self.mana_cap - self.mana))
+        if gained <= 0:
+            return
+        self.mana += gained
+        self.emit("mana", amount=gained, mana=self.mana, reason=reason, unit_id=unit_id)
+
+    def spend_mana(self, amount: int, reason: str, unit_id: Optional[str] = None) -> None:
+        if amount > self.mana:
+            raise ValueError(f"Not enough mana ({self.mana}/{amount}).")
+        self.mana -= amount
+        self.emit("mana", amount=-amount, mana=self.mana, reason=reason, unit_id=unit_id)
 
     # ── Queries ────────────────────────────────────────────────────────────
     def get_unit(self, unit_id: str) -> Optional[LaneUnit]:
@@ -378,4 +409,6 @@ class Battle:
             "rewards": self.rewards,
             "events": self.events[-150:],
             "event_seq": self.event_seq,
+            "mana": self.mana,
+            "mana_cap": self.mana_cap,
         }

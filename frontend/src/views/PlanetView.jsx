@@ -96,7 +96,7 @@ function ExpeditionsTab({ biome, target, runInProgress, activeRun, onLaunch, onR
  * A planet: launch expeditions, or study its enemy hierarchy and pick who to hunt.
  * Expeditions on the planet feed Influence to the targeted champion; enough Influence opens its boss fight.
  */
-export default function PlanetView({ biome, squad, champions, activeRun, onStartCombat }) {
+export default function PlanetView({ biome, squad, champions, activeRun, onStartCombat, onOpenBarracks }) {
   const [tab, setTab] = useState('expeditions');
   const [hierarchy, setHierarchy] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -232,6 +232,7 @@ export default function PlanetView({ biome, squad, champions, activeRun, onStart
           squad={squad}
           champions={champions}
           onClose={() => setSetup(null)}
+          onOpenBarracks={onOpenBarracks}
           onLaunched={(run) => {
             setSetup(null);
             onStartCombat?.(run);

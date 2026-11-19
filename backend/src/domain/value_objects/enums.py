@@ -81,6 +81,7 @@ class NodeType(str, Enum):
     ELITE = "ELITE"
     REST = "REST"
     CACHE = "CACHE"
+    ARCHIVE = "ARCHIVE"  # derelict warp archive: hero blueprints & print materials
     BOSS = "BOSS"
 
 

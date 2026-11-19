@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "Cost": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "credits": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Credits",
+          "type": "integer"
+        },
+        "crystals": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Crystals",
+          "type": "integer"
+        }
+      },
+      "title": "Cost",
+      "type": "object"
+    },
+    "UpgradeBonus": {
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Editor hint, ignored by the game.",
+          "title": "$Schema"
+        },
+        "attack": {
+          "default": 0.0,
+          "description": "+% troop attack (0.10 = +10%).",
+          "minimum": 0.0,
+          "title": "Attack",
+          "type": "number"
+        },
+        "hp": {
+          "default": 0.0,
+          "description": "+% troop soldier HP.",
+          "minimum": 0.0,
+          "title": "Hp",
+          "type": "number"
+        },
+        "defense": {
+          "default": 0.0,
+          "description": "+% troop defense.",
+          "minimum": 0.0,
+          "title": "Defense",
+          "type": "number"
+        }
+      },
+      "title": "UpgradeBonus",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A barracks tech: a structure (unlocks troops) or a research (stat bonus for its faction's troops).",
+  "properties": {
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Editor hint, ignored by the game.",
+      "title": "$Schema"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "faction": {
+      "enum": [
+        "Terran Vanguard",
+        "Bio-Swarm",
+        "Astral Templars"
+      ],
+      "title": "Faction",
+      "type": "string"
+    },
+    "kind": {
+      "default": "structure",
+      "enum": [
+        "structure",
+        "research"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "cost": {
+      "$ref": "#/$defs/Cost"
+    },
+    "requires": {
+      "description": "Upgrade ids that must be complete first.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Requires",
+      "type": "array"
+    },
+    "bonus": {
+      "$ref": "#/$defs/UpgradeBonus",
+      "description": "Research: bonus to every troop pack of this faction."
+    },
+    "order": {
+      "default": 100,
+      "description": "Display order within the faction (lower first).",
+      "title": "Order",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "faction"
+  ],
+  "title": "Upgrade",
+  "type": "object",
+  "$id": "upgrade.schema.json"
+}

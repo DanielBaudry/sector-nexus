@@ -7,5 +7,13 @@
   "unit_hp": 40,
   "unit_attack": 8,
   "defense": 10,
-  "description": "Spine-launching damage dealers."
+  "description": "Spine-launching damage dealers.",
+  "mana_cost": 3,
+  "cost": {
+    "credits": 600,
+    "crystals": 8
+  },
+  "requires": [
+    "zerg_hydralisk_den"
+  ]
 }

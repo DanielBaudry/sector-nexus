@@ -68,12 +68,17 @@ const HOSTILE_KEYWORDS = [
   ['marauder', 'marauder'],
 ];
 
+// Art painted as raster illustrations (the rest are SVG silhouettes).
+const TROOP_ART_EXT = { zergling: 'png', zealot: 'png' };
+
+const troopArtPath = (key) => `/assets/troops/${key}.${TROOP_ART_EXT[key] || 'svg'}`;
+
 export function getTroopArt(unit) {
   const byTemplate = TROOP_ART[unit.template_id];
-  if (byTemplate) return `/assets/troops/${byTemplate}.svg`;
+  if (byTemplate) return troopArtPath(byTemplate);
   const name = (unit.name || '').toLowerCase();
   const hit = HOSTILE_KEYWORDS.find(([kw]) => name.includes(kw));
-  return `/assets/troops/${hit ? hit[1] : 'hostile'}.svg`;
+  return troopArtPath(hit ? hit[1] : 'hostile');
 }
 
 // ── Battle projectiles ─────────────────────────────────────────────────────

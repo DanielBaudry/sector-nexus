@@ -8,5 +8,13 @@
   "unit_attack": 10,
   "defense": 18,
   "description": "Psi-blade warriors. Elite but few.",
-  "icon_name": "Swords"
+  "icon_name": "Swords",
+  "mana_cost": 4,
+  "cost": {
+    "credits": 550,
+    "crystals": 5
+  },
+  "requires": [
+    "protoss_gateway"
+  ]
 }

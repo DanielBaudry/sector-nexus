@@ -120,7 +120,7 @@ export default function BossBanner({ boss, fx, onInspect, targetable = null, dim
               <div className="flex-1"><Bar value={boss.turn_meter} max={100} className="bg-amber-400" height="h-1.5" /></div>
             </div>
             <div className="flex items-center gap-2 min-h-[22px]">
-              {alive && boss.effects?.length > 0 && <EffectBadges effects={boss.effects} />}
+              {alive && boss.effects?.length > 0 && <EffectBadges effects={boss.effects} size="lg" />}
               {boss.passive && (
                 <span className="font-mono text-[12px] text-violet-300 truncate" title={boss.passive.description}>
                   ★ {boss.passive.name}{boss.passive_stacks ? ` ×${boss.passive_stacks}` : ''}

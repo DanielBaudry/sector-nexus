@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Swords, Skull, Tent, Package, Crown, Rocket } from 'lucide-react';
+import { Swords, Skull, Tent, Package, Crown, Rocket, Satellite } from 'lucide-react';
 
 const NODE_STYLE = {
   START:  { icon: Rocket,  color: '#22d3ee', label: 'Landing Zone' },
@@ -7,6 +7,7 @@ const NODE_STYLE = {
   ELITE:  { icon: Skull,   color: '#f59e0b', label: 'Elite' },
   REST:   { icon: Tent,    color: '#34d399', label: 'Field Camp' },
   CACHE:  { icon: Package, color: '#a78bfa', label: 'Supply Cache' },
+  ARCHIVE: { icon: Satellite, color: '#38bdf8', label: 'Warp Archive' },
   BOSS:   { icon: Crown,   color: '#ef4444', label: 'Apex Threat' },
 };
 

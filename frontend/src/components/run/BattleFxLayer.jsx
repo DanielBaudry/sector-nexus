@@ -12,6 +12,7 @@ const FLOATER = {
   debuff: 'text-red-200 text-xs font-orbitron tracking-wider bg-red-950/80 px-1.5 rounded border border-red-400/60',
   resist: 'text-slate-200 text-xs font-orbitron tracking-wider bg-slate-800/90 px-1.5 rounded border border-slate-400/60',
   passive: 'text-violet-100 text-xs font-orbitron tracking-wider bg-violet-950/85 px-1.5 rounded border border-violet-400/70',
+  mana: 'text-violet-100 text-sm font-orbitron tracking-wider bg-violet-700/90 px-2 rounded-full border border-violet-200 shadow-[0_0_12px_rgba(139,92,246,0.8)]',
 };
 
 /** Melee hit: one (or, on crits, two) blade arcs drawn across the target. */

@@ -1,0 +1,20 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "protoss_ground_weapons_2",
+  "name": "Ground Weapons II",
+  "faction": "Astral Templars",
+  "kind": "research",
+  "description": "Phase-disruptor tuning: +15% more attack for Protoss troops.",
+  "cost": {
+    "credits": 20000,
+    "crystals": 170
+  },
+  "requires": [
+    "protoss_ground_weapons_1",
+    "protoss_cybernetics_core"
+  ],
+  "bonus": {
+    "attack": 0.15
+  },
+  "order": 50
+}

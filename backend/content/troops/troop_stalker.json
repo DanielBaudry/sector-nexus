@@ -8,5 +8,13 @@
   "unit_attack": 12,
   "defense": 20,
   "description": "Blink-capable walkers with heavy shots.",
-  "icon_name": "Radio"
+  "icon_name": "Radio",
+  "mana_cost": 4,
+  "cost": {
+    "credits": 850,
+    "crystals": 15
+  },
+  "requires": [
+    "protoss_cybernetics_core"
+  ]
 }

@@ -1,11 +1,12 @@
 import React from 'react';
-import { LayoutDashboard, Sparkles, Shield, Compass, Swords } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Shield, Compass, Swords, Factory } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, hasActiveCombat }) {
   const tabs = [
     { id: 'deck', label: 'Command Deck', icon: LayoutDashboard },
-    { id: 'gacha', label: 'Warp Beacon', icon: Sparkles, badge: 'SUMMON' },
+    { id: 'gacha', label: 'Warp Beacon', icon: Sparkles, badge: 'PRINT' },
     { id: 'champions', label: 'Armory & AI', icon: Shield },
+    { id: 'barracks', label: 'Barracks', icon: Factory },
     { id: 'expeditions', label: 'Sector Map', icon: Compass },
     { id: 'combat', label: 'Tactical Combat', icon: Swords, alert: hasActiveCombat },
   ];

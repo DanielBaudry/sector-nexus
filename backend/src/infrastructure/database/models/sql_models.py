@@ -55,7 +55,7 @@ class PlayerProfileSQL(SQLModel, table=True):
     username: str
     crystals: int = 1500
     credits: int = 50000
-    warp_shards: int = 15
+    warp_shards: int = 15  # legacy column (warp shards were removed from the game)
     level: int = 1
     experience: int = 0
     champion_xp: int = 0
@@ -70,3 +70,27 @@ class HierarchyStandingSQL(SQLModel, table=True):
     defeated: bool = False
     losses: int = 0
     targeted: bool = False
+
+
+class TroopStockSQL(SQLModel, table=True):
+    """Troop packs in the player's garrison (barracks)."""
+    __tablename__ = "troop_stock"
+
+    template_id: str = Field(primary_key=True)
+    count: int = 0
+
+
+class ResearchSQL(SQLModel, table=True):
+    """Completed barracks techs (structures and researches)."""
+    __tablename__ = "barracks_research"
+
+    upgrade_id: str = Field(primary_key=True)
+
+
+class HeroArchiveSQL(SQLModel, table=True):
+    """Warp Beacon: hero blueprint owned + print materials gathered, per hero template."""
+    __tablename__ = "hero_archive"
+
+    template_id: str = Field(primary_key=True)
+    blueprint: bool = False
+    materials: int = 0

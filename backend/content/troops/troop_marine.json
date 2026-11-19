@@ -8,5 +8,13 @@
   "unit_attack": 6,
   "defense": 12,
   "description": "Reliable gauss riflemen. Balanced pack.",
-  "icon_name": "Crosshair"
+  "icon_name": "Crosshair",
+  "mana_cost": 3,
+  "cost": {
+    "credits": 400,
+    "crystals": 0
+  },
+  "requires": [
+    "terran_barracks"
+  ]
 }

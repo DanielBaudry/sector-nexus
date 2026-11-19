@@ -4,13 +4,12 @@ from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 
 from src.infrastructure.database.connection import create_db_and_tables, engine
-from src.infrastructure.database.models.sql_models import ChampionSQL, ArtifactSQL, SquadSQL
+from src.infrastructure.database.models.sql_models import ChampionSQL, ArtifactSQL, SquadSQL, ResearchSQL, TroopStockSQL
 from src.infrastructure.database.seed_data import (
     get_seed_champion_templates,
     get_seed_starting_artifacts,
 )
 from src.presentation.controllers import (
-    gacha_controller,
     champions_controller,
     artifacts_controller,
     squads_controller,
@@ -18,7 +17,13 @@ from src.presentation.controllers import (
     player_controller,
     runs_controller,
     hierarchy_controller,
+    barracks_controller,
+    warp_beacon_controller,
 )
+
+# Barracks starter kit (first launch only): a Barracks and a few Marine squads.
+STARTER_RESEARCH = ["terran_barracks"]
+STARTER_TROOPS = {"troop_marine": 3}
 
 
 @asynccontextmanager
@@ -56,12 +61,20 @@ async def lifespan(app: FastAPI):
             session.add(default_squad)
             session.commit()
 
+        # Barracks starter kit, given once (research rows are never removed).
+        if not session.exec(select(ResearchSQL)).first() and not session.exec(select(TroopStockSQL)).first():
+            for upgrade_id in STARTER_RESEARCH:
+                session.add(ResearchSQL(upgrade_id=upgrade_id))
+            for template_id, count in STARTER_TROOPS.items():
+                session.add(TroopStockSQL(template_id=template_id, count=count))
+            session.commit()
+
     yield
 
 
 app = FastAPI(
-    title="Sector Nexus API - StarCraft Tactical Gacha RPG",
-    description="Clean Architecture backend for StarCraft-inspired Gacha with timed tactical card combat.",
+    title="Sector Nexus API - StarCraft Tactical RPG",
+    description="Clean Architecture backend for a StarCraft-inspired hero collection game with tactical lane combat.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -77,13 +90,14 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(player_controller.router)
-app.include_router(gacha_controller.router)
 app.include_router(champions_controller.router)
 app.include_router(artifacts_controller.router)
 app.include_router(squads_controller.router)
 app.include_router(expeditions_controller.router)
 app.include_router(runs_controller.router)
 app.include_router(hierarchy_controller.router)
+app.include_router(barracks_controller.router)
+app.include_router(warp_beacon_controller.router)
 
 
 @app.get("/")
@@ -94,7 +108,8 @@ def root():
         "version": "1.0.0",
         "endpoints": [
             "/api/player",
-            "/api/gacha/banners",
+            "/api/warp-beacon",
+            "/api/barracks",
             "/api/champions",
             "/api/artifacts",
             "/api/squads",

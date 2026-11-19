@@ -10,10 +10,10 @@ MAP_WIDTH = 3
 # Weighted node pools per depth band (middle rows only).
 _ROW_POOLS = {
     1: [(NodeType.COMBAT, 1.0)],
-    2: [(NodeType.COMBAT, 0.55), (NodeType.CACHE, 0.25), (NodeType.ELITE, 0.20)],
-    3: [(NodeType.COMBAT, 0.45), (NodeType.ELITE, 0.25), (NodeType.REST, 0.30)],
-    4: [(NodeType.COMBAT, 0.50), (NodeType.ELITE, 0.25), (NodeType.CACHE, 0.25)],
-    5: [(NodeType.REST, 0.45), (NodeType.COMBAT, 0.35), (NodeType.CACHE, 0.20)],
+    2: [(NodeType.COMBAT, 0.50), (NodeType.CACHE, 0.15), (NodeType.ARCHIVE, 0.15), (NodeType.ELITE, 0.20)],
+    3: [(NodeType.COMBAT, 0.40), (NodeType.ELITE, 0.20), (NodeType.REST, 0.25), (NodeType.ARCHIVE, 0.15)],
+    4: [(NodeType.COMBAT, 0.45), (NodeType.ELITE, 0.25), (NodeType.CACHE, 0.15), (NodeType.ARCHIVE, 0.15)],
+    5: [(NodeType.REST, 0.40), (NodeType.COMBAT, 0.30), (NodeType.CACHE, 0.15), (NodeType.ARCHIVE, 0.15)],
 }
 
 
@@ -72,5 +72,6 @@ _HINTS = {
     NodeType.ELITE: "Elite commanders — high threat, rich spoils",
     NodeType.REST: "Field camp — repair heroes, regroup troops",
     NodeType.CACHE: "Supply cache — credits & crystals",
+    NodeType.ARCHIVE: "Derelict warp archive — hero blueprints & print materials",
     NodeType.BOSS: "Apex threat — eliminate the boss",
 }

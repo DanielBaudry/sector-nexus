@@ -4,6 +4,7 @@
   "order": 1,
   "image": "/assets/planets/char.png",
   "image_hue": 0,
+  "battle_image": "/assets/planets/char_battle.png",
   "name": "Char: Molten Ashfields",
   "description": "Volcanic planet overrun by frenzied Swarm hives and molten magma rivers.",
   "hazard_name": "Thermal Overheat",

@@ -21,6 +21,8 @@ class CombatCard:
     lane_scope: LaneScope = LaneScope.SAME_LANE
     # Lane battle: optional troop template summoned into the target lane.
     summon_troop_id: Optional[str] = None
+    # Lane battle (heroes): mana granted to the player when the ability is used.
+    mana_gain: int = 0
     # Lane battle: buffs / debuffs / cleanse / strip / steal applied by the ability.
     effects: List[EffectSpec] = field(default_factory=list)
     # Boss abilities: own turns spent winding up (announced to the player) before it lands,
@@ -43,6 +45,7 @@ class CombatCard:
             "flavor_quote": self.flavor_quote,
             "lane_scope": self.lane_scope.value if hasattr(self.lane_scope, "value") else str(self.lane_scope),
             "summon_troop_id": self.summon_troop_id,
+            "mana_gain": self.mana_gain,
             "effects": [e.to_dict() for e in self.effects],
             "telegraph_turns": self.telegraph_turns,
             "phase": self.phase,
@@ -64,6 +67,7 @@ class CombatCard:
             flavor_quote=data.get("flavor_quote"),
             lane_scope=LaneScope(data.get("lane_scope", LaneScope.SAME_LANE)),
             summon_troop_id=data.get("summon_troop_id"),
+            mana_gain=int(data.get("mana_gain", 0)),
             effects=[EffectSpec.from_dict(e) for e in data.get("effects", [])],
             telegraph_turns=int(data.get("telegraph_turns", 0)),
             phase=int(data.get("phase", 0)),

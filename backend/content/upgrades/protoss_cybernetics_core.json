@@ -1,0 +1,16 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "protoss_cybernetics_core",
+  "name": "Cybernetics Core",
+  "faction": "Astral Templars",
+  "kind": "structure",
+  "description": "Unlocks Stalker Wings and advanced warp matrices.",
+  "cost": {
+    "credits": 10000,
+    "crystals": 100
+  },
+  "requires": [
+    "protoss_gateway"
+  ],
+  "order": 20
+}

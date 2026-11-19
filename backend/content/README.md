@@ -5,8 +5,9 @@ Everything you design lives here as JSON — one file per unit:
 | Folder | What | Key fields |
 |---|---|---|
 | `heroes/` | Playable champions | `stats`, `passive`, `abilities`, `gambits`, `order` |
-| `troops/` | Troop packs heroes lead / summon | `count`, `unit_hp`, `unit_attack`, `defense` |
-| `planets/` | Planets: expedition setting, enemy pool, difficulty threats | `enemy_pool`, `difficulty_enemies`, `max_difficulty`, `order` |
+| `troops/` | Troop packs: trained in the Barracks, brought as expedition reserve (deployed with mana) / hero summons | `count`, `unit_hp`, `unit_attack`, `defense`, `mana_cost`, `cost`, `requires` |
+| `upgrades/` | Barracks tech tree: structures (unlock troops) and researches (faction troop bonuses) | `faction`, `kind`, `cost`, `requires`, `bonus`, `order` |
+| `planets/` | Planets: expedition setting, enemy pool, difficulty threats | `enemy_pool`, `difficulty_enemies`, `max_difficulty`, `order`, `image`, `battle_image` |
 | `bosses/` | Colossal bosses and planet hierarchies | `stats`, `abilities`, `phases`, `summons`, `rank`, `superior`, `influence_required`, `guard` |
 | `schema/` | JSON Schemas (generated — don't edit by hand) | |
 
@@ -44,7 +45,7 @@ cd backend && PYTHONPATH=. python -c "from src.infrastructure.content.library im
 
 - **Ability** — `target_type`: `single_enemy | all_enemies | self | all_allies | lowest_hp_ally`;
   `lane_scope`: `same_lane | adjacent_lanes | any_lane | all_lanes`; damage = attack × `power_multiplier`,
-  heal = attack × `heal_multiplier`; `cooldown_turns` in own turns. Bosses: `telegraph_turns`
+  heal = attack × `heal_multiplier`; `cooldown_turns` in own turns; heroes: `mana_gain` (player mana per use). Bosses: `telegraph_turns`
   (wind-up, a stun interrupts it) and `phase` (0-based unlock phase).
 - **Effect** — buffs `ATK_UP DEF_UP SPD_UP CRIT_UP IMMUNITY REGEN`, debuffs
   `ATK_DOWN DEF_DOWN SPD_DOWN BURN POISON STUN HEAL_BLOCK MARKED`, ops `CLEANSE STRIP STEAL`.

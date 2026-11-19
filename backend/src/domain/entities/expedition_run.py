@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from src.domain.entities.battle import Battle, LaneUnit
-from src.domain.value_objects.enums import NodeType, RunStatus
+from src.domain.entities.battle import MANA_CAP, MANA_FLOOR, Battle, LaneUnit
+from src.domain.value_objects.enums import BattleStatus, NodeType, RunStatus
 
 
 @dataclass
@@ -43,7 +43,10 @@ class ExpeditionRun:
     nodes: List[MapNode] = field(default_factory=list)
     current_node_id: Optional[str] = None
     heroes: List[LaneUnit] = field(default_factory=list)
+    # Troop reserve: packs picked before the expedition. Deployed with mana mid-battle,
+    # they then hold their lane (deployed_lane) until destroyed or the run ends.
     troops: List[LaneUnit] = field(default_factory=list)
+    mana: int = 0  # carried between battles; the battle holds the live value while fighting
     battle: Optional[Battle] = None
     log: List[str] = field(default_factory=list)
     # Loot accumulated node by node: credits, crystals, champion XP capsules and artifact dicts.
@@ -60,6 +63,11 @@ class ExpeditionRun:
     influence_banked: Optional[int] = None
     target_guard: Optional[Dict[str, Any]] = None
     hierarchy_result: Optional[Dict[str, Any]] = None  # boss mode: claimed / adaptation gained
+    # Warp Beacon loot: every hero that can drop (template id -> name) and blueprints already owned.
+    hero_pool: Dict[str, str] = field(default_factory=dict)
+    known_blueprints: List[str] = field(default_factory=list)
+    # Last non-combat node outcome (rest / cache / archive), shown to the player once.
+    node_event: Optional[Dict[str, Any]] = None
 
     def get_node(self, node_id: Optional[str]) -> Optional[MapNode]:
         return next((n for n in self.nodes if n.id == node_id), None)
@@ -75,8 +83,16 @@ class ExpeditionRun:
     def living_heroes(self) -> List[LaneUnit]:
         return [h for h in self.heroes if h.is_alive]
 
-    def troops_of(self, hero_id: str) -> List[LaneUnit]:
-        return [t for t in self.troops if t.owner_id == hero_id and t.is_alive]
+    def reserve_troops(self) -> List[LaneUnit]:
+        return [t for t in self.troops if t.is_alive and t.deployed_lane is None]
+
+    def field_troops(self) -> List[LaneUnit]:
+        return [t for t in self.troops if t.is_alive and t.deployed_lane is not None]
+
+    @property
+    def live_mana(self) -> int:
+        b = self.battle
+        return b.mana if b and b.status == BattleStatus.IN_PROGRESS else self.mana
 
     @property
     def is_finished(self) -> bool:
@@ -104,9 +120,14 @@ class ExpeditionRun:
             "reachable_node_ids": self.reachable_node_ids() if self.status == RunStatus.MAP else [],
             "heroes": [h.to_dict() for h in self.heroes],
             "troops": [t.to_dict() for t in self.troops],
+            "mana": self.live_mana,
+            "mana_cap": MANA_CAP,
+            "mana_floor": MANA_FLOOR,
             "battle": self.battle.to_dict() if self.battle else None,
             "log": self.log[-30:],
             "rewards": self.rewards,
             "payout": self.payout,
+            "hero_names": self.hero_pool,
+            "node_event": self.node_event,
             "rewards_paid": self.rewards_paid,
         }

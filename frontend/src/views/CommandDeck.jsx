@@ -61,7 +61,7 @@ export default function CommandDeck({
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-200 font-orbitron font-bold text-xs uppercase tracking-wider transition"
             >
               <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>Warp Invocations</span>
+              <span>Warp Beacon</span>
             </button>
           </div>
         </div>

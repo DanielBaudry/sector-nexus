@@ -25,7 +25,7 @@ function PlanetThumb({ planet, size = 44 }) {
  * hierarchy) on the right. Switch planets with the system strip, the arrows or ← / →:
  * the camera "jumps" — stars streak, the old planet flies off and the new one arrives from depth.
  */
-export default function ExpeditionMapView({ biomes = [], squads, champions = [], activeRun, onStartCombat }) {
+export default function ExpeditionMapView({ biomes = [], squads, champions = [], activeRun, onStartCombat, onOpenBarracks }) {
   const [index, setIndex] = useState(() => {
     const i = biomes.findIndex((b) => b.id === activeRun?.biome_id);
     return i >= 0 ? i : 0;
@@ -158,6 +158,7 @@ export default function ExpeditionMapView({ biomes = [], squads, champions = [],
             champions={champions}
             activeRun={activeRun}
             onStartCombat={onStartCombat}
+            onOpenBarracks={onOpenBarracks}
           />
         </div>
       </div>

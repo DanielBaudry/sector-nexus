@@ -48,34 +48,34 @@ function grouped(effects = []) {
 export function EffectBadges({ effects, size = 'md', max = 6 }) {
   const list = grouped(effects);
   if (!list.length) return null;
-  const box = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
-  const icon = size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5';
+  const box = { sm: 'w-7 h-7', md: 'w-8 h-8', lg: 'w-10 h-10' }[size] || 'w-8 h-8';
+  const icon = { sm: 'w-4 h-4', md: 'w-5 h-5', lg: 'w-6 h-6' }[size] || 'w-5 h-5';
   const shown = list.slice(0, max);
   return (
-    <div className="flex flex-wrap justify-center gap-0.5">
+    <div className="flex flex-wrap justify-center gap-1.5">
       {shown.map((e) => {
         const { icon: Icon, color } = metaFor(e.type);
         return (
           <span
             key={e.type}
             title={`${e.label}${e.stacks > 1 ? ` ×${e.stacks}` : ''} — ${e.description} (${e.turns} turn${e.turns > 1 ? 's' : ''})`}
-            className={`relative ${box} rounded flex items-center justify-center bg-black/85 border`}
-            style={{ borderColor: color, boxShadow: `0 0 5px ${color}66` }}
+            className={`relative ${box} rounded-md flex items-center justify-center bg-black/85 border-2`}
+            style={{ borderColor: color, boxShadow: `0 0 8px ${color}77` }}
           >
             <Icon className={icon} style={{ color }} />
-            {!e.is_buff && <span className="absolute -top-px -left-px w-1 h-1 rounded-full bg-red-500" />}
-            <span className="absolute -bottom-1 -right-1 min-w-[12px] px-px rounded-sm bg-black text-[10px] font-mono font-bold leading-[12px] text-white text-center">
+            {!e.is_buff && <span className="absolute -top-0.5 -left-0.5 w-1.5 h-1.5 rounded-full bg-red-500" />}
+            <span className="absolute -bottom-1.5 -right-1.5 min-w-[16px] px-0.5 rounded bg-black border border-white/30 text-[12px] font-mono font-bold leading-[15px] text-white text-center">
               {e.turns}
             </span>
             {e.stacks > 1 && (
-              <span className="absolute -top-1 -right-1 px-px rounded-sm bg-black text-[9px] font-mono leading-[10px]" style={{ color }}>
+              <span className="absolute -top-1.5 -right-1.5 px-0.5 rounded bg-black text-[11px] font-mono font-bold leading-[13px]" style={{ color }}>
                 ×{e.stacks}
               </span>
             )}
           </span>
         );
       })}
-      {list.length > max && <span className="text-[11px] font-mono text-slate-400">+{list.length - max}</span>}
+      {list.length > max && <span className="self-center text-[13px] font-mono font-bold text-slate-300">+{list.length - max}</span>}
     </div>
   );
 }
@@ -97,19 +97,19 @@ export function PassiveMark({ passive, stacks = 0 }) {
 /** Chips summarising what an ability applies (used on ability cards). */
 export function EffectSpecChips({ effects, size = 'sm' }) {
   if (!effects?.length) return null;
-  const text = size === 'sm' ? 'text-[11px]' : 'text-[12px]';
+  const text = size === 'sm' ? 'text-[13px]' : 'text-[14px]';
   return (
-    <div className="flex flex-wrap gap-0.5">
+    <div className="flex flex-wrap gap-1">
       {effects.map((e, i) => {
         const { icon: Icon, color } = metaFor(e.type);
         return (
           <span
             key={`${e.type}-${i}`}
             title={e.description}
-            className={`inline-flex items-center gap-0.5 px-1 rounded border bg-black/60 font-mono ${text} leading-tight`}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border bg-black/60 font-mono ${text} leading-tight`}
             style={{ borderColor: `${color}99`, color }}
           >
-            <Icon className="w-2.5 h-2.5" />
+            <Icon className="w-4 h-4" />
             {e.label}
             {e.chance < 1 && !e.is_buff && <span className="opacity-70">{Math.round(e.chance * 100)}%</span>}
           </span>
@@ -122,19 +122,23 @@ export function EffectSpecChips({ effects, size = 'sm' }) {
 /** Full list of active effects for the unit info panel. */
 export function EffectList({ effects }) {
   const list = grouped(effects);
-  if (!list.length) return <div className="font-mono text-[12px] text-slate-500">No active effects.</div>;
+  if (!list.length) return <div className="font-mono text-[13px] text-slate-500">No active effects.</div>;
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {list.map((e) => {
         const { icon: Icon, color } = metaFor(e.type);
         return (
-          <div key={e.type} className="flex items-center gap-2 rounded-md bg-slate-900/80 border px-2 py-1" style={{ borderColor: `${color}55` }}>
-            <Icon className="w-3.5 h-3.5 shrink-0" style={{ color }} />
-            <span className="font-mono text-[12px] font-bold" style={{ color }}>
-              {e.label}{e.stacks > 1 ? ` ×${e.stacks}` : ''}
+          <div key={e.type} className="flex items-center gap-2.5 rounded-lg bg-slate-900/80 border px-2.5 py-1.5" style={{ borderColor: `${color}66` }}>
+            <span className="w-8 h-8 shrink-0 rounded-md flex items-center justify-center bg-black/80 border-2" style={{ borderColor: color }}>
+              <Icon className="w-5 h-5" style={{ color }} />
             </span>
-            <span className="text-[12px] text-slate-300 truncate">{e.description}</span>
-            <span className="ml-auto font-mono text-[12px] text-slate-400 shrink-0">{e.turns}t</span>
+            <div className="min-w-0">
+              <div className="font-mono text-[14px] font-bold" style={{ color }}>
+                {e.label}{e.stacks > 1 ? ` ×${e.stacks}` : ''}
+              </div>
+              <div className="text-[13px] text-slate-300 leading-snug">{e.description}</div>
+            </div>
+            <span className="ml-auto font-mono text-[13px] font-bold text-slate-300 shrink-0">{e.turns}t</span>
           </div>
         );
       })}

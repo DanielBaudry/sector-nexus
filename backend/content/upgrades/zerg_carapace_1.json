@@ -1,0 +1,19 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "zerg_carapace_1",
+  "name": "Chitinous Carapace I",
+  "faction": "Bio-Swarm",
+  "kind": "research",
+  "description": "Thicker carapace: +15% soldier HP for Zerg troops.",
+  "cost": {
+    "credits": 7500,
+    "crystals": 50
+  },
+  "requires": [
+    "zerg_spawning_pool"
+  ],
+  "bonus": {
+    "hp": 0.15
+  },
+  "order": 40
+}

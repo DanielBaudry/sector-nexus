@@ -1,0 +1,20 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "terran_infantry_weapons_2",
+  "name": "Infantry Weapons II",
+  "faction": "Terran Vanguard",
+  "kind": "research",
+  "description": "Depleted-neosteel rounds: +15% more attack for Terran troops.",
+  "cost": {
+    "credits": 18000,
+    "crystals": 150
+  },
+  "requires": [
+    "terran_infantry_weapons_1",
+    "terran_tech_lab"
+  ],
+  "bonus": {
+    "attack": 0.15
+  },
+  "order": 50
+}

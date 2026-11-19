@@ -80,7 +80,8 @@
       ],
       "energy_cost": 1,
       "icon_name": "Shield",
-      "flavor_quote": "Give 'em some pepper!"
+      "flavor_quote": "Give 'em some pepper!",
+      "mana_gain": 1
     },
     {
       "id": "raynor_drop_pods",

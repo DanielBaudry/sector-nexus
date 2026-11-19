@@ -1,0 +1,14 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "zerg_spawning_pool",
+  "name": "Spawning Pool",
+  "faction": "Bio-Swarm",
+  "kind": "structure",
+  "description": "Spawns Zergling Swarms. Cheap, fast, endless.",
+  "cost": {
+    "credits": 2500,
+    "crystals": 0
+  },
+  "requires": [],
+  "order": 10
+}

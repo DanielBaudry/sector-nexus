@@ -18,7 +18,10 @@ const T = {
   phase: 1600,
   announce: 1900,
   endGap: 260,
+  enemyWindup: 750,   // hostile actor lights up before acting: time to see it coming
+  enemyEndGap: 520,   // breather after a hostile action
   floater: 1150,
+  mana: 220,
   impact: 380,
 };
 
@@ -71,17 +74,24 @@ export default function useBattleReplay(battle) {
   const [projectiles, setProjectiles] = useState([]);
   const [animating, setAnimating] = useState(false);
   const [announce, setAnnounce] = useState(null);   // big centred banner (boss phase / wind-up)
+  const [synced, setSynced] = useState(null);       // `${battleId}:${seq}` the replay has absorbed
+  const [acting, setActing] = useState(null);       // { id, side, name, drill } — whose action is playing
+  const [mana, setMana] = useState(null);           // mana as replayed (null = use the server value)
+  const [manaPulse, setManaPulse] = useState(null); // { key, amount } on every gain / spend
 
   const battleRef = useRef(battle);
   const lastSeqRef = useRef(null);
   const battleIdRef = useRef(null);
   const prevUnitsRef = useRef({});
+  const prevManaRef = useRef(0);
   const queueRef = useRef([]);
   const runningRef = useRef(false);
   const aliveRef = useRef(true);
   const keyRef = useRef(0);
+  const actingRef = useRef(null);
 
   battleRef.current = battle;
+  actingRef.current = acting;
   const nextKey = () => ++keyRef.current;
 
   // Set on (re)mount too: StrictMode mounts → unmounts → mounts again in development.
@@ -142,23 +152,37 @@ export default function useBattleReplay(battle) {
   const run = useCallback(async () => {
     if (runningRef.current) return;
     runningRef.current = true;
-    setAnimating(true);
+    // A troop deployment (mana spend + drop-in) plays without closing the player's turn.
+    const quiet = queueRef.current.every((e) => e.type === 'mana' || (e.type === 'summon' && e.deploy));
+    if (!quiet) setAnimating(true);
     setOverrides({ ...prevUnitsRef.current });
+    setMana(prevManaRef.current);
 
     try {
     while (queueRef.current.length && aliveRef.current) {
       const ev = queueRef.current.shift();
+      if (ev.type !== 'mana' && !(ev.type === 'summon' && ev.deploy)) setAnimating(true);
       const units = battleRef.current?.units || [];
       switch (ev.type) {
         case 'turn': {
+          const actorUnit = units.find((u) => u.id === ev.actor_id);
+          const side = ev.drill ? ev.side : actorUnit?.side;
           if (ev.drill) {
             units
               .filter((u) => u.kind === 'TROOP' && u.side === ev.side && u.lane === ev.lane)
-              .forEach((u) => mark(u.id, 'attack'));
+              .forEach((u) => mark(u.id, side === 'ENEMY' ? 'windup' : 'attack'));
           } else {
-            mark(ev.actor_id, 'attack');
+            mark(ev.actor_id, side === 'ENEMY' ? 'windup' : 'attack');
           }
-          await sleep(T.turn);
+          setActing({
+            id: ev.actor_id || null,
+            side,
+            drill: !!ev.drill,
+            lane: ev.lane ?? actorUnit?.lane ?? null,
+            name: ev.drill ? (side === 'ENEMY' ? 'Hostile troops' : 'Your troops') : actorUnit?.name || 'Unknown',
+          });
+          // Hostiles telegraph: they glow for a beat before striking.
+          await sleep(side === 'ENEMY' ? T.enemyWindup : T.turn);
           break;
         }
         case 'ability':
@@ -195,9 +219,16 @@ export default function useBattleReplay(battle) {
           await sleep(T.shield);
           break;
         case 'summon':
-          floatAt(ev.source_id, `+ ${ev.name}`, 'heal');
+          if (ev.deploy) floatAt(ev.unit_id, 'DEPLOYED', 'buff');
+          else floatAt(ev.source_id, `+ ${ev.name}`, 'heal');
           mark(ev.unit_id, 'heal');
           await sleep(T.summon);
+          break;
+        case 'mana':
+          setMana(ev.mana);
+          setManaPulse({ key: nextKey(), amount: ev.amount });
+          if (ev.amount > 0 && ev.unit_id && ev.reason === 'kill') floatAt(ev.unit_id, `+${ev.amount} MANA`, 'mana');
+          await sleep(ev.amount > 0 ? T.mana : 0);
           break;
         case 'effect': {
           const label = ev.action === 'applied' ? `${ev.is_buff ? '▲' : '▼'} ${ev.label}`
@@ -257,10 +288,13 @@ export default function useBattleReplay(battle) {
           setLaneFx((l) => ({ ...l, [ev.lane]: nextKey() }));
           await sleep(T.wave);
           break;
-        case 'end':
+        case 'end': {
+          const wasEnemy = actingRef.current?.side === 'ENEMY';
           setFx({});
-          await sleep(T.endGap);
+          await sleep(wasEnemy ? T.enemyEndGap : T.endGap);
+          setActing(null);
           break;
+        }
         default:
           break;
       }
@@ -270,10 +304,13 @@ export default function useBattleReplay(battle) {
       // Always release the lock so a later batch (or a remount) can replay again.
       runningRef.current = false;
       prevUnitsRef.current = snapshot(battleRef.current?.units);
+      prevManaRef.current = battleRef.current?.mana ?? 0;
       queueRef.current = aliveRef.current ? queueRef.current : [];
       if (aliveRef.current) {
+        setMana(null);
         setFx({});
         setOverrides({});
+        setActing(null);
         setAnimating(false);
       }
     }
@@ -288,18 +325,28 @@ export default function useBattleReplay(battle) {
       battleIdRef.current = battle.id;
       lastSeqRef.current = battle.event_seq || 0;
       prevUnitsRef.current = snapshot(battle.units);
+      prevManaRef.current = battle.mana ?? 0;
       queueRef.current = [];
+      setSynced(`${battle.id}:${battle.event_seq || 0}`);
       return;
     }
     const newEvents = (battle.events || []).filter((e) => e.seq > lastSeqRef.current);
     lastSeqRef.current = battle.event_seq || lastSeqRef.current;
+    setSynced(`${battle.id}:${battle.event_seq || 0}`);
     if (!newEvents.length) {
-      if (!runningRef.current) prevUnitsRef.current = snapshot(battle.units);
+      if (!runningRef.current) {
+        prevUnitsRef.current = snapshot(battle.units);
+        prevManaRef.current = battle.mana ?? 0;
+      }
       return;
     }
     queueRef.current.push(...newEvents);
     run();
   }, [battle?.id, battle?.event_seq, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { overrides, fx, laneFx, floaters, projectiles, animating, announce };
+  // True only once every event of the current battle state has been played. On the render
+  // where a new state arrives, the effect above hasn't queued its events yet — not settled.
+  const settled = !animating && !!battle && synced === `${battle.id}:${battle.event_seq || 0}`;
+
+  return { overrides, fx, laneFx, floaters, projectiles, animating, announce, acting, settled, mana, manaPulse };
 }

@@ -53,7 +53,8 @@
         }
       ],
       "energy_cost": 1,
-      "icon_name": "Shield"
+      "icon_name": "Shield",
+      "mana_gain": 1
     },
     {
       "id": "karax_chrono_beam",

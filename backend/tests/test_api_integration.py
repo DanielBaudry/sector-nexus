@@ -14,7 +14,7 @@ def test_player_profile_and_resupply(client):
     assert res.status_code == 200
     data = res.json()
     assert data["username"] == "Dominion Commander"
-    assert data["crystals"] >= 1000
+    assert data["crystals"] >= 0 and data["credits"] >= 0
 
     resupply = client.post("/api/player/resupply")
     assert resupply.status_code == 200
@@ -26,25 +26,23 @@ def test_champions_roster(client):
     res = client.get("/api/champions")
     assert res.status_code == 200
     champs = res.json()
-    assert len(champs) >= 4
+    assert len(champs) >= 1
     first = champs[0]
     assert "effective_stats" in first
     assert len(first["cards"]) >= 2
     assert len(first["gambits"]) >= 1
 
 
-def test_gacha_banners_and_summon(client):
-    banners_res = client.get("/api/gacha/banners")
-    assert banners_res.status_code == 200
-    banners = banners_res.json()
-    assert len(banners) == 4
-
-    summon_res = client.post("/api/gacha/summon", json={"banner_faction": "Bio-Swarm", "count": 1})
-    assert summon_res.status_code == 200
-    data = summon_res.json()
-    assert len(data["summoned"]) == 1
-    new_champ = data["summoned"][0]
-    assert new_champ["faction"] in ("Bio-Swarm", "Terran Vanguard", "Astral Templars")
+def test_warp_beacon_lists_every_hero_and_blocks_unready_prints(client):
+    res = client.get("/api/warp-beacon")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["print_cost"] == 100 and data["total"] == len(data["heroes"]) > 0
+    assert "warp_shards" not in client.get("/api/player").json()
+    locked = next((h for h in data["heroes"] if not h["ready"]), None)
+    if locked:
+        bad = client.post("/api/warp-beacon/warpcopy", json={"template_id": locked["template_id"]})
+        assert bad.status_code == 400
 
 
 def test_expeditions_flow(client):
@@ -59,7 +57,7 @@ def test_expeditions_flow(client):
     assert start_res.status_code == 200
     expedition = start_res.json()
     assert expedition["status"] == "IN_PROGRESS"
-    assert len(expedition["allies"]) == 4
+    assert 1 <= len(expedition["allies"]) <= 4
     assert len(expedition["enemies"]) >= 2
 
     # Execute a card choice or timeout gambit

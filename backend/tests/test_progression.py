@@ -150,6 +150,19 @@ def test_progression_api(client):
     assert {"rank", "max_level", "xp_to_next", "can_rank_up"} <= set(target)
 
     arts = client.get("/api/artifacts").json()
+    if not any(a["level"] < 16 for a in arts):  # fresh account: empty vault, add one artifact
+        import uuid
+        from sqlmodel import Session
+        from src.domain.entities.artifact import Artifact
+        from src.domain.value_objects.enums import ArtifactSetType, Rarity
+        from src.infrastructure.database.connection import engine
+        from src.infrastructure.repositories.artifact_repository_sql import ArtifactRepositorySQL
+        with Session(engine) as s:
+            ArtifactRepositorySQL(s).save(Artifact.generate(
+                artifact_id=f"art_{uuid.uuid4().hex[:8]}", rarity=Rarity.RARE, rank=3,
+                set_type=list(ArtifactSetType)[0],
+            ))
+        arts = client.get("/api/artifacts").json()
     art = next(a for a in arts if a["level"] < 16)
     assert {"rank", "upgrade_cost", "upgrade_chance"} <= set(art)
     res = client.post(f"/api/artifacts/{art['id']}/upgrade")

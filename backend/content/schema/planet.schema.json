@@ -93,6 +93,13 @@
           "description": "Troop template summoned into the target lane.",
           "title": "Summon Troop Id"
         },
+        "mana_gain": {
+          "default": 0,
+          "description": "Heroes: mana granted to the player when used.",
+          "minimum": 0,
+          "title": "Mana Gain",
+          "type": "integer"
+        },
         "effects": {
           "items": {
             "$ref": "#/$defs/Effect"
@@ -595,6 +602,12 @@
       "description": "Hue rotation (deg) applied to the art \u2014 placeholder tinting until unique art exists.",
       "title": "Image Hue",
       "type": "integer"
+    },
+    "battle_image": {
+      "default": "",
+      "description": "Battlefield background shown during battles on this planet (empty = plain dark field).",
+      "title": "Battle Image",
+      "type": "string"
     },
     "enemy_pool": {
       "items": {

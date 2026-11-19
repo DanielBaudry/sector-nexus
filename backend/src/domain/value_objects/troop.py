@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any, Dict, Tuple
 
 
 @dataclass(frozen=True)
@@ -14,6 +14,11 @@ class TroopTemplate:
     defense: int
     description: str = ""
     icon_name: str = "Users"
+    mana_cost: int = 3  # mana spent to deploy the pack mid-battle
+    # Barracks production: price of one pack and the techs (structures) it needs.
+    cost_credits: int = 0
+    cost_crystals: int = 0
+    requires: Tuple[str, ...] = ()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -26,4 +31,7 @@ class TroopTemplate:
             "defense": self.defense,
             "description": self.description,
             "icon_name": self.icon_name,
+            "mana_cost": self.mana_cost,
+            "cost": {"credits": self.cost_credits, "crystals": self.cost_crystals},
+            "requires": list(self.requires),
         }

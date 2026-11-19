@@ -1,0 +1,19 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "zerg_attacks_1",
+  "name": "Swarm Attacks I",
+  "faction": "Bio-Swarm",
+  "kind": "research",
+  "description": "Sharpened claws and spines: +10% attack for Zerg troops.",
+  "cost": {
+    "credits": 7500,
+    "crystals": 50
+  },
+  "requires": [
+    "zerg_spawning_pool"
+  ],
+  "bonus": {
+    "attack": 0.1
+  },
+  "order": 30
+}

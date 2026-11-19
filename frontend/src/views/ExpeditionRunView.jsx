@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Swords, Trophy, Skull, Map as MapIcon, Users, Heart, ArrowRight, Rocket, AlertTriangle, X, Crosshair, Crown, Dna } from 'lucide-react';
+import { Swords, Trophy, Skull, Map as MapIcon, Users, Heart, ArrowRight, Rocket, AlertTriangle, X, Crosshair, Crown, Dna, Gem } from 'lucide-react';
 import { api } from '../services/api';
 import RunNodeMap, { NODE_STYLE } from '../components/run/RunNodeMap';
 import LaneBattleBoard from '../components/run/LaneBattleBoard';
 import ObjectiveTracker from '../components/run/ObjectiveTracker';
 import { factionTone, getPortrait, pct } from '../utils/battleVisuals';
 import ArtifactCard from '../components/ArtifactCard';
+import { HeroLootList, heroLootTotals } from '../components/run/HeroLoot';
+import NodeEventModal from '../components/run/NodeEventModal';
+import { ArtifactDetail, LootSummary } from '../components/run/BattleDrawers';
 
 function LootList({ artifacts = [], title }) {
   if (!artifacts.length) return null;
@@ -28,6 +31,12 @@ function Rewards({ rewards }) {
       {rewards?.artifacts?.length > 0 && (
         <span className="text-emerald-300 font-bold">+{rewards.artifacts.length} ARTIFACT{rewards.artifacts.length > 1 ? 'S' : ''}</span>
       )}
+      {heroLootTotals(rewards).blueprints > 0 && (
+        <span className="text-sky-300 font-bold">+{heroLootTotals(rewards).blueprints} BLUEPRINT{heroLootTotals(rewards).blueprints > 1 ? 'S' : ''}</span>
+      )}
+      {heroLootTotals(rewards).materials > 0 && (
+        <span className="text-teal-300 font-bold">+{heroLootTotals(rewards).materials} PRINT MATS</span>
+      )}
     </div>
   );
 }
@@ -37,7 +46,6 @@ function RosterPanel({ run }) {
     <div className="space-y-1.5">
       {run.heroes.map((h) => {
         const tone = factionTone(h.faction);
-        const packs = run.troops.filter((t) => t.owner_id === h.id && t.is_alive);
         const portrait = getPortrait(h.name);
         return (
           <div key={h.id} className={`rounded-lg border p-1.5 bg-black/50 ${h.is_alive ? tone.border : 'border-slate-800 opacity-40 grayscale'}`}>
@@ -58,28 +66,38 @@ function RosterPanel({ run }) {
                 </div>
               </div>
             </div>
-            {packs.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {packs.map((p) => (
-                  <span key={p.id} className={`font-mono text-[11px] px-1 rounded border ${tone.border} ${tone.text} bg-black/40`}>
-                    {p.name} ×{p.count}/{p.max_count}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         );
       })}
+      <div className="pt-1.5 flex items-center justify-between font-mono text-[11px] tracking-widest text-slate-400">
+        <span>TROOPS</span>
+        <span className="flex items-center gap-1 text-violet-300"><Gem className="w-3 h-3" /> {run.mana ?? 0}/{run.mana_cap ?? 10} MANA</span>
+      </div>
+      {run.troops.filter((t) => t.is_alive).length ? (
+        <div className="flex flex-wrap gap-1">
+          {run.troops.filter((t) => t.is_alive).map((p) => (
+            <span key={p.id} className={`font-mono text-[11px] px-1 rounded border ${factionTone(p.faction).border} ${factionTone(p.faction).text} bg-black/40`}
+              title={p.deployed_lane == null ? `In reserve — ${p.mana_cost} mana to deploy` : 'Holding its lane'}>
+              {p.name} ×{p.count}/{p.max_count} · {p.deployed_lane == null ? `RESERVE ${p.mana_cost}◆` : ['LEFT', 'CENTER', 'RIGHT'][p.deployed_lane]}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="font-mono text-[11px] text-slate-500">No troops left.</div>
+      )}
     </div>
   );
 }
 
-export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, setActiveTab }) {
+export default function ExpeditionRunView({ run, planet, onRunUpdated, onRunCleared, setActiveTab }) {
   const [busy, setBusy] = useState(false);
   const [dismissedBattleId, setDismissedBattleId] = useState(null);
   const [error, setError] = useState(null);
   const [boardAnimating, setBoardAnimating] = useState(false);
   const [confirmExtract, setConfirmExtract] = useState(false);
+  // Node outcomes already acknowledged (the one present on mount was seen before).
+  const [seenEventSeq, setSeenEventSeq] = useState(() => run?.node_event?.seq ?? 0);
+  const [artifactDetail, setArtifactDetail] = useState(null);
 
   if (!run) {
     return (
@@ -125,94 +143,9 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
     await onRunCleared();
   };
 
-  return (
-    <div className="h-full flex flex-col gap-2 min-h-0">
-      {/* Run header */}
-      <div className="shrink-0 hud-panel rounded-xl px-3 py-2 border border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-          <span className="font-orbitron font-bold text-slate-100 text-[13px] tracking-wider truncate">{run.biome_name.toUpperCase()}</span>
-          {bossMode ? (
-            <span className="px-1.5 py-px rounded bg-orange-950/70 text-orange-300 border border-orange-500/50 font-mono text-[12px]">
-              BOSS ENCOUNTER
-            </span>
-          ) : (
-            <span className="px-1.5 py-px rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-mono text-[12px]">
-              DEPTH {currentNode?.row ?? 0}/{Math.max(...run.nodes.map((n) => n.row))}
-            </span>
-          )}
-          {run.difficulty > 1 && (
-            <span className="px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 font-mono text-[12px]">
-              DIFFICULTY {run.difficulty}
-            </span>
-          )}
-          {run.influence && (
-            <span className="flex items-center gap-1 px-1.5 py-px rounded bg-cyan-950/70 text-cyan-200 border border-cyan-500/50 font-mono text-[12px]" title="Influence gathered this run (banked when it ends)">
-              <Crosshair className="w-3 h-3" /> {run.influence.target_name.toUpperCase()} +{run.influence.gained}
-            </span>
-          )}
-          <span className="px-1.5 py-px rounded border font-mono text-[12px]" style={{ borderColor: nodeStyle.color, color: nodeStyle.color }}>
-            {run.status === 'MAP' ? 'NAVIGATING' : run.status}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Rewards rewards={run.rewards} />
-          {!finished && (
-            <button
-              onClick={() => setConfirmExtract(true)}
-              disabled={busy}
-              title="Leave the expedition now — keep half of the loot"
-              className="group relative flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 border border-red-300/60 text-white font-orbitron font-black text-xs tracking-widest shadow-lg shadow-red-900/60 disabled:opacity-50"
-            >
-              <span className="absolute inset-0 rounded-lg ring-2 ring-red-400/60 animate-pulse pointer-events-none" />
-              <Rocket className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
-              <span className="leading-none text-left">
-                EXTRACT
-                <span className="block font-mono font-normal text-[11px] tracking-normal text-red-100/80">keep 50% loot</span>
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 min-h-0">
-        {showBoard ? (
-          <LaneBattleBoard run={run} onRunUpdated={onRunUpdated} onAnimatingChange={setBoardAnimating} />
-        ) : (
-          <div className="h-full flex flex-col lg:flex-row gap-2 min-h-0">
-            <div className="flex-1 hud-panel rounded-xl border border-cyan-500/20 p-3 flex flex-col min-h-0">
-              <div className="flex items-center justify-between font-mono text-[12px] text-slate-400 mb-1">
-                <span className="flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-cyan-400" /> PLANETARY ROUTE</span>
-                <span>{run.status === 'MAP' ? 'SELECT A GLOWING NODE' : ''}</span>
-              </div>
-              <div className="flex-1 min-h-0">
-                <RunNodeMap
-                  nodes={run.nodes}
-                  currentNodeId={run.current_node_id}
-                  reachableIds={run.reachable_node_ids}
-                  busy={busy}
-                  onChoose={(id) => act(() => api.chooseRunNode(id))}
-                />
-              </div>
-              {error && <div className="font-mono text-[12px] text-red-400">{error}</div>}
-            </div>
-            <div className="lg:w-72 shrink-0 flex flex-col gap-2 min-h-0">
-              <div className="hud-panel rounded-xl p-2 border border-cyan-500/20 overflow-y-auto">
-                <div className="font-mono text-[11px] text-slate-400 mb-1.5">STRIKE TEAM</div>
-                <RosterPanel run={run} />
-              </div>
-              <div className="hud-panel rounded-xl p-2 border border-slate-800 flex-1 min-h-[100px] overflow-y-auto">
-                <div className="font-mono text-[11px] text-slate-500 mb-1">EXPEDITION LOG</div>
-                {[...run.log].reverse().map((l, i) => (
-                  <div key={i} className={`font-mono text-[12px] leading-tight ${i === 0 ? 'text-slate-100' : 'text-slate-500'}`}>{l}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
+  // Modals shared by the battle screen and the route screen.
+  const overlays = (
+    <>
       {/* Extraction confirmation */}
       {confirmExtract && !finished && (() => {
         const r = run.rewards || {};
@@ -274,6 +207,7 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
             <div className="my-4 text-left"><ObjectiveTracker objectives={battle.objectives} /></div>
             <div className="flex justify-center mb-3"><Rewards rewards={battle.rewards} /></div>
             <div className="mb-4"><LootList artifacts={battle.rewards?.artifacts} title="Artifacts recovered" /></div>
+            <div className="mb-4"><HeroLootList rewards={battle.rewards} names={run.hero_names} title="Warp data recovered" /></div>
             <p className="font-mono text-[12px] text-slate-400 mb-4">Wounds and troop losses carry over. Rest at a field camp to recover.</p>
             <button
               onClick={() => setDismissedBattleId(battle.id)}
@@ -328,12 +262,125 @@ export default function ExpeditionRunView({ run, onRunUpdated, onRunCleared, set
               <p className="font-mono text-[13px] text-amber-300 -mt-3 mb-3">{run.payout.artifacts_lost} artifact(s) lost in extraction.</p>
             )}
             <div className="mb-5"><LootList artifacts={(run.payout || run.rewards)?.artifacts} title="Artifacts banked to your vault" /></div>
+            <div className="mb-5"><HeroLootList rewards={run.payout || run.rewards} names={run.hero_names} title="Sent to the Warp Beacon" /></div>
             <button onClick={closeRun} className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold text-xs uppercase tracking-wider">
               Return to Command Deck
             </button>
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (showBoard) {
+    return (
+      <div className="h-full min-h-0">
+        <LaneBattleBoard
+          run={run}
+          planet={planet}
+          onRunUpdated={onRunUpdated}
+          onAnimatingChange={setBoardAnimating}
+          onExtract={() => setConfirmExtract(true)}
+          canExtract={!finished}
+        />
+        {overlays}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col gap-2 min-h-0 px-3 py-2 max-w-[1920px] mx-auto w-full">
+      {/* Run header */}
+      <div className="shrink-0 hud-panel rounded-xl px-3 py-2 border border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+          <span className="font-orbitron font-bold text-slate-100 text-[13px] tracking-wider truncate">{run.biome_name.toUpperCase()}</span>
+          {bossMode ? (
+            <span className="px-1.5 py-px rounded bg-orange-950/70 text-orange-300 border border-orange-500/50 font-mono text-[12px]">
+              BOSS ENCOUNTER
+            </span>
+          ) : (
+            <span className="px-1.5 py-px rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-mono text-[12px]">
+              DEPTH {currentNode?.row ?? 0}/{Math.max(...run.nodes.map((n) => n.row))}
+            </span>
+          )}
+          {run.difficulty > 1 && (
+            <span className="px-1.5 py-px rounded bg-red-950/60 text-red-300 border border-red-500/40 font-mono text-[12px]">
+              DIFFICULTY {run.difficulty}
+            </span>
+          )}
+          {run.influence && (
+            <span className="flex items-center gap-1 px-1.5 py-px rounded bg-cyan-950/70 text-cyan-200 border border-cyan-500/50 font-mono text-[12px]" title="Influence gathered this run (banked when it ends)">
+              <Crosshair className="w-3 h-3" /> {run.influence.target_name.toUpperCase()} +{run.influence.gained}
+            </span>
+          )}
+          <span className="px-1.5 py-px rounded border font-mono text-[12px]" style={{ borderColor: nodeStyle.color, color: nodeStyle.color }}>
+            {run.status === 'MAP' ? 'NAVIGATING' : run.status}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Rewards rewards={run.rewards} />
+          {!finished && (
+            <button
+              onClick={() => setConfirmExtract(true)}
+              disabled={busy}
+              title="Leave the expedition now — keep half of the loot"
+              className="group relative flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 border border-red-300/60 text-white font-orbitron font-black text-xs tracking-widest shadow-lg shadow-red-900/60 disabled:opacity-50"
+            >
+              <span className="absolute inset-0 rounded-lg ring-2 ring-red-400/60 animate-pulse pointer-events-none" />
+              <Rocket className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+              <span className="leading-none text-left">
+                EXTRACT
+                <span className="block font-mono font-normal text-[11px] tracking-normal text-red-100/80">keep 50% loot</span>
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 min-h-0">
+        <div className="h-full flex flex-col lg:flex-row gap-2 min-h-0">
+          <div className="flex-1 hud-panel rounded-xl border border-cyan-500/20 p-3 flex flex-col min-h-0">
+            <div className="flex items-center justify-between font-mono text-[12px] text-slate-400 mb-1">
+              <span className="flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-cyan-400" /> PLANETARY ROUTE</span>
+              <span>{run.status === 'MAP' ? 'SELECT A GLOWING NODE' : ''}</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <RunNodeMap
+                nodes={run.nodes}
+                currentNodeId={run.current_node_id}
+                reachableIds={run.reachable_node_ids}
+                busy={busy}
+                onChoose={(id) => act(() => api.chooseRunNode(id))}
+              />
+            </div>
+            {error && <div className="font-mono text-[12px] text-red-400">{error}</div>}
+          </div>
+          <div className="lg:w-80 shrink-0 flex flex-col gap-2 min-h-0">
+            <div className="hud-panel rounded-xl p-2 border border-cyan-500/20 overflow-y-auto max-h-[45%]">
+              <div className="font-mono text-[11px] text-slate-400 mb-1.5">STRIKE TEAM</div>
+              <RosterPanel run={run} />
+            </div>
+            <div className="hud-panel rounded-xl p-3 border border-amber-500/25 flex-1 min-h-[120px] overflow-y-auto">
+              <div className="font-mono text-[11px] tracking-widest text-amber-300/90 mb-2">LOOT SECURED THIS RUN</div>
+              <LootSummary run={run} onArtifact={setArtifactDetail} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {overlays}
+      {run.status === 'MAP' && run.node_event && run.node_event.seq > seenEventSeq && (
+        <NodeEventModal
+          event={run.node_event}
+          names={run.hero_names}
+          onArtifact={setArtifactDetail}
+          paused={!!artifactDetail}
+          onConfirm={() => setSeenEventSeq(run.node_event.seq)}
+        />
+      )}
+      <ArtifactDetail artifact={artifactDetail} onClose={() => setArtifactDetail(null)} />
     </div>
   );
 }

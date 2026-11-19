@@ -2,11 +2,6 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 
-class SummonRequestDTO(BaseModel):
-    banner_faction: str = "ALL"
-    count: int = 1
-
-
 class UpdateGambitsDTO(BaseModel):
     gambits: List[Dict[str, Any]]
 
@@ -49,15 +44,17 @@ class SetHierarchyTargetDTO(BaseModel):
 class StartBossRunDTO(BaseModel):
     boss_id: str
     champion_ids: List[str] = Field(..., min_length=1, max_length=3)
-    troop_assignments: Optional[Dict[str, List[str]]] = None
+    troop_ids: Optional[List[str]] = None  # troop reserve: template ids taken from the garrison
     difficulty: int = Field(1, ge=1, le=10)
 
 
 class StartRunDTO(BaseModel):
     biome_id: str
     squad_id: str = "squad_alpha"
-    # hero (champion) id -> list of troop template ids; omitted heroes get default faction troops
-    troop_assignments: Optional[Dict[str, List[str]]] = None
+    # troop reserve: template ids taken from the barracks garrison (repeats allowed)
+    troop_ids: Optional[List[str]] = None
+    # heroes picked in the launch screen; omitted = the squad's heroes
+    champion_ids: Optional[List[str]] = Field(None, min_length=1, max_length=4)
     difficulty: int = Field(1, ge=1, le=10)
 
 
@@ -68,6 +65,11 @@ class ChooseNodeDTO(BaseModel):
 class DeployHeroesDTO(BaseModel):
     # hero (champion) id -> lane index (0 = left, 1 = center, 2 = right)
     assignments: Dict[str, int]
+
+
+class DeployTroopDTO(BaseModel):
+    troop_id: str
+    lane: int = Field(..., ge=0, le=2)
 
 
 class PlayAbilityDTO(BaseModel):

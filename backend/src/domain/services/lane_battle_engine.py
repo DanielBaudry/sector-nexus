@@ -28,7 +28,16 @@ import time
 import uuid
 from typing import List, Optional
 
-from src.domain.entities.battle import LANE_COUNT, LANE_NAMES, Battle, LaneUnit
+from src.domain.entities.battle import (
+    LANE_COUNT,
+    LANE_NAMES,
+    MANA_PER_HERO_KILL,
+    MANA_PER_LANE_CLEARED,
+    MANA_PER_OBJECTIVE,
+    MANA_PER_TROOP_KILL,
+    Battle,
+    LaneUnit,
+)
 from src.domain.services.gambit_evaluator import GambitEvaluator
 from src.domain.value_objects.card import CombatCard
 from src.domain.value_objects.enums import (
@@ -73,17 +82,18 @@ class LaneBattleEngine:
     # ── Lifecycle ───────────────────────────────────────────────────────────
     def begin(self, battle: Battle, now: Optional[float] = None, max_actions: Optional[int] = None) -> None:
         battle.status = BattleStatus.IN_PROGRESS
+        # Every battle starts from scratch: empty turn meters, speed alone decides who acts first.
         for u in battle.units:
-            if u.is_hero and u.lane is not None:
-                u.turn_meter = float(self.rng.randint(10, 40))
+            u.turn_meter = 0.0
         for side in Side:
             for lane in range(LANE_COUNT):
-                battle.drill_meters[f"{side.value}:{lane}"] = float(self.rng.randint(0, 20))
+                battle.drill_meters[f"{side.value}:{lane}"] = 0.0
         for u in list(battle.units):
             p = u.passive
             if u.is_alive and u.lane is not None and p and p.kind == PassiveKind.BATTLE_START_EFFECT and p.effect:
                 for ally in battle.living(u.side, u.lane):
                     self._apply_effect(battle, u, ally, p.effect)
+        battle.cleared_lanes = [battle.is_lane_cleared(l) for l in range(LANE_COUNT)]
         self._evaluate(battle)
         self.advance(battle, now, max_actions)
 
@@ -310,6 +320,9 @@ class LaneBattleEngine:
         lane_label = "ALL LANES" if len(lanes) == LANE_COUNT else " + ".join(LANE_NAMES[l] for l in lanes)
         battle.log.append(f"🎯 {actor.name} uses {card.name} → {lane_label}.")
         battle.emit("ability", actor_id=actor.id, name=card.name, lanes=lanes, summon=bool(card.summon_troop_id))
+        if card.mana_gain and actor.side == Side.ALLY:
+            battle.gain_mana(card.mana_gain, card.name, actor.id)
+            battle.log.append(f"🔷 {card.name}: +{card.mana_gain} mana.")
 
         attack = battle.effective(actor, "attack")
         hit_targets: List[LaneUnit] = []
@@ -810,6 +823,8 @@ class LaneBattleEngine:
         target.turn_meter = 0.0
         target.effects = []
         battle.log.append(f"💀 {target.name} destroyed in {LANE_NAMES[target.lane]}!")
+        if target.side == Side.ENEMY:
+            battle.gain_mana(MANA_PER_TROOP_KILL if target.is_troop else MANA_PER_HERO_KILL, "kill", target.id)
 
     @staticmethod
     def _heal(battle: Battle, source: LaneUnit, target: LaneUnit, amount: int) -> None:
@@ -882,11 +897,13 @@ class LaneBattleEngine:
             battle.log.append("❌ Lane battle lost. Strike team pulls back.")
             return
 
+        self._reward_progress(battle)
         primaries = [o for o in battle.objectives if o.is_primary]
         if primaries and all(o.status == "COMPLETE" for o in primaries):
             for o in battle.objectives:
                 if o.type == ObjectiveType.DEFEND_LANE:
                     o.status = "COMPLETE"
+            self._reward_progress(battle)
             battle.status = BattleStatus.WON
             battle.current_actor_id = None
             battle.log.append("🏆 All primary objectives secured!")
@@ -896,6 +913,20 @@ class LaneBattleEngine:
             battle.status = BattleStatus.LOST
             battle.current_actor_id = None
             battle.log.append("❌ Offensive stalled — no way left to complete the objectives.")
+
+    @staticmethod
+    def _reward_progress(battle: Battle) -> None:
+        """Mana for lanes that just got cleared and objectives completed (each objective pays once)."""
+        if len(battle.cleared_lanes) == LANE_COUNT:
+            for lane in range(LANE_COUNT):
+                cleared = battle.is_lane_cleared(lane)
+                if cleared and not battle.cleared_lanes[lane]:
+                    battle.gain_mana(MANA_PER_LANE_CLEARED, "lane", None)
+                battle.cleared_lanes[lane] = cleared
+        for obj in battle.objectives:
+            if obj.status == "COMPLETE" and not obj.params.get("mana_paid"):
+                obj.params["mana_paid"] = True
+                battle.gain_mana(MANA_PER_OBJECTIVE, "objective", None)
 
     def _is_stalemate(self, battle: Battle) -> bool:
         """No ally hero left and no ally troop is facing anything it could still kill."""

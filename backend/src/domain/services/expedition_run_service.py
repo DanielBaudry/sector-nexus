@@ -1,13 +1,14 @@
 import random
 from typing import Any, Dict, Optional
 
-from src.domain.entities.battle import LANE_COUNT, LANE_NAMES
+from src.domain.entities.battle import LANE_COUNT, LANE_NAMES, MANA_CAP, MANA_FLOOR
 from src.domain.entities.biome import Biome
 from src.domain.entities.expedition_run import ExpeditionRun
 from src.domain.services.encounter_factory import EncounterFactory
 from src.domain.services.hierarchy_service import HierarchyService
 from src.domain.services.lane_battle_engine import LaneBattleEngine
 from src.domain.services.loot_service import LootService
+from src.domain.services.warp_forge_service import WarpForgeService
 from src.domain.value_objects.difficulty import Difficulty
 from src.domain.value_objects.enums import BattleStatus, NodeType, RunStatus, Side
 from src.domain.value_objects.troop import TroopTemplate
@@ -15,6 +16,7 @@ from src.domain.value_objects.troop import TroopTemplate
 BATTLE_NODES = (NodeType.COMBAT, NodeType.ELITE, NodeType.BOSS)
 REST_HERO_HEAL = 0.35      # fraction of max HP restored to living heroes
 REST_TROOP_REGROUP = 0.50  # fraction of missing soldiers recovered
+CACHE_MANA = 2             # supply caches hold mana crystals
 DEFEAT_REWARD_SHARE = 0.5  # share of run loot kept on defeat / retreat
 ACTIONS_PER_STEP = 1       # enemy/drill actions resolved per tick, so each one can be animated
 
@@ -31,6 +33,7 @@ class ExpeditionRunService:
         self.rng = rng or random.Random()
         self.engine = engine or LaneBattleEngine(self.rng)
         self.encounters = encounters or EncounterFactory(self.rng)
+        self.forge = WarpForgeService(self.rng)
 
     # ── Map ─────────────────────────────────────────────────────────────────
     def choose_node(
@@ -56,14 +59,33 @@ class ExpeditionRunService:
             run.status = RunStatus.DEPLOYMENT
             run.log.append(f"⚔️ Contact! {node.type.value} at {node.id}. Deploy your heroes to the lanes.")
         elif node.type == NodeType.REST:
+            healed, regrouped = [], []
             for hero in run.living_heroes():
+                before = hero.hp
                 hero.hp = min(hero.max_hp, hero.hp + int(hero.max_hp * REST_HERO_HEAL))
                 hero.shields = hero.max_shields
+                healed.append({"id": hero.id, "name": hero.name, "before": before, "after": hero.hp, "max": hero.max_hp})
             for pack in run.troops:
                 if pack.is_alive:
+                    before = pack.count
                     missing = pack.max_hp - pack.hp
                     pack.hp += int(missing * REST_TROOP_REGROUP)
+                    regrouped.append({"id": pack.id, "name": pack.name, "before": before, "after": pack.count, "max": pack.max_count})
             run.log.append("⛺ Field camp: heroes patched up, troops regrouped.")
+            self._node_event(run, node, "Field Camp",
+                             "Your squad digs in for a few hours. Medics patch the heroes up and shattered packs regroup.",
+                             healed=healed, regrouped=regrouped)
+        elif node.type == NodeType.ARCHIVE:
+            loot = self.forge.archive_loot(run.hero_pool, self._known_blueprints(run))
+            self._add_rewards(run, loot)
+            run.log.append(
+                f"🛰️ Derelict warp archive: {self._describe_hero_loot(run, loot)}." if loot
+                else "🛰️ Derelict warp archive: the data cores are scrambled. Nothing to recover."
+            )
+            self._node_event(run, node, "Derelict Warp Archive",
+                             "A dead relay station still hums with warp data. Your techs pull what they can from its cores."
+                             if loot else "The data cores are scrambled — nothing could be recovered.",
+                             loot=loot)
         elif node.type == NodeType.CACHE:
             mult = Difficulty(run.difficulty).reward_mult
             loot = {
@@ -72,10 +94,29 @@ class ExpeditionRunService:
                 **LootService(self.rng).node_loot(biome, node.type, node.threat, run.difficulty),
             }
             self._add_rewards(run, loot)
+            run.mana = min(MANA_CAP, run.mana + CACHE_MANA)
             found = f", {len(loot['artifacts'])} artifact(s)" if loot["artifacts"] else ""
             run.log.append(
-                f"📦 Supply cache: +{loot['credits']} CR, +{loot['crystals']} crystals, +{loot['champion_xp']} XP{found}."
+                f"📦 Supply cache: +{loot['credits']} CR, +{loot['crystals']} crystals, +{loot['champion_xp']} XP{found}, +{CACHE_MANA} mana."
             )
+            self._node_event(run, node, "Supply Cache",
+                             "An abandoned supply drop, still sealed. Your squad cracks it open.",
+                             loot=loot, mana=CACHE_MANA)
+
+    @staticmethod
+    def _node_event(run: ExpeditionRun, node, title: str, description: str, **details: Any) -> None:
+        """What happened at a non-combat node, for the client to show (seq makes each one unique)."""
+        seq = (run.node_event or {}).get("seq", 0) + 1
+        run.node_event = {"seq": seq, "node_id": node.id, "type": node.type.value, "title": title,
+                          "description": description, **details}
+
+    def _known_blueprints(self, run: ExpeditionRun) -> set:
+        return set(run.known_blueprints) | set(run.rewards.get("blueprints", []))
+
+    def _describe_hero_loot(self, run: ExpeditionRun, loot: Dict[str, Any]) -> str:
+        parts = [f"📐 {run.hero_pool.get(t, t)} blueprint" for t in loot.get("blueprints", [])]
+        parts += [f"+{n} {run.hero_pool.get(t, t)} print materials" for t, n in (loot.get("hero_materials") or {}).items()]
+        return ", ".join(parts)
 
     # ── Battle ──────────────────────────────────────────────────────────────
     def deploy(self, run: ExpeditionRun, assignments: Dict[str, int], now: Optional[float] = None) -> None:
@@ -104,14 +145,17 @@ class ExpeditionRunService:
             hero.effects = []
             hero.passive_stacks = 0
             hero.shields = hero.max_shields  # shields recharge between battles; hull damage persists
-            for pack in run.troops_of(hero.id):
-                pack.lane = lane
             if lane is not None:
                 battle.units.append(hero)
-                battle.units.extend(run.troops_of(hero.id))
+        # Packs deployed in earlier battles hold their lane.
+        for pack in run.field_troops():
+            pack.lane = pack.deployed_lane
+            battle.units.append(pack)
 
         deployed = ", ".join(f"{living[h].name} → {LANE_NAMES[l]}" for h, l in assignments.items())
         battle.log.append(f"🚀 Deployment: {deployed}.")
+        battle.mana = min(battle.mana_cap, max(run.mana, MANA_FLOOR))
+        battle.log.append(f"🔷 {battle.mana} mana available — deploy reserve troops during your turns.")
         run.status = RunStatus.BATTLE
         self.engine.begin(battle, now, max_actions=ACTIONS_PER_STEP)
         self._settle(run)
@@ -127,6 +171,27 @@ class ExpeditionRunService:
             max_actions_after=0,
         )
         self._settle(run)
+
+    def deploy_troop(self, run: ExpeditionRun, troop_id: str, lane: int) -> None:
+        """Spend mana to bring a reserve pack onto the field (player's turn only, free action)."""
+        battle = run.battle
+        if run.status != RunStatus.BATTLE or not battle or battle.status != BattleStatus.IN_PROGRESS:
+            raise ValueError("No battle in progress.")
+        if not battle.current_actor_id:
+            raise ValueError("Troops can only be deployed during your turn.")
+        if not (0 <= lane < LANE_COUNT):
+            raise ValueError(f"Invalid lane {lane}.")
+        pack = next((t for t in run.reserve_troops() if t.id == troop_id), None)
+        if pack is None:
+            raise ValueError("That troop pack is not in your reserve.")
+        battle.spend_mana(pack.mana_cost, "deploy", pack.id)
+        pack.lane = lane
+        pack.deployed_lane = lane
+        pack.turn_meter = 0.0
+        pack.effects = []
+        battle.units.append(pack)
+        battle.emit("summon", source_id=None, unit_id=pack.id, lane=lane, name=pack.name, deploy=True)
+        battle.log.append(f"📦 {pack.name} ×{pack.count} deployed to {LANE_NAMES[lane]} (-{pack.mana_cost} mana).")
 
     def tick(self, run: ExpeditionRun, now: Optional[float] = None) -> None:
         if run.status != RunStatus.BATTLE or not run.battle:
@@ -167,6 +232,14 @@ class ExpeditionRunService:
             keep = -(-len(artifacts) // 2)  # ceil
             artifacts = self.rng.sample(artifacts, keep)
         payout["artifacts"] = artifacts
+        # Warp Beacon loot: materials share like currencies; on defeat a random half of the blueprints survives.
+        payout["hero_materials"] = {
+            t: int(n * share) for t, n in (run.rewards.get("hero_materials") or {}).items() if int(n * share) > 0
+        }
+        blueprints = list(run.rewards.get("blueprints", []))
+        if not full and blueprints:
+            blueprints = self.rng.sample(blueprints, -(-len(blueprints) // 2))
+        payout["blueprints"] = blueprints
         payout["artifacts_lost"] = len(run.rewards.get("artifacts", [])) - len(artifacts)
         run.payout = payout
         return payout
@@ -180,6 +253,11 @@ class ExpeditionRunService:
             return
         node = run.current_node
         if battle.status == BattleStatus.WON:
+            if node and node.type == NodeType.BOSS:
+                hero_loot = self.forge.boss_loot(run.hero_pool, self._known_blueprints(run))
+                battle.rewards.update(hero_loot)
+                if hero_loot:
+                    run.log.append(f"🛰️ Warp data recovered from the wreck: {self._describe_hero_loot(run, hero_loot)}.")
             self._add_rewards(run, battle.rewards)
             drops = len(battle.rewards.get("artifacts", []))
             run.log.append(
@@ -207,6 +285,8 @@ class ExpeditionRunService:
             self.finalize_payout(run)
 
     def _cleanup_after_battle(self, run: ExpeditionRun) -> None:
+        if run.battle and run.battle.status != BattleStatus.DEPLOYMENT:
+            run.mana = run.battle.mana  # unspent and earned mana carries over
         # Summoned packs dissolve; destroyed packs are gone for the rest of the run.
         roster_ids = {t.id for t in run.troops}
         run.troops = [t for t in run.troops if t.is_alive]
@@ -225,5 +305,9 @@ class ExpeditionRunService:
         for key, value in loot.items():
             if isinstance(value, list):
                 run.rewards.setdefault(key, []).extend(value)
+            elif isinstance(value, dict):
+                bucket = run.rewards.setdefault(key, {})
+                for k, v in value.items():
+                    bucket[k] = bucket.get(k, 0) + v
             else:
                 run.rewards[key] = run.rewards.get(key, 0) + value

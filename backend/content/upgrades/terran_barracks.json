@@ -1,0 +1,14 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "terran_barracks",
+  "name": "Barracks",
+  "faction": "Terran Vanguard",
+  "kind": "structure",
+  "description": "Trains Marine Squads. The backbone of every Dominion strike force.",
+  "cost": {
+    "credits": 3000,
+    "crystals": 0
+  },
+  "requires": [],
+  "order": 10
+}

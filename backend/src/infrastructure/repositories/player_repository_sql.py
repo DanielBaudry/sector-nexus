@@ -19,7 +19,6 @@ class PlayerRepositorySQL(IPlayerRepository):
                 username="Dominion Commander",
                 crystals=2000,
                 credits=75000,
-                warp_shards=20,
                 level=1,
                 experience=0,
             )

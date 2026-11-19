@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import CommandDeck from './views/CommandDeck';
 import WarpBeaconView from './views/WarpBeaconView';
 import ArmoryView from './views/ArmoryView';
+import BarracksView from './views/BarracksView';
 import ExpeditionMapView from './views/ExpeditionMapView';
 import ExpeditionRunView from './views/ExpeditionRunView';
 import { api } from './services/api';
@@ -11,7 +12,6 @@ import { api } from './services/api';
 export default function App() {
   const [activeTab, setActiveTab] = useState('deck');
   const [player, setPlayer] = useState(null);
-  const [banners, setBanners] = useState([]);
   const [champions, setChampions] = useState([]);
   const [artifacts, setArtifacts] = useState([]);
   const [squads, setSquads] = useState([]);
@@ -27,7 +27,6 @@ export default function App() {
       setError(null);
       const [
         playerData,
-        bannersData,
         championsData,
         artifactsData,
         squadsData,
@@ -35,7 +34,6 @@ export default function App() {
         activeRunData,
       ] = await Promise.all([
         api.getPlayerProfile(),
-        api.getBanners(),
         api.getChampions(),
         api.getArtifacts(),
         api.getSquads(),
@@ -44,7 +42,6 @@ export default function App() {
       ]);
 
       setPlayer(playerData);
-      setBanners(bannersData);
       setChampions(championsData);
       setArtifacts(artifactsData);
       setSquads(squadsData);
@@ -168,7 +165,7 @@ export default function App() {
       {/* Main Tactical Viewport */}
       <main className={`flex-1 w-full mx-auto relative z-10 ${
         activeTab === 'combat'
-          ? 'min-h-0 overflow-hidden px-3 py-2 max-w-[1920px]'
+          ? 'min-h-0 overflow-hidden'
           : activeTab === 'expeditions'
           ? 'min-h-0 lg:overflow-hidden px-4 py-4 max-w-[1920px]'
           : 'max-w-7xl p-4 sm:p-6 pb-20'
@@ -184,14 +181,7 @@ export default function App() {
         )}
 
         {activeTab === 'gacha' && (
-          <WarpBeaconView
-            banners={banners}
-            player={player}
-            onSummonSuccess={async (updatedPlayer) => {
-              setPlayer(updatedPlayer);
-              await refreshChampions();
-            }}
-          />
+          <WarpBeaconView onPrinted={refreshChampions} />
         )}
 
         {activeTab === 'champions' && (
@@ -206,6 +196,10 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'barracks' && (
+          <BarracksView onPlayerUpdated={(p) => setPlayer(p)} />
+        )}
+
         {activeTab === 'expeditions' && (
           <ExpeditionMapView
             biomes={biomes}
@@ -213,12 +207,14 @@ export default function App() {
             champions={champions}
             activeRun={activeRun}
             onStartCombat={handleStartCombat}
+            onOpenBarracks={() => setActiveTab('barracks')}
           />
         )}
 
         {activeTab === 'combat' && (
           <ExpeditionRunView
             run={activeRun}
+            planet={biomes.find((b) => b.id === activeRun?.biome_id)}
             onRunUpdated={(updated) => setActiveRun(updated)}
             onRunCleared={async () => {
               setActiveRun(null);

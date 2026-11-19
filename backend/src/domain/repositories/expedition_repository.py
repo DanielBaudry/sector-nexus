@@ -5,6 +5,7 @@ from src.domain.entities.biome import Biome
 from src.domain.entities.boss_encounter import BossEncounter
 from src.domain.entities.expedition_run import ExpeditionRun
 from src.domain.value_objects.troop import TroopTemplate
+from src.domain.value_objects.upgrade import Upgrade
 
 
 class IExpeditionRepository(ABC):
@@ -43,4 +44,9 @@ class IExpeditionRepository(ABC):
 
     @abstractmethod
     def get_troop_templates(self) -> List[TroopTemplate]:
+        pass
+
+    @abstractmethod
+    def get_upgrades(self) -> List[Upgrade]:
+        """Barracks tech tree (structures and researches)."""
         pass

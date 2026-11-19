@@ -1,0 +1,20 @@
+{
+  "$schema": "../schema/upgrade.schema.json",
+  "id": "zerg_attacks_2",
+  "name": "Swarm Attacks II",
+  "faction": "Bio-Swarm",
+  "kind": "research",
+  "description": "Adrenal glands: +15% more attack for Zerg troops.",
+  "cost": {
+    "credits": 17000,
+    "crystals": 140
+  },
+  "requires": [
+    "zerg_attacks_1",
+    "zerg_hydralisk_den"
+  ],
+  "bonus": {
+    "attack": 0.15
+  },
+  "order": 50
+}
